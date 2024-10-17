@@ -15,7 +15,7 @@ export default function Index() {
   };
 
   const handleCreateAccount = () => {
-    router.push('/create-account'); // REATE ACCOUNT PAGE SHOULD BE THIS NAME
+    router.push('/create-account'); // CREATE ACCOUNT PAGE SHOULD BE THIS NAME
   };
 
   return (
@@ -27,7 +27,7 @@ export default function Index() {
       <TextInput
         style={styles.input}
         placeholder="Username" // Placeholder text
-        placeholderTextColor="#888" // Optional: color for placeholder text
+        placeholderTextColor="#777" // Optional: color for placeholder text
         value={username}
         onChangeText={setUsername}
         autoCapitalize="none"
@@ -39,6 +39,14 @@ export default function Index() {
       {/* Create an Account Text */}
       <TouchableOpacity onPress={handleCreateAccount}>
         <Text style={styles.createAccountText}>Create Account</Text>
+      </TouchableOpacity>
+
+      {/* Sign in with Google Button (Graphic) */}
+      <TouchableOpacity style={styles.googleSignInButton}>
+        <Image 
+          source={require('C:/Users/Kinga/StickerSmash/assets/sign-in-with-google.png')} // Path to your Google Sign-In button image
+          style={styles.googleSignInImage}
+        />
       </TouchableOpacity>
 
     </View>
@@ -54,19 +62,19 @@ const styles = StyleSheet.create({
     padding: 35,
   },
   logo: {
-    width: 100,  // Adjust the size of the logo as needed
-    height: 100,
-    marginBottom: 80, // Decrease this value to move the logo higher
+    width: 125,  // Size of logo ADJUST HERE
+    height: 125,
+    marginBottom: 70, //Space between logo and login bars
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: 'white',
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
     width: '100%',
     marginBottom: 20,
-    backgroundColor: '#fff', // Optional: make input fields have a white background
+    // No background color  
   },
   loginButton: {
     borderColor: '#fff', // White border color
@@ -83,5 +91,13 @@ const styles = StyleSheet.create({
   createAccountText: {
       color: '#ffffff', // create account text
       fontSize: 14,
+  },
+  googleSignInButton: {
+    marginTop: 10, // Space between "Create Account" and the Google Sign-In button
+  },
+  googleSignInImage: {
+    width: 160,  // Adjust width of Google Sign-In button
+    height: 50,  // Adjust height of Google Sign-In button
+    resizeMode: 'contain', // Keeps the aspect ratio of the image
   },
 });

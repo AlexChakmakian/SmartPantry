@@ -1,27 +1,60 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+  Dimensions,
+} from 'react-native';
+
+const { width } = Dimensions.get('window'); // Get device width for menu slide
 
 const HomeScreen = () => {
+  const [isMenuOpen, setMenuOpen] = useState(false); // Track menu state (open/close)
+  const slideAnim = useRef(new Animated.Value(-width)).current; // Slide animation starting off-screen
+
+  const toggleMenu = () => {
+    setMenuOpen(!isMenuOpen); // Toggle the menu state
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? -width : 0, // Move menu in or out
+      duration: 300, // Animation duration
+      useNativeDriver: true, // Optimize performance
+    }).start();
+  };
+
   return (
     <View style={styles.container}>
-      {/* Row containing "sandwich" lines and SmartPantry text */}
-      <View style={styles.header}>
-        {/* Sandwich made of three horizontal lines */}
-        <View style={styles.sandwich}>
-          <View style={styles.sandwichLine} />
-          <View style={styles.sandwichLine} />
-          <View style={styles.sandwichLine} />
-        </View>
-        <Text style={styles.text}>Your SmartPantry</Text>
-      </View>
+      {/* Hamburger Icon */}
+      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+        <View style={styles.line} />
+        <View style={styles.line} />
+        <View style={styles.line} />
+      </TouchableOpacity>
 
-      {/* Horizontal line (separator) */}
-      <View style={styles.separator} />
+      <Text style={styles.headerText}>Your SmartPantry</Text>
 
-      {/* Large circular button in the middle */}
+      {/* Main content */}
       <TouchableOpacity style={styles.circleButton}>
         <Text style={styles.buttonText}>Configure</Text>
+        <Text style={styles.buttonText}>Pantry 🍽️</Text>
       </TouchableOpacity>
+
+      {/* Animated Sliding Menu */}
+      <Animated.View
+        style={[
+          styles.menuContainer,
+          { transform: [{ translateX: slideAnim }] }, // Slide animation
+        ]}
+      >
+        <Text style={styles.menuText}></Text>
+        <Text style={styles.menuText}>Home</Text>
+        <Text style={styles.menuText}>Profile</Text>
+        <Text style={styles.menuText}>Testing</Text>
+        <Text style={styles.menuText}>Testing</Text>
+        <Text style={styles.menuText}>Testing</Text>
+        <Text style={styles.menuText}>Settings</Text>
+      </Animated.View>
     </View>
   );
 };
@@ -32,44 +65,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#ADD8E6',
     paddingTop: 20,
   },
-  header: {
-    flexDirection: 'row', // Align "sandwich" and text horizontally
-    alignItems: 'center', // Vertically center items
-    justifyContent: 'center', // Horizontally center the row
-    marginBottom: 10, // Space below the header
-  },
-  sandwich: {
-    marginRight: 10, // Space between "sandwich" and text
-  },
-  sandwichLine: {
-    width: 30, // Width of each "sandwich" line
-    height: 4, // Height/thickness of each line
-    backgroundColor: '#fff', // White color for the lines
-    marginVertical: 2, // Space between the lines
-  },
-  text: {
+  headerText: {
     fontSize: 20,
+    textAlign: 'center',
+    marginTop: 20,
     color: '#fff',
   },
-  separator: {
-    height: 2, // Thickness of the separator line
-    backgroundColor: '#fff', // Color of the line
-    width: '90%', // Line width across 90% of the screen
-    alignSelf: 'center', // Center the line horizontally
-    marginVertical: 20, // Space above and below the line
+  hamburger: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 1, // Ensure the hamburger is on top of the menu
+  },
+  line: {
+    width: 30,
+    height: 4,
+    backgroundColor: '#fff',
+    marginVertical: 4,
   },
   circleButton: {
-    width: 150, // Width of the circle
-    height: 150, // Height of the circle
-    borderRadius: 75, // Half of width/height to make it a circle
-    backgroundColor: '#FF6347', // Tomato color for the button
-    justifyContent: 'center', // Center content vertically
-    alignItems: 'center', // Center content horizontally
-    alignSelf: 'center', // Center the button on the screen
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: '#AFDFE6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 100, // Pushed lower on the screen
+    borderColor: '#fff', // White border color
+    borderWidth: 3, // Thickness of the border
+    borderStyle: 'dashed', // Dashed border style
   },
   buttonText: {
-    color: '#fff', // White text
-    fontSize: 18, // Text size
+    color: '#fff',
+    fontSize: 18,
+  },
+  menuContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: width * 0.40, // CHANGE WIDTH OF CONTAINER THAT OPENS
+    backgroundColor: '#4C5D6B',
+    padding: 20,
+    paddingTop: 60, // To avoid the status bar
+    zIndex: 0, // Behind the hamburger icon
+  },
+  menuText: {
+    fontSize: 18,
+    color: '#fff',
+    marginVertical: 10,
   },
 });
 
