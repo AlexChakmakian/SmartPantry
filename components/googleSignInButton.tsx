@@ -5,7 +5,7 @@ const GoogleSignInButton = ({ onPress }) => {
   return (
     <TouchableOpacity style={styles.googleSignInButton} onPress={onPress}>
       <Image
-        source={require("C:/Users/chine/Documents/repos/SmartPantry/assets/sign-in-with-google.png")}
+        source={require("../assets/sign-in-with-google.png")}
         style={styles.googleSignInImage}
       />
     </TouchableOpacity>

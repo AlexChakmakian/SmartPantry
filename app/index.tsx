@@ -19,8 +19,8 @@ export default function Index() {
       } else {
         Alert.alert("Please enter both username and password");
       }
-    } catch (error) {
-      Alert.alert("Login failed", error.message);
+    } catch (error : any) {
+      Alert.alert("Login failed, incorrect username or password");
     }
   };
 
@@ -31,7 +31,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <Image
-        source={require("C:/Users/chine/Documents/repos/SmartPantry/assets/Logo.png")}
+        source={require("../assets/Logo.png")}
         style={styles.logo}
       />
       <TextInput
@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   logo: {
     width: 125,
     height: 125,
-    marginBottom: 70,
+    marginBottom: 60,
   },
   input: {
     height: 40,
