@@ -20,8 +20,6 @@ export default function Index() {
         Alert.alert("Please enter both username and password");
       }
     } catch (error: any) {
-      Alert.alert("Login failed", error.message);
-    } catch (error : any) {
       Alert.alert("Login failed, incorrect username or password");
     }
   };
@@ -32,10 +30,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require("../assets/Logo.png")}
-        style={styles.logo}
-      />
+      <Image source={require("../assets/Logo.png")} style={styles.logo} />
       <TextInput
         style={styles.input}
         placeholder="Username"
