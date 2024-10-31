@@ -11,7 +11,7 @@ export default function RootLayout() {
         name="create-account"
         options={{ title: "Register" }}
       />{" "}
-      {/* Creating a new user */}
+      {/* Registering a new user */}
     </Stack>
   );
 }
