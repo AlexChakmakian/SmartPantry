@@ -19,6 +19,8 @@ export default function Index() {
       } else {
         Alert.alert("Please enter both username and password");
       }
+    } catch (error: any) {
+      Alert.alert("Login failed", error.message);
     } catch (error : any) {
       Alert.alert("Login failed, incorrect username or password");
     }
