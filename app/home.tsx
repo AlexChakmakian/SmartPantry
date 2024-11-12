@@ -8,10 +8,12 @@ import {
   Dimensions,
   Image,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
 const HomeScreen = () => {
+  const router = useRouter(); // Create a router instance
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState('Home');
   const [showConfigurePage, setShowConfigurePage] = useState(false);
@@ -26,11 +28,29 @@ const HomeScreen = () => {
     }).start();
   };
 
-  const handleMenuSelect = (menuItem: any) => {
+  const handleMenuSelect = (page: string) => {
     setShowConfigurePage(false); // Hide Configure page when selecting a menu item
-    setSelectedMenu(menuItem);
-    toggleMenu();
+  
+    // Close the side menu and animate it to slide away
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width, // Slide the menu back out
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  
+    // For "Recipes," just update the selectedMenu without navigating
+    if (page === 'Recipes') {
+      setSelectedMenu(page);
+    } else {
+      // For other pages, push to the respective route
+      setSelectedMenu(page);
+      router.push({
+        pathname: `/screens/${page}`, // Navigate directly to the page
+      });
+    }
   };
+  
 
   const handleConfigurePantry = () => {
     setSelectedMenu(''); // Deselect menu items when opening Configure
