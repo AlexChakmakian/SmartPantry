@@ -1,31 +1,43 @@
 import React, { useState } from "react";
-import { Text, View, StyleSheet, TextInput, Image, Alert } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TextInput,
+  Image,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import AuthButton from "../components/authButton";
 import GoogleSignInButton from "../components/googleSignInButton";
 import CreateAccountButton from "../components/createAccountButton";
-import { loginWithEmailAndPassword } from "../firebase/authService"; // Import Firebase auth logic
+import { loginWithEmailAndPassword } from "../firebase/authService";
 
 export default function Index() {
-  const [username, setUsername] = useState(""); // For username
-  const [password, setPassword] = useState(""); // For password
-  const router = useRouter(); // Use router from expo-router
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
 
   const handleLogin = async () => {
     try {
       if (username && password) {
-        await loginWithEmailAndPassword(username, password); // Login with email/password
-        router.push("/home"); // Navigate to Home screen
+        await loginWithEmailAndPassword(username, password);
+        router.push("/home");
       } else {
         Alert.alert("Please enter both username and password");
       }
-    } catch (error: any) {
+    } catch (error) {
       Alert.alert("Login failed, incorrect username or password");
     }
   };
 
+  const handleForgotPassword = () => {
+    router.push("/forgot-password"); // Navigate to Forgot Password screen
+  };
+
   const handleCreateAccount = () => {
-    router.push("/register"); // Navigate to Create Account screen
+    router.push("/register");
   };
 
   return (
@@ -33,7 +45,7 @@ export default function Index() {
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
       <TextInput
         style={styles.input}
-        placeholder="Username"
+        placeholder="Email"
         placeholderTextColor="#777"
         value={username}
         onChangeText={setUsername}
@@ -49,6 +61,9 @@ export default function Index() {
         secureTextEntry
       />
       <AuthButton onPress={handleLogin} title="Login" />
+      <TouchableOpacity onPress={handleForgotPassword}>
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
       <CreateAccountButton onPress={handleCreateAccount} />
       <GoogleSignInButton onPress={() => Alert.alert("Google Sign-In")} />
     </View>
@@ -76,5 +91,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     width: "100%",
     marginBottom: 20,
+  },
+  forgotPasswordText: {
+    color: "white",
+    marginTop: -15,
+    marginBottom: 20,
+    fontSize: 12,
   },
 });

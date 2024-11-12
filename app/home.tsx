@@ -10,10 +10,12 @@ import {
   FlatList,
 } from "react-native";
 import { addItem, getItems } from "../firebase/pantryService"; // Import the getItems & addItems function
+import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {
+  const router = useRouter(); // Create a router instance
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState("Home");
   const [showConfigurePage, setShowConfigurePage] = useState(false);
@@ -29,26 +31,26 @@ const HomeScreen = () => {
     }).start();
   };
 
-  const handleMenuSelect = async (menuItem) => {
-    setShowConfigurePage(false);
-    setSelectedMenu(menuItem);
-    toggleMenu();
+  const handleMenuSelect = (page: string) => {
+    setShowConfigurePage(false); // Hide Configure page when selecting a menu item
 
-    if (
-      menuItem === "Pantry" ||
-      menuItem === "Fridge" ||
-      menuItem === "Freezer" ||
-      menuItem === "Spices" ||
-      menuItem === "Appliances"
-    ) {
-      try {
-        const fetchedItems = await getItems(menuItem.toLowerCase()); // Fetch items from Firestore
-        setItems(fetchedItems);
-      } catch (e) {
-        console.error("Error fetching items: ", e);
-      }
+    // Close the side menu and animate it to slide away
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width, // Slide the menu back out
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    // For "Recipes," just update the selectedMenu without navigating
+    if (page === "Recipes") {
+      setSelectedMenu(page);
     } else {
-      setItems([]); // Clear items when a non-location is selected
+      // For other pages, push to the respective route
+      setSelectedMenu(page);
+      router.push({
+        pathname: `/screens/${page}`, // Navigate directly to the page
+      });
     }
   };
 
