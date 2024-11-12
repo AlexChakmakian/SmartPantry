@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,115 +6,237 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
-} from 'react-native';
+  Image,
+  FlatList,
+} from "react-native";
+import { addItem, getItems } from "../firebase/pantryService"; // Import the getItems & addItems function
 
-const { width } = Dimensions.get('window'); // Get device width for menu slide
+const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {
-  const [isMenuOpen, setMenuOpen] = useState(false); // Track menu state (open/close)
-  const slideAnim = useRef(new Animated.Value(-width)).current; // Slide animation starting off-screen
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState("Home");
+  const [showConfigurePage, setShowConfigurePage] = useState(false);
+  const [items, setItems] = useState([]); // State to store items
+  const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const toggleMenu = () => {
-    setMenuOpen(!isMenuOpen); // Toggle the menu state
+    setMenuOpen(!isMenuOpen);
     Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0, // Move menu in or out
-      duration: 300, // Animation duration
-      useNativeDriver: true, // Optimize performance
+      toValue: isMenuOpen ? -width : 0,
+      duration: 300,
+      useNativeDriver: true,
     }).start();
+  };
+
+  const handleMenuSelect = async (menuItem) => {
+    setShowConfigurePage(false);
+    setSelectedMenu(menuItem);
+    toggleMenu();
+
+    if (
+      menuItem === "Pantry" ||
+      menuItem === "Fridge" ||
+      menuItem === "Freezer" ||
+      menuItem === "Spices" ||
+      menuItem === "Appliances"
+    ) {
+      try {
+        const fetchedItems = await getItems(menuItem.toLowerCase()); // Fetch items from Firestore
+        setItems(fetchedItems);
+      } catch (e) {
+        console.error("Error fetching items: ", e);
+      }
+    } else {
+      setItems([]); // Clear items when a non-location is selected
+    }
+  };
+
+  const handleConfigurePantry = () => {
+    setSelectedMenu("");
+    setShowConfigurePage(true);
+  };
+
+  const handleAddSampleItem = async () => {
+    const sampleItem = {
+      name: "Milk",
+      quantity: 1,
+      unit: "gallon",
+      expiryDate: "2024-11-10",
+      category: "Dairy",
+    };
+
+    try {
+      await addItem("fridge", sampleItem);
+      console.log("Sample item added to fridge");
+    } catch (e) {
+      console.error("Error adding sample item:", e);
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Hamburger Icon */}
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
         <View style={styles.line} />
         <View style={styles.line} />
       </TouchableOpacity>
 
-      <Text style={styles.headerText}>Your SmartPantry</Text>
+      <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
-      {/* Main content */}
-      <TouchableOpacity style={styles.circleButton}>
-        <Text style={styles.buttonText}>Configure</Text>
-        <Text style={styles.buttonText}>Pantry 🍽️</Text>
-      </TouchableOpacity>
+      <View style={styles.contentContainer}>
+        {!showConfigurePage && selectedMenu === "Home" && (
+          <Text style={styles.contentText}>Welcome to your Smart Pantry!</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Recipes" && (
+          <Text style={styles.contentText}>Your Recipes</Text>
+        )}
+        {!showConfigurePage &&
+          (selectedMenu === "Pantry" ||
+            selectedMenu === "Fridge" ||
+            selectedMenu === "Freezer" ||
+            selectedMenu === "Spices" ||
+            selectedMenu === "Appliances") && (
+            <View>
+              <Text style={styles.contentText}>
+                Your {selectedMenu.toLowerCase()} items:
+              </Text>
+              <FlatList
+                data={items}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.itemCard}>
+                    <Text style={styles.itemText}>Name: {item.name}</Text>
+                    <Text style={styles.itemText}>
+                      Quantity: {item.quantity} {item.unit}
+                    </Text>
+                    {item.expiryDate && (
+                      <Text style={styles.itemText}>
+                        Expires: {item.expiryDate}
+                      </Text>
+                    )}
+                  </View>
+                )}
+              />
+            </View>
+          )}
+        {!showConfigurePage && selectedMenu === "Log out" && (
+          <Text style={styles.contentText}>Logging out...</Text>
+        )}
+      </View>
 
-      {/* Animated Sliding Menu */}
+      {showConfigurePage ? (
+        <View style={styles.configureContainer}>
+          <Text style={styles.configureText}>Pantry Configuration</Text>
+        </View>
+      ) : (
+        <TouchableOpacity
+          style={styles.circleButton}
+          onPress={handleConfigurePantry}
+        >
+          <Text style={styles.buttonText}>Configure</Text>
+          <Text style={styles.buttonText}>Pantry 🍽️</Text>
+        </TouchableOpacity>
+      )}
+
       <Animated.View
         style={[
           styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] }, // Slide animation
+          { transform: [{ translateX: slideAnim }] },
         ]}
       >
         <Text style={styles.menuText}></Text>
-        <Text style={styles.menuText}>Home</Text>
-        <Text style={styles.menuText}>Profile</Text>
-        <Text style={styles.menuText}>Testing</Text>
-        <Text style={styles.menuText}>Testing</Text>
-        <Text style={styles.menuText}>Testing</Text>
-        <Text style={styles.menuText}>Settings</Text>
+        <TouchableOpacity onPress={() => handleMenuSelect("Recipes")}>
+          <Text style={styles.menuText}>Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+          <Text style={styles.menuText}>Pantry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+          <Text style={styles.menuText}>Fridge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+          <Text style={styles.menuText}>Freezer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+          <Text style={styles.menuText}>Spices</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+          <Text style={styles.menuText}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+          <Text style={styles.menuText}>Log out</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handleAddSampleItem}
+          style={styles.addButton}
+        >
+          <Text style={styles.buttonText}>Add Sample Item to Fridge</Text>
+        </TouchableOpacity>
       </Animated.View>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ADD8E6',
-    paddingTop: 20,
-  },
-  headerText: {
-    fontSize: 20,
-    textAlign: 'center',
-    marginTop: 20,
-    color: '#fff',
-  },
-  hamburger: {
-    position: 'absolute',
-    top: 40,
-    left: 20,
-    zIndex: 1, // Ensure the hamburger is on top of the menu
-  },
-  line: {
-    width: 30,
-    height: 4,
-    backgroundColor: '#fff',
-    marginVertical: 4,
-  },
+  container: { flex: 1, backgroundColor: "#ADD8E6", paddingTop: 20 },
+  logo: { width: 80, height: 80, alignSelf: "center", marginTop: -5 },
+  hamburger: { position: "absolute", top: 40, left: 20, zIndex: 1 },
+  line: { width: 30, height: 4, backgroundColor: "#fff", marginVertical: 4 },
   circleButton: {
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: '#AFDFE6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: 100, // Pushed lower on the screen
-    borderColor: '#fff', // White border color
-    borderWidth: 3, // Thickness of the border
-    borderStyle: 'dashed', // Dashed border style
+    backgroundColor: "#AFDFE6",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginTop: 100,
+    borderColor: "#fff",
+    borderWidth: 3,
+    borderStyle: "dashed",
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
-  },
+  buttonText: { color: "#fff", fontSize: 18 },
   menuContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
-    width: width * 0.40, // CHANGE WIDTH OF CONTAINER THAT OPENS
-    backgroundColor: '#4C5D6B',
+    width: width * 0.4,
+    backgroundColor: "#4C5D6B",
     padding: 20,
-    paddingTop: 60, // To avoid the status bar
-    zIndex: 0, // Behind the hamburger icon
+    paddingTop: 60,
+    zIndex: 0,
   },
-  menuText: {
-    fontSize: 18,
-    color: '#fff',
+  addButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
+  },
+
+  menuText: { fontSize: 18, color: "#fff", marginVertical: 10 },
+  contentContainer: { marginTop: 50, alignItems: "center" },
+  contentText: { fontSize: 18, color: "#333" },
+  configureContainer: {
+    alignItems: "center",
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: "#E0F7FA",
+    borderRadius: 10,
+  },
+  configureText: { fontSize: 16, color: "#333" },
+  itemCard: {
+    padding: 15,
     marginVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#f8f8f8",
+    elevation: 3,
+  },
+  itemText: {
+    fontSize: 16,
+    color: "#333",
   },
 });
 
