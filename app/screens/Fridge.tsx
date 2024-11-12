@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 
 // Example pantry with dummy data
 const pantryItems = [
@@ -14,9 +13,19 @@ const pantryItems = [
 ];
 
 export default function Fridge() {
+    const addItem = () => {
+        // Add item logic here
+        console.log('Add item clicked');
+    };
+
     return (
         <View style={styles.container}>
-            <Text style={styles.header}>Fridge Items</Text>
+            <View style={styles.headerContainer}>
+                <Text style={styles.header}>Fridge Items</Text>
+                <TouchableOpacity style={styles.addButton} onPress={addItem}>
+                    <Text style={styles.addButtonText}>+</Text>
+                </TouchableOpacity>
+            </View>
             <FlatList
                 data={pantryItems}
                 keyExtractor={(item) => item.id}
@@ -36,11 +45,24 @@ const styles = StyleSheet.create({
         padding: 20,
         backgroundColor: '#ADD8E6',
     },
+    headerContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
     header: {
         fontSize: 24,
         fontWeight: 'bold',
-        marginBottom: 20,
-        textAlign: 'center',
+    },
+    addButton: {
+        backgroundColor: '#007BFF',
+        padding: 10,
+        borderRadius: 5,
+    },
+    addButtonText: {
+        color: '#ffffff',
+        fontSize: 20,
     },
     itemContainer: {
         padding: 15,
