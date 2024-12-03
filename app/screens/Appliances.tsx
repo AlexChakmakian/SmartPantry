@@ -1,9 +1,8 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, Button, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 
-// Example pantry with dummy data
-const pantryItems = [
+// Example appliance items with dummy data
+const applianceItems = [
     { id: '1', name: 'Item1' },
     { id: '2', name: 'Item2' },
     { id: '3', name: 'Item3' },
@@ -13,12 +12,6 @@ const pantryItems = [
 ];
 
 export default function Appliances() {
-    const navigation = useNavigation(); // React Navigation hook
-
-    const goToHome = () => {
-        navigation.navigate('home'); // Navigate to Home screen
-    };
-
     const addItem = () => {
         // Add item logic here
         console.log('Add item clicked');
@@ -33,7 +26,7 @@ export default function Appliances() {
                 </TouchableOpacity>
             </View>
             <FlatList
-                data={pantryItems}
+                data={applianceItems}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
                     <View style={styles.itemContainer}>
@@ -41,8 +34,6 @@ export default function Appliances() {
                     </View>
                 )}
             />
-            {/* Button to navigate back to the Home screen */}
-            <Button title="Go to Home" onPress={goToHome} />
         </View>
     );
 }
