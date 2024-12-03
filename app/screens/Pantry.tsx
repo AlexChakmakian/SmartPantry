@@ -1,22 +1,17 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, Button, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 
+// Example pantry with dummy data
 const pantryItems = [
-    { id: '1', name: 'Rice' },
-    { id: '2', name: 'Pasta' },
-    { id: '3', name: 'Flour' },
-    { id: '4', name: 'Canned Beans' },
-    { id: '5', name: 'Olive Oil' },
-    { id: '6', name: 'Spices' },
+    { id: '1', name: 'Pantry1' },
+    { id: '2', name: 'Pantry2' },
+    { id: '3', name: 'Item3' },
+    { id: '4', name: 'Item4' },
+    { id: '5', name: 'Item5' },
+    { id: '6', name: 'Item6' },
 ];
 
 export default function Pantry() {
-    const navigation = useNavigation(); // React Navigation hook
-
-    // Navigation functions
-    const goToHome = () => navigation.navigate('home');
-
     const addItem = () => {
         // Add item logic here
         console.log('Add item clicked');
@@ -25,7 +20,7 @@ export default function Pantry() {
     return (
         <View style={styles.container}>
             <View style={styles.headerContainer}>
-                <Text style={styles.header}>Pantry Items</Text>
+                <Text style={styles.header}>Pantry</Text>
                 <TouchableOpacity style={styles.addButton} onPress={addItem}>
                     <Text style={styles.addButtonText}>+</Text>
                 </TouchableOpacity>
@@ -39,8 +34,6 @@ export default function Pantry() {
                     </View>
                 )}
             />
-            {/* Navigation buttons */}
-            <Button title="Go to Home" onPress={goToHome} />
         </View>
     );
 }
