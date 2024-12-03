@@ -59,23 +59,6 @@ const HomeScreen = () => {
     setShowConfigurePage(true);
   };
 
-  const handleAddSampleItem = async () => {
-    const sampleItem = {
-      name: "Milk",
-      quantity: 1,
-      unit: "gallon",
-      expiryDate: "2024-11-10",
-      category: "Dairy",
-    };
-
-    try {
-      await addItem("fridge", sampleItem);
-      console.log("Sample item added to fridge");
-    } catch (e) {
-      console.error("Error adding sample item:", e);
-    }
-  };
-
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -168,12 +151,6 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleAddSampleItem}
-          style={styles.addButton}
-        >
-          <Text style={styles.buttonText}>Add Sample Item to Fridge</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
