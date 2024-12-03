@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,38 +7,19 @@ import {
   Animated,
   Dimensions,
   Image,
-  ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
+  FlatList,
+} from "react-native";
+import { addItem, getItems } from "../firebase/pantryService"; // Import the getItems & addItems function
+import { useRouter } from "expo-router";
 
-const { width } = Dimensions.get('window');
-
-const RecipeCard = ({ title, imagePath }) => (
-  <View style={styles.recipeCard}>
-    <View style={styles.imageContainer}>
-      {imagePath ? (
-        <Image 
-          source={imagePath} 
-          style={styles.recipeImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.placeholder} />
-      )}
-    </View>
-    <View style={styles.recipeContent}>
-      <Text style={styles.recipeTitle}>{title}</Text>
-      <Text style={styles.recipeText}>Ingredients: Placeholder ingredients</Text>
-      <Text style={styles.recipeText}>Instructions: Placeholder instructions</Text>
-    </View>
-  </View>
-);
+const { width } = Dimensions.get("window");
 
 const HomeScreen = () => {
-  const router = useRouter();
+  const router = useRouter(); // Create a router instance
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState('Recipes');
+  const [selectedMenu, setSelectedMenu] = useState("Home");
   const [showConfigurePage, setShowConfigurePage] = useState(false);
+  const [items, setItems] = useState([]); // State to store items
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const toggleMenu = () => {
@@ -51,33 +32,30 @@ const HomeScreen = () => {
   };
 
   const handleMenuSelect = (page: string) => {
-    setShowConfigurePage(false);
+    setShowConfigurePage(false); // Hide Configure page when selecting a menu item
+
+    // Close the side menu and animate it to slide away
     setMenuOpen(false);
     Animated.timing(slideAnim, {
-      toValue: -width,
+      toValue: -width, // Slide the menu back out
       duration: 300,
       useNativeDriver: true,
     }).start();
 
-    if (page === 'Recipes') {
+    // For "Recipes," just update the selectedMenu without navigating
+    if (page === "Recipes") {
       setSelectedMenu(page);
     } else {
+      // For other pages, push to the respective route
       setSelectedMenu(page);
-      const paths: { [key: string]: '/screens/Appliances' | '/screens/Freezer' | '/screens/Fridge' | '/screens/Pantry' | '/screens/Spices' | '/' } = {
-        Appliances: '/screens/Appliances',
-        Freezer: '/screens/Freezer',
-        Fridge: '/screens/Fridge',
-        Pantry: '/screens/Pantry',
-        Spices: '/screens/Spices',
-      };
       router.push({
-        pathname: paths[page] || '/',
+        pathname: `/screens/${page}`, // Navigate directly to the page
       });
     }
   };
 
   const handleConfigurePantry = () => {
-    setSelectedMenu('');
+    setSelectedMenu("");
     setShowConfigurePage(true);
   };
 
@@ -89,38 +67,47 @@ const HomeScreen = () => {
         <View style={styles.line} />
       </TouchableOpacity>
 
-      <Image source={require('../assets/Logo.png')} style={styles.logo} />
+      <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.contentContainer}>
-        {!showConfigurePage && selectedMenu === 'Recipes' && (
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
-            <Text style={styles.recipesHeader}>Your Recipes</Text>
-            <View style={styles.recipeContainer}>
-              <RecipeCard 
-                title="Spaghetti Alfredo"
-                imagePath={require('../assets/spaghetti.jpg')}
-              />
-              <RecipeCard 
-                title="Steak and Potatoes"
-                imagePath={require('../assets/steakpotatoes.jpg')}
-              />
-              <RecipeCard 
-                title="Tacos"
-                imagePath={require('../assets/tacos.jpg')}
-              />
-              <RecipeCard 
-                title="Fish and Chips"
-                imagePath={require('../assets/fishandchips.jpg')}
+        {!showConfigurePage && selectedMenu === "Home" && (
+          <Text style={styles.contentText}>Welcome to your Smart Pantry!</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Recipes" && (
+          <Text style={styles.contentText}>Your Recipes</Text>
+        )}
+        {!showConfigurePage &&
+          (selectedMenu === "Pantry" ||
+            selectedMenu === "Fridge" ||
+            selectedMenu === "Freezer" ||
+            selectedMenu === "Spices" ||
+            selectedMenu === "Appliances") && (
+            <View>
+              <Text style={styles.contentText}>
+                Your {selectedMenu.toLowerCase()} items:
+              </Text>
+              <FlatList
+                data={items}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <View style={styles.itemCard}>
+                    <Text style={styles.itemText}>Name: {item.name}</Text>
+                    <Text style={styles.itemText}>
+                      Quantity: {item.quantity} {item.unit}
+                    </Text>
+                    {item.expiryDate && (
+                      <Text style={styles.itemText}>
+                        Expires: {item.expiryDate}
+                      </Text>
+                    )}
+                  </View>
+                )}
               />
             </View>
-          </ScrollView>
+          )}
+        {!showConfigurePage && selectedMenu === "Log out" && (
+          <Text style={styles.contentText}>Logging out...</Text>
         )}
-        {!showConfigurePage && selectedMenu === 'Pantry' && <Text style={styles.contentText}>Your pantry items:</Text>}
-        {!showConfigurePage && selectedMenu === 'Fridge' && <Text style={styles.contentText}>Items in your fridge:</Text>}
-        {!showConfigurePage && selectedMenu === 'Freezer' && <Text style={styles.contentText}>Items in your freezer:</Text>}
-        {!showConfigurePage && selectedMenu === 'Spices' && <Text style={styles.contentText}>Your spice collection:</Text>}
-        {!showConfigurePage && selectedMenu === 'Appliances' && <Text style={styles.contentText}>Your Appliances:</Text>}
-        {!showConfigurePage && selectedMenu === 'Log out' && <Text style={styles.contentText}>Logging out...</Text>}
       </View>
 
       {showConfigurePage ? (
@@ -128,7 +115,10 @@ const HomeScreen = () => {
           <Text style={styles.configureText}>Pantry Configuration</Text>
         </View>
       ) : (
-        <TouchableOpacity style={styles.circleButton} onPress={handleConfigurePantry}>
+        <TouchableOpacity
+          style={styles.circleButton}
+          onPress={handleConfigurePantry}
+        >
           <Text style={styles.buttonText}>Configure</Text>
           <Text style={styles.buttonText}>Pantry 🍽️</Text>
         </TouchableOpacity>
@@ -140,25 +130,26 @@ const HomeScreen = () => {
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <TouchableOpacity style={styles.firstMenuItem} onPress={() => handleMenuSelect('Recipes')}>
+        <Text style={styles.menuText}></Text>
+        <TouchableOpacity onPress={() => handleMenuSelect("Recipes")}>
           <Text style={styles.menuText}>Recipes</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Pantry')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
           <Text style={styles.menuText}>Pantry</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Fridge')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
           <Text style={styles.menuText}>Fridge</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Freezer')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
           <Text style={styles.menuText}>Freezer</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Spices')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
           <Text style={styles.menuText}>Spices</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Appliances')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Log out')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -167,147 +158,64 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#ADD8E6', 
-    paddingTop: 10 
-  },
-  logo: { 
-    width: 80, 
-    height: 80, 
-    alignSelf: 'center', 
-    marginTop: 3 
-  },
-  hamburger: { 
-    position: 'absolute', 
-    top: 40, 
-    left: 20, 
-    zIndex: 1 
-  },
-  line: { 
-    width: 30, 
-    height: 4, 
-    backgroundColor: '#fff', 
-    marginVertical: 4 
-  },
-  scrollView: {
-    flex: 1,
-    width: '100%',
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    paddingBottom: 20,
-  },
+  container: { flex: 1, backgroundColor: "#ADD8E6", paddingTop: 20 },
+  logo: { width: 80, height: 80, alignSelf: "center", marginTop: -5 },
+  hamburger: { position: "absolute", top: 40, left: 20, zIndex: 1 },
+  line: { width: 30, height: 4, backgroundColor: "#fff", marginVertical: 4 },
   circleButton: {
-    width: 110,
-    height: 110,
+    width: 150,
+    height: 150,
     borderRadius: 75,
-    backgroundColor: '#AFDFE6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    position: 'absolute',
-    bottom: 20,
-    borderColor: '#fff',
+    backgroundColor: "#AFDFE6",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginTop: 100,
+    borderColor: "#fff",
     borderWidth: 3,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 18 
-  },
+  buttonText: { color: "#fff", fontSize: 18 },
   menuContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
-    width: width * 0.40,
-    backgroundColor: '#4C5D6B',
+    width: width * 0.4,
+    backgroundColor: "#4C5D6B",
     padding: 20,
-    paddingTop: 40,
+    paddingTop: 60,
     zIndex: 0,
   },
-  firstMenuItem: {
-    paddingTop: 40,
+  addButton: {
+    backgroundColor: "#4CAF50",
+    padding: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 20,
   },
-  menuText: { 
-    fontSize: 18, 
-    color: '#fff', 
-    marginVertical: 10 
-  },
-  contentContainer: { 
-    marginTop: 20, 
-    alignItems: 'center',
-    flex: 1,
-    width: '100%'
-  },
-  contentText: { 
-    fontSize: 18, 
-    color: '#333' 
-  },
-  recipesHeader: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-  },
+
+  menuText: { fontSize: 18, color: "#fff", marginVertical: 10 },
+  contentContainer: { marginTop: 50, alignItems: "center" },
+  contentText: { fontSize: 18, color: "#333" },
   configureContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 30,
     padding: 20,
-    backgroundColor: '#E0F7FA',
+    backgroundColor: "#E0F7FA",
     borderRadius: 10,
   },
-  configureText: { 
-    fontSize: 16, 
-    color: '#333' 
-  },
-  recipeContainer: {
-    width: '100%',
-    padding: 5,
-  },
-  recipeCard: {
-    backgroundColor: '#ffffff',
-    padding: 10,
+  configureText: { fontSize: 16, color: "#333" },
+  itemCard: {
+    padding: 15,
     marginVertical: 10,
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    width: '90%',
-    alignSelf: 'center',
-    flexDirection: 'row',
+    borderRadius: 8,
+    backgroundColor: "#f8f8f8",
+    elevation: 3,
   },
-  imageContainer: {
-    width: 100,
-    height: 100,
-    marginRight: 15,
-  },
-  recipeImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 10,
-  },
-  placeholder: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#E0E0E0',
-    borderRadius: 10,
-  },
-  recipeContent: {
-    flex: 1,
-  },
-  recipeTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  recipeText: {
-    fontSize: 14,
-    marginLeft: 10,
+  itemText: {
+    fontSize: 16,
+    color: "#333",
   },
 });
 

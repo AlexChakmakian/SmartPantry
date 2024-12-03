@@ -1,5 +1,13 @@
 import React, { useState } from "react";
-import { Text, View, StyleSheet, TextInput, Image, Alert, TouchableOpacity } from "react-native";
+import {
+  Text,
+  View,
+  StyleSheet,
+  TextInput,
+  Image,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
 import { useRouter } from "expo-router";
 import AuthButton from "../components/authButton";
 import GoogleSignInButton from "../components/googleSignInButton";
@@ -89,6 +97,5 @@ const styles = StyleSheet.create({
     marginTop: -15,
     marginBottom: 20,
     fontSize: 12,
-
   },
 });
