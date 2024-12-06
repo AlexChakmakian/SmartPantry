@@ -13,23 +13,18 @@ import { useRouter } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 
-const RecipeCard = ({ title, imagePath }) => (
+const RecipeCard = ({ title, imagePath, description }) => (
   <View style={styles.recipeCard}>
     <View style={styles.imageContainer}>
       {imagePath ? (
-        <Image 
-          source={imagePath} 
-          style={styles.recipeImage}
-          resizeMode="cover"
-        />
+        <Image source={imagePath} style={styles.recipeImage} resizeMode="cover" />
       ) : (
         <View style={styles.placeholder} />
       )}
     </View>
     <View style={styles.recipeContent}>
       <Text style={styles.recipeTitle}>{title}</Text>
-      <Text style={styles.recipeText}>Ingredients: Placeholder ingredients</Text>
-      <Text style={styles.recipeText}>Instructions: Placeholder instructions</Text>
+      <Text style={styles.recipeText}>{description}</Text>
     </View>
   </View>
 );
@@ -39,6 +34,8 @@ const HomeScreen = () => {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState('Recipes');
   const [showConfigurePage, setShowConfigurePage] = useState(false);
+  const [showRecipes, setShowRecipes] = useState(true);
+  const [showButton, setShowButton] = useState(true);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const toggleMenu = () => {
@@ -61,8 +58,10 @@ const HomeScreen = () => {
 
     if (page === 'Recipes') {
       setSelectedMenu(page);
+      setShowRecipes(true);
     } else {
       setSelectedMenu(page);
+      setShowRecipes(false);
       const paths: { [key: string]: '/screens/Appliances' | '/screens/Freezer' | '/screens/Fridge' | '/screens/Pantry' | '/screens/Spices' | '/' } = {
         Appliances: '/screens/Appliances',
         Freezer: '/screens/Freezer',
@@ -77,8 +76,7 @@ const HomeScreen = () => {
   };
 
   const handleConfigurePantry = () => {
-    setSelectedMenu('');
-    setShowConfigurePage(true);
+    setShowButton(false);
   };
 
   return (
@@ -92,25 +90,29 @@ const HomeScreen = () => {
       <Image source={require('../assets/Logo.png')} style={styles.logo} />
 
       <View style={styles.contentContainer}>
-        {!showConfigurePage && selectedMenu === 'Recipes' && (
+        {showRecipes && !showConfigurePage && selectedMenu === 'Recipes' && (
           <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
             <Text style={styles.recipesHeader}>Your Recipes</Text>
             <View style={styles.recipeContainer}>
-              <RecipeCard 
+              <RecipeCard
                 title="Spaghetti Alfredo"
                 imagePath={require('../assets/spaghetti.jpg')}
+                description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
               />
-              <RecipeCard 
+              <RecipeCard
                 title="Steak and Potatoes"
                 imagePath={require('../assets/steakpotatoes.jpg')}
+                description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
               />
-              <RecipeCard 
+              <RecipeCard
                 title="Tacos"
                 imagePath={require('../assets/tacos.jpg')}
+                description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
               />
-              <RecipeCard 
+              <RecipeCard
                 title="Fish and Chips"
                 imagePath={require('../assets/fishandchips.jpg')}
+                description="A classic British dish with crispy fried fish and golden fries."
               />
             </View>
           </ScrollView>
@@ -123,11 +125,7 @@ const HomeScreen = () => {
         {!showConfigurePage && selectedMenu === 'Log out' && <Text style={styles.contentText}>Logging out...</Text>}
       </View>
 
-      {showConfigurePage ? (
-        <View style={styles.configureContainer}>
-          <Text style={styles.configureText}>Pantry Configuration</Text>
-        </View>
-      ) : (
+      {showButton && (
         <TouchableOpacity style={styles.circleButton} onPress={handleConfigurePantry}>
           <Text style={styles.buttonText}>Configure</Text>
           <Text style={styles.buttonText}>Pantry 🍽️</Text>
@@ -167,28 +165,28 @@ const HomeScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#ADD8E6', 
-    paddingTop: 10 
+  container: {
+    flex: 1,
+    backgroundColor: '#ADD8E6',
+    paddingTop: 10,
   },
-  logo: { 
-    width: 80, 
-    height: 80, 
-    alignSelf: 'center', 
-    marginTop: 3 
+  logo: {
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginTop: 3,
   },
-  hamburger: { 
-    position: 'absolute', 
-    top: 40, 
-    left: 20, 
-    zIndex: 1 
+  hamburger: {
+    position: 'absolute',
+    top: 40,
+    left: 20,
+    zIndex: 1,
   },
-  line: { 
-    width: 30, 
-    height: 4, 
-    backgroundColor: '#fff', 
-    marginVertical: 4 
+  line: {
+    width: 30,
+    height: 4,
+    backgroundColor: '#fff',
+    marginVertical: 4,
   },
   scrollView: {
     flex: 1,
@@ -199,69 +197,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 20,
   },
-  circleButton: {
-    width: 110,
-    height: 110,
-    borderRadius: 75,
-    backgroundColor: '#AFDFE6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    position: 'absolute',
-    bottom: 20,
-    borderColor: '#fff',
-    borderWidth: 3,
-    borderStyle: 'dashed',
-  },
-  buttonText: { 
-    color: '#fff', 
-    fontSize: 18 
-  },
-  menuContainer: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: width * 0.40,
-    backgroundColor: '#4C5D6B',
-    padding: 20,
-    paddingTop: 40,
-    zIndex: 0,
-  },
-  firstMenuItem: {
-    paddingTop: 40,
-  },
-  menuText: { 
-    fontSize: 18, 
-    color: '#fff', 
-    marginVertical: 10 
-  },
-  contentContainer: { 
-    marginTop: 20, 
+  contentContainer: {
+    marginTop: 20,
     alignItems: 'center',
     flex: 1,
-    width: '100%'
-  },
-  contentText: { 
-    fontSize: 18, 
-    color: '#333' 
+    width: '100%',
   },
   recipesHeader: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 20,
-  },
-  configureContainer: {
-    alignItems: 'center',
-    marginTop: 30,
-    padding: 20,
-    backgroundColor: '#E0F7FA',
-    borderRadius: 10,
-  },
-  configureText: { 
-    fontSize: 16, 
-    color: '#333' 
   },
   recipeContainer: {
     width: '100%',
@@ -309,16 +255,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 10,
   },
-  itemCard: {
-    padding: 15,
-    marginVertical: 10,
-    borderRadius: 8,
-    backgroundColor: "#f8f8f8",
-    elevation: 3,
+  circleButton: {
+    width: 110,
+    height: 110,
+    borderRadius: 75,
+    backgroundColor: '#AFDFE6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    position: 'absolute',
+    bottom: 20,
+    borderColor: '#fff',
+    borderWidth: 3,
+    borderStyle: 'dashed',
   },
-  itemText: {
+  buttonText: {
+    color: '#fff',
+    fontSize: 18,
+  },
+  menuContainer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: width * 0.40,
+    backgroundColor: '#4C5D6B',
+    padding: 20,
+    paddingTop: 40,
+    zIndex: 0,
+  },
+  firstMenuItem: {
+    paddingTop: 40,
+  },
+  menuText: {
+    fontSize: 18,
+    color: '#fff',
+    marginVertical: 10,
+  },
+  configureContainer: {
+    alignItems: 'center',
+    marginTop: 30,
+    padding: 20,
+    backgroundColor: '#E0F7FA',
+    borderRadius: 10,
+  },
+  configureText: {
     fontSize: 16,
-    color: "#333",
+    color: '#333',
+  },
+  contentText: {
+    fontSize: 18,
+    color: '#333',
   },
 });
 
