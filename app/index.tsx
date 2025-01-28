@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import {
   Text,
   View,
@@ -7,6 +7,7 @@ import {
   Image,
   Alert,
   TouchableOpacity,
+  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AuthButton from "../components/authButton";
@@ -18,6 +19,10 @@ export default function Index() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
+  const scaleValue = useRef(new Animated.Value(1)).current; // For the jump animation
+  const translateYValue = useRef(new Animated.Value(0)).current; // For the fall animation
+  const tapCount = useRef(0); // To count the number of taps
+  const lastTapTime = useRef(0); // To track the time between taps
 
   const handleLogin = async () => {
     try {
@@ -33,16 +38,82 @@ export default function Index() {
   };
 
   const handleForgotPassword = () => {
-    router.push("/forgot-password"); // Navigate to Forgot Password screen
+    router.push("/ResetPassword"); // Navigate to Forgot Password screen
   };
 
   const handleCreateAccount = () => {
     router.push("/register");
   };
 
+  const handleLogoPress = () => {
+    // Jump animation
+    Animated.sequence([
+      Animated.timing(scaleValue, {
+        toValue: 1.2,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleValue, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Easter egg logic: Detect 5 fast taps
+    const now = Date.now();
+    if (now - lastTapTime.current < 300) {
+      // If the time between taps is less than 300ms
+      tapCount.current += 1;
+    } else {
+      tapCount.current = 1; // Reset tap count if too slow
+    }
+    lastTapTime.current = now;
+
+    if (tapCount.current === 5) {
+      tapCount.current = 0; // Reset tap count
+      triggerFallAnimation();
+    }
+  };
+
+  const triggerFallAnimation = () => {
+    // Fall animation
+    Animated.sequence([
+      Animated.timing(translateYValue, {
+        toValue: 1000, // Move the logo down by 1000 units
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYValue, {
+        toValue: -1000, // Move the logo above the screen instantly
+        duration: 0,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateYValue, {
+        toValue: 0, // Bring the logo back to its original position from the top
+        duration: 250,
+        delay: 600, // Add 0.xxx second delay before returning
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+  
   return (
     <View style={styles.container}>
-      <Image source={require("../assets/Logo.png")} style={styles.logo} />
+      <TouchableOpacity onPress={handleLogoPress}>
+        <Animated.Image
+          source={require("../assets/Logo.png")}
+          style={[
+            styles.logo,
+            {
+              transform: [
+                { scale: scaleValue }, // Jump animation
+                { translateY: translateYValue }, // Fall animation
+              ],
+            },
+          ]}
+        />
+      </TouchableOpacity>
       <TextInput
         style={styles.input}
         placeholder="Email"
