@@ -10,6 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { getAuth, signOut } from 'firebase/auth'; // Import Firebase auth functions
 
 const { width } = Dimensions.get('window');
 
@@ -47,7 +48,7 @@ const HomeScreen = () => {
     }).start();
   };
 
-  const handleMenuSelect = (page: string) => {
+  const handleMenuSelect = async (page) => {
     setShowConfigurePage(false);
     setMenuOpen(false);
     Animated.timing(slideAnim, {
@@ -59,10 +60,21 @@ const HomeScreen = () => {
     if (page === 'Recipes') {
       setSelectedMenu(page);
       setShowRecipes(true);
+    } else if (page === 'Log out') {
+      // Handle logout
+      const auth = getAuth();
+      try {
+        await signOut(auth);
+        console.log('User signed out');
+        router.push('/'); // Redirect to the login screen
+      } catch (error) {
+        console.error('Error signing out:', error);
+        Alert.alert('Error', 'Failed to sign out. Please try again.');
+      }
     } else {
       setSelectedMenu(page);
       setShowRecipes(false);
-      const paths: { [key: string]: '/screens/Appliances' | '/screens/Freezer' | '/screens/Fridge' | '/screens/Pantry' | '/screens/Spices' | '/' } = {
+      const paths = {
         Appliances: '/screens/Appliances',
         Freezer: '/screens/Freezer',
         Fridge: '/screens/Fridge',
@@ -212,7 +224,7 @@ const styles = StyleSheet.create({
   recipeContainer: {
     width: '100%',
     padding: 5,
-  },
+  },  
   recipeCard: {
     backgroundColor: '#ffffff',
     padding: 10,
