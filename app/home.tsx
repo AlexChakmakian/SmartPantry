@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,17 +9,21 @@ import {
   Image,
   ScrollView,
   Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { getAuth, signOut } from 'firebase/auth'; // Import Firebase auth functions
+} from "react-native";
+import { useRouter } from "expo-router";
+import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const RecipeCard = ({ title, imagePath, description }) => (
   <View style={styles.recipeCard}>
     <View style={styles.imageContainer}>
       {imagePath ? (
-        <Image source={imagePath} style={styles.recipeImage} resizeMode="cover" />
+        <Image
+          source={imagePath}
+          style={styles.recipeImage}
+          resizeMode="cover"
+        />
       ) : (
         <View style={styles.placeholder} />
       )}
@@ -34,11 +38,58 @@ const RecipeCard = ({ title, imagePath, description }) => (
 const HomeScreen = () => {
   const router = useRouter();
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState('Recipes');
+  const [selectedMenu, setSelectedMenu] = useState("Recipes");
   const [showConfigurePage, setShowConfigurePage] = useState(false);
   const [showRecipes, setShowRecipes] = useState(true);
   const [showButton, setShowButton] = useState(true);
   const slideAnim = useRef(new Animated.Value(-width)).current;
+
+  const auth = getAuth();
+
+  // Function to check if the user has already seen the "Configure Pantry" button
+  useEffect(() => {
+    const checkIfFirstTimeUser = async () => {
+      const user = auth.currentUser;
+
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          // If the flag `hasSeenConfigureButton` is true, hide the button
+          if (userData.hasSeenConfigureButton) {
+            setShowButton(false); // Do not show the button if the flag is true
+          }
+        } else {
+          console.log("User document does not exist.");
+        }
+      }
+    };
+    checkIfFirstTimeUser();
+  }, [auth.currentUser]);
+
+  // Function to set flag in Firestore when user clicks "Configure Pantry"
+  const handleConfigurePantry = async () => {
+    const user = auth.currentUser;
+
+    if (user) {
+      const userDocRef = doc(db, "users", user.uid);
+      try {
+        // Update Firestore to set `hasSeenConfigureButton` to true
+        await setDoc(
+          userDocRef,
+          { hasSeenConfigureButton: true },
+          { merge: true }
+        );
+
+        // Hide the button after successful Firestore update
+        setShowButton(false); // Hide the button once clicked
+      } catch (error) {
+        console.error("Error updating Firestore:", error);
+      }
+    }
+  };
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
@@ -58,39 +109,32 @@ const HomeScreen = () => {
       useNativeDriver: true,
     }).start();
 
-    if (page === 'Recipes') {
+    if (page === "Recipes") {
       setSelectedMenu(page);
       setShowRecipes(true);
-    } else if (page === 'Log out') {
-      // Handle logout
-      const auth = getAuth();
+    } else if (page === "Log out") {
       try {
         await signOut(auth);
-        console.log('User signed out');
-        router.push('/'); // Redirect to the login screen
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
       } catch (error) {
-        console.error('Error signing out:', error);
-        Alert.alert('Error', 'Failed to sign out. Please try again.');
+        console.error("Error signing out:", error);
       }
     } else {
       setSelectedMenu(page);
       setShowRecipes(false);
       const paths = {
-        Appliances: '/screens/Appliances',
-        AIRecipes: '/screens/AIRecipes', // Add the path for AIRecipes
-        Freezer: '/screens/Freezer',
-        Fridge: '/screens/Fridge',
-        Pantry: '/screens/Pantry',
-        Spices: '/screens/Spices',
+        Appliances: "/screens/Appliances",
+        AIRecipes: "/screens/AIRecipes", // Add the path for AIRecipes
+        Freezer: "/screens/Freezer",
+        Fridge: "/screens/Fridge",
+        Pantry: "/screens/Pantry",
+        Spices: "/screens/Spices",
       };
       router.push({
-        pathname: paths[page] || '/',
+        pathname: paths[page] || "/",
       });
     }
-  };
-
-  const handleConfigurePantry = () => {
-    setShowButton(false);
   };
 
   return (
@@ -101,47 +145,68 @@ const HomeScreen = () => {
         <View style={styles.line} />
       </TouchableOpacity>
 
-      <Image source={require('../assets/Logo.png')} style={styles.logo} />
+      <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.contentContainer}>
-        {showRecipes && !showConfigurePage && selectedMenu === 'Recipes' && (
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+        {showRecipes && !showConfigurePage && selectedMenu === "Recipes" && (
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+          >
             <Text style={styles.recipesHeader}>Your Recipes</Text>
             <View style={styles.recipeContainer}>
               <RecipeCard
                 title="Spaghetti Alfredo"
-                imagePath={require('../assets/spaghetti.jpg')}
+                imagePath={require("../assets/spaghetti.jpg")}
                 description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
               />
               <RecipeCard
                 title="Steak and Potatoes"
-                imagePath={require('../assets/steakpotatoes.jpg')}
+                imagePath={require("../assets/steakpotatoes.jpg")}
                 description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
               />
               <RecipeCard
                 title="Tacos"
-                imagePath={require('../assets/tacos.jpg')}
+                imagePath={require("../assets/tacos.jpg")}
                 description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
               />
               <RecipeCard
                 title="Fish and Chips"
-                imagePath={require('../assets/fishandchips.jpg')}
+                imagePath={require("../assets/fishandchips.jpg")}
                 description="A classic British dish with crispy fried fish and golden fries."
               />
             </View>
           </ScrollView>
         )}
-        {!showConfigurePage && selectedMenu === 'Pantry' && <Text style={styles.contentText}>Your pantry items:</Text>}
-        {!showConfigurePage && selectedMenu === 'AIRecipes' && <Text style={styles.contentText}>AI-generated recipes:</Text>}
-        {!showConfigurePage && selectedMenu === 'Fridge' && <Text style={styles.contentText}>Items in your fridge:</Text>}
-        {!showConfigurePage && selectedMenu === 'Freezer' && <Text style={styles.contentText}>Items in your freezer:</Text>}
-        {!showConfigurePage && selectedMenu === 'Spices' && <Text style={styles.contentText}>Your spice collection:</Text>}
-        {!showConfigurePage && selectedMenu === 'Appliances' && <Text style={styles.contentText}>Your Appliances:</Text>}
-        {!showConfigurePage && selectedMenu === 'Log out' && <Text style={styles.contentText}>Logging out...</Text>}
+        {!showConfigurePage && selectedMenu === "Pantry" && (
+          <Text style={styles.contentText}>Your pantry items:</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "AIRecipes" && (
+          <Text style={styles.contentText}>AI-generated recipes:</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Fridge" && (
+          <Text style={styles.contentText}>Items in your fridge:</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Freezer" && (
+          <Text style={styles.contentText}>Items in your freezer:</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Spices" && (
+          <Text style={styles.contentText}>Your spice collection:</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Appliances" && (
+          <Text style={styles.contentText}>Your Appliances:</Text>
+        )}
+        {!showConfigurePage && selectedMenu === "Log out" && (
+          <Text style={styles.contentText}>Logging out...</Text>
+        )}
       </View>
 
+      {/* Show "Configure Pantry" button only for first-time users */}
       {showButton && (
-        <TouchableOpacity style={styles.circleButton} onPress={handleConfigurePantry}>
+        <TouchableOpacity
+          style={styles.circleButton}
+          onPress={handleConfigurePantry}
+        >
           <Text style={styles.buttonText}>Configure</Text>
           <Text style={styles.buttonText}>Pantry 🍽️</Text>
         </TouchableOpacity>
@@ -153,28 +218,31 @@ const HomeScreen = () => {
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <TouchableOpacity style={styles.firstMenuItem} onPress={() => handleMenuSelect('Recipes')}>
+        <TouchableOpacity
+          style={styles.firstMenuItem}
+          onPress={() => handleMenuSelect("Recipes")}
+        >
           <Text style={styles.menuText}>Recipes</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Pantry')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
           <Text style={styles.menuText}>Pantry</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Fridge')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
           <Text style={styles.menuText}>Fridge</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Freezer')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
           <Text style={styles.menuText}>Freezer</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Spices')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
           <Text style={styles.menuText}>Spices</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Appliances')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('AIRecipes')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect('Log out')}>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
@@ -185,17 +253,17 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ADD8E6',
+    backgroundColor: "#ADD8E6",
     paddingTop: 10,
   },
   logo: {
     width: 80,
     height: 80,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: 3,
   },
   hamburger: {
-    position: 'absolute',
+    position: "absolute",
     top: 40,
     left: 20,
     zIndex: 1,
@@ -203,47 +271,47 @@ const styles = StyleSheet.create({
   line: {
     width: 30,
     height: 4,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     marginVertical: 4,
   },
   scrollView: {
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   scrollViewContent: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: "center",
     paddingBottom: 20,
   },
   contentContainer: {
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
     flex: 1,
-    width: '100%',
+    width: "100%",
   },
   recipesHeader: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 20,
   },
   recipeContainer: {
-    width: '100%',
+    width: "100%",
     padding: 5,
-  },  
+  },
   recipeCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
     padding: 10,
     marginVertical: 10,
     borderRadius: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
-    width: '90%',
-    alignSelf: 'center',
-    flexDirection: 'row',
+    width: "90%",
+    alignSelf: "center",
+    flexDirection: "row",
   },
   imageContainer: {
     width: 100,
@@ -258,7 +326,7 @@ const styles = StyleSheet.create({
   placeholder: {
     width: 100,
     height: 100,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: "#E0E0E0",
     borderRadius: 10,
   },
   recipeContent: {
@@ -266,7 +334,7 @@ const styles = StyleSheet.create({
   },
   recipeTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 10,
   },
   recipeText: {
@@ -277,27 +345,27 @@ const styles = StyleSheet.create({
     width: 110,
     height: 110,
     borderRadius: 75,
-    backgroundColor: '#AFDFE6',
-    justifyContent: 'center',
-    alignItems: 'center',
-    alignSelf: 'center',
-    position: 'absolute',
+    backgroundColor: "#AFDFE6",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    position: "absolute",
     bottom: 20,
-    borderColor: '#fff',
+    borderColor: "#fff",
     borderWidth: 3,
-    borderStyle: 'dashed',
+    borderStyle: "dashed",
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
   },
   menuContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     bottom: 0,
     left: 0,
-    width: width * 0.40,
-    backgroundColor: '#4C5D6B',
+    width: width * 0.4,
+    backgroundColor: "#4C5D6B",
     padding: 20,
     paddingTop: 40,
     zIndex: 0,
@@ -307,23 +375,23 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 18,
-    color: '#fff',
+    color: "#fff",
     marginVertical: 10,
   },
   configureContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginTop: 30,
     padding: 20,
-    backgroundColor: '#E0F7FA',
+    backgroundColor: "#E0F7FA",
     borderRadius: 10,
   },
   configureText: {
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   contentText: {
     fontSize: 18,
-    color: '#333',
+    color: "#333",
   },
 });
 
