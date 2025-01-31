@@ -8,6 +8,7 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getAuth, signOut } from 'firebase/auth'; // Import Firebase auth functions
@@ -76,6 +77,7 @@ const HomeScreen = () => {
       setShowRecipes(false);
       const paths = {
         Appliances: '/screens/Appliances',
+        AIRecipes: '/screens/AIRecipes', // Add the path for AIRecipes
         Freezer: '/screens/Freezer',
         Fridge: '/screens/Fridge',
         Pantry: '/screens/Pantry',
@@ -130,6 +132,7 @@ const HomeScreen = () => {
           </ScrollView>
         )}
         {!showConfigurePage && selectedMenu === 'Pantry' && <Text style={styles.contentText}>Your pantry items:</Text>}
+        {!showConfigurePage && selectedMenu === 'AIRecipes' && <Text style={styles.contentText}>AI-generated recipes:</Text>}
         {!showConfigurePage && selectedMenu === 'Fridge' && <Text style={styles.contentText}>Items in your fridge:</Text>}
         {!showConfigurePage && selectedMenu === 'Freezer' && <Text style={styles.contentText}>Items in your freezer:</Text>}
         {!showConfigurePage && selectedMenu === 'Spices' && <Text style={styles.contentText}>Your spice collection:</Text>}
@@ -167,6 +170,9 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect('Appliances')}>
           <Text style={styles.menuText}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect('AIRecipes')}>
+          <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect('Log out')}>
           <Text style={styles.menuText}>Log out</Text>
