@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
+import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const { width } = Dimensions.get("window");
 
