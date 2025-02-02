@@ -128,6 +128,7 @@ const HomeScreen = () => {
       const paths = {
         Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes", // Add the path for AIRecipes
+        ReciptScanner: "/screens/Recipt-Scanner", //Adding path for Recipt-Scanner
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
@@ -186,6 +187,9 @@ const HomeScreen = () => {
         {!showConfigurePage && selectedMenu === "AIRecipes" && (
           <Text style={styles.contentText}>AI-generated recipes:</Text>
         )}
+        {!showConfigurePage && selectedMenu === "Recipt Scanner" && (
+          <Text style={styles.contentText}>Scan a Recipt:</Text>
+        )}
         {!showConfigurePage && selectedMenu === "Fridge" && (
           <Text style={styles.contentText}>Items in your fridge:</Text>
         )}
@@ -243,6 +247,9 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
+          </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
+          <Text style={styles.menuText}>Recipt Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
