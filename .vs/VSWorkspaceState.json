@@ -1,0 +1,16 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\app",
+    "\\app-example",
+    "\\assets",
+    "\\assets\\fonts",
+    "\\components",
+    "\\components\\navigation",
+    "\\constants",
+    "\\firebase",
+    "\\hooks"
+  ],
+  "SelectedNode": "\\app\\home.tsx",
+  "PreviewInSolutionExplorer": false
+}
