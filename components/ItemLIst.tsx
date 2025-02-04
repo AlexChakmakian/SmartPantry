@@ -18,13 +18,14 @@ import {
   addItem as addItemToDatabase,
   getItems as getItemsFromDatabase,
   deleteItem as deleteItemFromDatabase,
+  updateItem as updateItemFromDatabase,
 } from "../firebase/pantryService";
+import Icon from "react-native-vector-icons/Ionicons"; // Import the Icon
 
 export default function ItemList({ itemType }) {
-  const [items, setItems] = useState<
-    { id: string; name: string; quantity: string; dateAdded: string }[]
-  >([]);
+  const [items, setItems] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [loading, setLoading] = useState(false);
@@ -68,15 +69,44 @@ export default function ItemList({ itemType }) {
     }
   };
 
+  const editItem = (item) => {
+    setEditingItem(item);
+    setNewItemName(item.name);
+    setNewItemQuantity(item.quantity);
+    setModalVisible(true);
+  };
+
+  const updateItem = async () => {
+    if (newItemName.trim() && newItemQuantity.trim() && editingItem) {
+      const updatedItem = {
+        name: newItemName,
+        quantity: newItemQuantity,
+      };
+      try {
+        await updateItemFromDatabase(itemType, editingItem.id, updatedItem);
+        setItems(
+          items.map((item) =>
+            item.id === editingItem.id ? { ...item, ...updatedItem } : item
+          )
+        );
+        setModalVisible(false);
+        setNewItemName("");
+        setNewItemQuantity("");
+      } catch (e) {
+        console.error(`Error updating item in ${itemType}:`, e);
+      }
+    }
+  };
+
   const deleteItem = async (id) => {
     try {
-      setLoading(true); // Set loading to true while deletion is in progress
+      setLoading(true);
       await deleteItemFromDatabase(itemType, id);
       setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-      setLoading(false); // Set loading to false after deletion is complete
+      setLoading(false);
     } catch (e) {
       console.error(`Error deleting item from ${itemType}:`, e);
-      setLoading(false); // Set loading to false in case of an error
+      setLoading(false);
     }
   };
 
@@ -132,7 +162,11 @@ export default function ItemList({ itemType }) {
           renderItem={({ item }) => {
             const formattedDate = new Date(item.dateAdded).toLocaleDateString(
               "en-US",
-              { month: "short", day: "numeric", year: "numeric" }
+              {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              }
             );
             return (
               <Swipeable renderRightActions={() => renderRightActions(item.id)}>
@@ -149,6 +183,13 @@ export default function ItemList({ itemType }) {
                     <Text style={styles.itemLabel}>Date added: </Text>
                     <Text style={styles.itemDate}>{formattedDate}</Text>
                   </View>
+                  {/* Pencil Icon positioned at the bottom-right */}
+                  <TouchableOpacity
+                    style={styles.editButton}
+                    onPress={() => editItem(item)}
+                  >
+                    <Icon name="pencil" size={18} color="#007BFF" />
+                  </TouchableOpacity>
                 </View>
               </Swipeable>
             );
@@ -162,7 +203,9 @@ export default function ItemList({ itemType }) {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalView}>
-              <Text style={styles.modalText}>Add New Item</Text>
+              <Text style={styles.modalText}>
+                {editingItem ? "Edit Item" : "Add New Item"}
+              </Text>
               <TextInput
                 style={[styles.input, styles.blackText]}
                 placeholder="Enter item name"
@@ -178,8 +221,13 @@ export default function ItemList({ itemType }) {
                 onChangeText={setNewItemQuantity}
               />
 
-              <TouchableOpacity style={styles.modalAddButton} onPress={addItem}>
-                <Text style={styles.modalAddButtonText}>Add</Text>
+              <TouchableOpacity
+                style={styles.modalAddButton}
+                onPress={editingItem ? updateItem : addItem}
+              >
+                <Text style={styles.modalAddButtonText}>
+                  {editingItem ? "Update" : "Add"}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.modalCancelButton}
@@ -314,5 +362,17 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  editButton: {
+    position: "absolute",
+    bottom: 10,
+    right: 10,
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 50,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
 });
