@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions } from "react-native";
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
+import logo from '../../assets/logo.png'; // Import the logo image
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { height } = Dimensions.get('window');
@@ -70,12 +71,13 @@ export default function AIRecipes() {
     if (!instructions) return "No instructions available.";
     return instructions
       .replace(/<\/?[^>]+(>|$)/g, "\n") // Replace HTML tags with new lines
-      .replace(/\n\s*\n/g, "\n"); // Remove multiple new lines
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>AI RECIPES</Text>
+      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+
+      <Text style={styles.title}>YOUR RECIPES</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
@@ -90,14 +92,14 @@ export default function AIRecipes() {
               </TouchableOpacity>
             ))
           ) : (
-            <Text>No recipes available. Please try again later.</Text>
+            <Text>Limit reached. Please try again later!</Text>
           )}
           <View style={styles.spacer} />
         </ScrollView>
       )}
 
       <TouchableOpacity style={styles.resetButton} onPress={fetchRecipes}>
-        <Text style={styles.resetButtonText}>Generate New Recipes</Text>
+        <Text style={styles.resetButtonText}>Get New Recipes</Text>
       </TouchableOpacity>
 
       {selectedRecipe && (
@@ -140,6 +142,12 @@ const styles = StyleSheet.create({
     paddingTop: 50, // Adjust this value to position the text at the top
     backgroundColor: '#ADD8E6',
   },
+    logo: { //adjust logo
+    width: 85,
+    height: 85,
+    marginBottom: 10,
+    marginTop: -40,
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -148,6 +156,7 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     alignItems: 'center',
     paddingVertical: 20,
+    paddingBottom: 50, // Add padding to the bottom to ensure the last item is fully visible
   },
   recipeContainer: {
     marginTop: 20,
@@ -170,7 +179,7 @@ const styles = StyleSheet.create({
   },
   recipeImage: {
     width: '100%',
-    height: 200,
+    height: 250, // Increase the height of the recipe image
     borderRadius: 10,
   },
   spacer: {
