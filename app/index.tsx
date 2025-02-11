@@ -4,10 +4,10 @@ import {
   View,
   StyleSheet,
   TextInput,
-  Image,
   Alert,
   TouchableOpacity,
   Animated,
+  ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import AuthButton from "../components/authButton";
@@ -97,46 +97,54 @@ export default function Index() {
       }),
     ]).start();
   };
-  
+
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={handleLogoPress}>
-        <Animated.Image
-          source={require("../assets/Logo.png")}
-          style={[
-            styles.logo,
-            {
-              transform: [
-                { scale: scaleValue }, // Jump animation
-                { translateY: translateYValue }, // Fall animation
-              ],
-            },
-          ]}
-        />
-      </TouchableOpacity>
-      <TextInput
-        style={styles.input}
-        placeholder="Email"
-        placeholderTextColor="#777"
-        value={username}
-        onChangeText={setUsername}
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Password"
-        placeholderTextColor="#777"
-        value={password}
-        onChangeText={setPassword}
-        autoCapitalize="none"
-        secureTextEntry
-      />
-      <AuthButton onPress={handleLogin} title="Login" />
-      <TouchableOpacity onPress={handleForgotPassword}>
-        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
-      </TouchableOpacity>
-      <CreateAccountButton onPress={handleCreateAccount} />
-      <GoogleSignInButton onPress={() => Alert.alert("Google Sign-In")} />
+      <ImageBackground
+        source={require("../assets/images/foodBackground.png")}
+        style={styles.background}
+      >
+        <View style={styles.overlay} />
+        <View style={styles.innerContainer}>
+          <TouchableOpacity onPress={handleLogoPress}>
+            <Animated.Image
+              source={require("../assets/Logo.png")}
+              style={[
+                styles.logo,
+                {
+                  transform: [
+                    { scale: scaleValue }, // Jump animation
+                    { translateY: translateYValue }, // Fall animation
+                  ],
+                },
+              ]}
+            />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            placeholderTextColor="#777"
+            value={username}
+            onChangeText={setUsername}
+            autoCapitalize="none"
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            placeholderTextColor="#777"
+            value={password}
+            onChangeText={setPassword}
+            autoCapitalize="none"
+            secureTextEntry
+          />
+          <AuthButton onPress={handleLogin} title="Login" />
+          <TouchableOpacity onPress={handleForgotPassword}>
+            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+          </TouchableOpacity>
+          <CreateAccountButton onPress={handleCreateAccount} />
+          <GoogleSignInButton onPress={() => Alert.alert("Google Sign-In")} />
+        </View>
+      </ImageBackground>
     </View>
   );
 }
@@ -144,7 +152,21 @@ export default function Index() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#ADD8E6", // Background color
+  },
+  background: {
+    flex: 1,
+    resizeMode: "cover",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "#ADD8E6",
+    opacity: 0.5, // Adjust the opacity as needed
+  },
+  innerContainer: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "flex-start",
     padding: 35,
@@ -157,10 +179,10 @@ const styles = StyleSheet.create({
   input: {
     height: 40,
     borderColor: "white",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderRadius: 5,
     paddingHorizontal: 10,
-    width: "100%",
+    width: 300, // Set a fixed width for the input fields
     marginBottom: 20,
   },
   forgotPasswordText: {

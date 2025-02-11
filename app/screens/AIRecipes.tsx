@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions, Animated } from "react-native";
 import { useRouter } from "expo-router";
-import { getAuth } from "firebase/auth"; // Import Firebase auth functions
+import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
@@ -100,7 +100,7 @@ export default function AIRecipes() {
     }).start();
   };
 
-  const handleMenuSelect = (page) => {
+  const handleMenuSelect = async (page) => {
     setMenuOpen(false);
     Animated.timing(slideAnim, {
       toValue: -width,
@@ -108,17 +108,27 @@ export default function AIRecipes() {
       useNativeDriver: true,
     }).start();
 
-    const paths = {
-      Recipes: "/home",
-      Appliances: "/screens/Appliances",
-      Freezer: "/screens/Freezer",
-      Fridge: "/screens/Fridge",
-      Pantry: "/screens/Pantry",
-      Spices: "/screens/Spices",
-    };
-    router.push({
-      pathname: paths[page] || "/",
-    });
+    if (page === "Log out") {
+      try {
+        await signOut(auth);
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    } else {
+      const paths = {
+        Recipes: "/home",
+        Appliances: "/screens/Appliances",
+        Freezer: "/screens/Freezer",
+        Fridge: "/screens/Fridge",
+        Pantry: "/screens/Pantry",
+        Spices: "/screens/Spices",
+      };
+      router.push({
+        pathname: paths[page] || "/",
+      });
+    }
   };
 
   return (
@@ -213,6 +223,9 @@ export default function AIRecipes() {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+          <Text style={styles.menuText}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
