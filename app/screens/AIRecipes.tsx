@@ -1,22 +1,40 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions, Animated } from "react-native";
+import { useRouter } from "expo-router";
+import { getAuth } from "firebase/auth"; // Import Firebase auth functions
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
-import logo from '../../assets/logo.png'; // Import the logo image
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
-const { height } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function AIRecipes() {
+  const router = useRouter();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [emoji, setEmoji] = useState("");
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-width)).current;
+
+  const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
+
+  const auth = getAuth();
+
+  useEffect(() => {
+    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+    setEmoji(randomEmoji);
+  }, []);
 
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const fetchRecipes = async () => {
     setLoading(true);
     try {
+      // Randomize the emoji
+      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+      setEmoji(randomEmoji);
+
       // Fetch ingredients from Firebase
       const ingredients = await getItems('pantry');
       console.log("Fetched ingredients from Firebase:", ingredients); // Debugging line
@@ -73,11 +91,46 @@ export default function AIRecipes() {
       .replace(/<\/?[^>]+(>|$)/g, "\n") // Replace HTML tags with new lines
   };
 
+  const toggleMenu = () => {
+    setMenuOpen(!isMenuOpen);
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? -width : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleMenuSelect = (page) => {
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    const paths = {
+      Recipes: "/home",
+      Appliances: "/screens/Appliances",
+      Freezer: "/screens/Freezer",
+      Fridge: "/screens/Fridge",
+      Pantry: "/screens/Pantry",
+      Spices: "/screens/Spices",
+    };
+    router.push({
+      pathname: paths[page] || "/",
+    });
+  };
+
   return (
     <View style={styles.container}>
-      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+        <View style={styles.line} />
+        <View style={styles.line} />
+        <View style={styles.line} />
+      </TouchableOpacity>
 
-      <Text style={styles.title}>YOUR RECIPES</Text>
+      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+      <Text style={styles.title}>Your Recipes {emoji}</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
@@ -130,6 +183,38 @@ export default function AIRecipes() {
           </View>
         </Modal>
       )}
+
+      <Animated.View
+        style={[
+          styles.menuContainer,
+          { transform: [{ translateX: slideAnim }] },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.firstMenuItem}
+          onPress={() => handleMenuSelect("Recipes")}
+        >
+          <Text style={styles.menuText}>Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")} disabled>
+          <Text style={styles.menuText}>AI Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+          <Text style={styles.menuText}>Pantry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+          <Text style={styles.menuText}>Fridge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+          <Text style={styles.menuText}>Freezer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+          <Text style={styles.menuText}>Spices</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+          <Text style={styles.menuText}>Appliances</Text>
+        </TouchableOpacity>
+      </Animated.View>
     </View>
   );
 }
@@ -142,7 +227,7 @@ const styles = StyleSheet.create({
     paddingTop: 50, // Adjust this value to position the text at the top
     backgroundColor: '#ADD8E6',
   },
-    logo: { //adjust logo
+  logo: {
     width: 85,
     height: 85,
     marginBottom: 10,
@@ -152,6 +237,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+    //textDecorationLine: 'underline', // Add underline to the text
+    // textShadowColor: '#FFFFFF', // White shadow color
+    //textShadowOffset: { width: -1, height: 1 }, // Shadow offset
+    //textShadowRadius: 2, // Shadow radius
   },
   scrollViewContent: {
     alignItems: 'center',
@@ -195,6 +284,7 @@ const styles = StyleSheet.create({
   },
   resetButtonText: {
     color: '#FFF',
+    fontWeight: 'bold',
     fontSize: 16,
   },
   modalContainer: {
@@ -240,5 +330,36 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: '#FFF',
     fontSize: 16,
+  },
+  hamburger: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    zIndex: 1,
+  },
+  line: {
+    width: 30,
+    height: 4,
+    backgroundColor: "#fff",
+    marginVertical: 4,
+  },
+  menuContainer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: width * 0.4,
+    backgroundColor: "#4C5D6B",
+    padding: 20,
+    paddingTop: 40,
+    zIndex: 0,
+  },
+  firstMenuItem: {
+    paddingTop: 40,
+  },
+  menuText: {
+    fontSize: 18,
+    color: "#fff",
+    marginVertical: 10,
   },
 });

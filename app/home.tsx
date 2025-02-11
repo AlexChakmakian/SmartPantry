@@ -8,7 +8,6 @@ import {
   Dimensions,
   Image,
   ScrollView,
-  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
@@ -40,9 +39,6 @@ const RecipeCard = ({ title, imagePath, description }) => (
 const HomeScreen = () => {
   const router = useRouter();
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [selectedMenu, setSelectedMenu] = useState("Recipes");
-  const [showConfigurePage, setShowConfigurePage] = useState(false);
-  const [showRecipes, setShowRecipes] = useState(true);
   const [showButton, setShowButton] = useState(true);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
@@ -103,7 +99,6 @@ const HomeScreen = () => {
   };
 
   const handleMenuSelect = async (page) => {
-    setShowConfigurePage(false);
     setMenuOpen(false);
     Animated.timing(slideAnim, {
       toValue: -width,
@@ -111,10 +106,7 @@ const HomeScreen = () => {
       useNativeDriver: true,
     }).start();
 
-    if (page === "Recipes") {
-      setSelectedMenu(page);
-      setShowRecipes(true);
-    } else if (page === "Log out") {
+    if (page === "Log out") {
       try {
         await signOut(auth);
         console.log("User signed out");
@@ -123,11 +115,9 @@ const HomeScreen = () => {
         console.error("Error signing out:", error);
       }
     } else {
-      setSelectedMenu(page);
-      setShowRecipes(false);
       const paths = {
         Appliances: "/screens/Appliances",
-        AIRecipes: "/screens/AIRecipes", // Add the path for AIRecipes
+        AIRecipes: "/screens/AIRecipes",
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
@@ -150,57 +140,34 @@ const HomeScreen = () => {
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.contentContainer}>
-        {showRecipes && !showConfigurePage && selectedMenu === "Recipes" && (
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollViewContent}
-          >
-            <Text style={styles.recipesHeader}>Your Recipes</Text>
-            <View style={styles.recipeContainer}>
-              <RecipeCard
-                title="Spaghetti Alfredo"
-                imagePath={require("../assets/spaghetti.jpg")}
-                description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
-              />
-              <RecipeCard
-                title="Steak and Potatoes"
-                imagePath={require("../assets/steakpotatoes.jpg")}
-                description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
-              />
-              <RecipeCard
-                title="Tacos"
-                imagePath={require("../assets/tacos.jpg")}
-                description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
-              />
-              <RecipeCard
-                title="Fish and Chips"
-                imagePath={require("../assets/fishandchips.jpg")}
-                description="A classic British dish with crispy fried fish and golden fries."
-              />
-            </View>
-          </ScrollView>
-        )}
-        {!showConfigurePage && selectedMenu === "Pantry" && (
-          <Text style={styles.contentText}>Your pantry items:</Text>
-        )}
-        {!showConfigurePage && selectedMenu === "AIRecipes" && (
-          <Text style={styles.contentText}>AI-generated recipes:</Text>
-        )}
-        {!showConfigurePage && selectedMenu === "Fridge" && (
-          <Text style={styles.contentText}>Items in your fridge:</Text>
-        )}
-        {!showConfigurePage && selectedMenu === "Freezer" && (
-          <Text style={styles.contentText}>Items in your freezer:</Text>
-        )}
-        {!showConfigurePage && selectedMenu === "Spices" && (
-          <Text style={styles.contentText}>Your spice collection:</Text>
-        )}
-        {!showConfigurePage && selectedMenu === "Appliances" && (
-          <Text style={styles.contentText}>Your Appliances:</Text>
-        )}
-        {!showConfigurePage && selectedMenu === "Log out" && (
-          <Text style={styles.contentText}>Logging out...</Text>
-        )}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          <Text style={styles.recipesHeader}>Your Recipes</Text>
+          <View style={styles.recipeContainer}>
+            <RecipeCard
+              title="Spaghetti Alfredo"
+              imagePath={require("../assets/spaghetti.jpg")}
+              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+            />
+            <RecipeCard
+              title="Steak and Potatoes"
+              imagePath={require("../assets/steakpotatoes.jpg")}
+              description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
+            />
+            <RecipeCard
+              title="Tacos"
+              imagePath={require("../assets/tacos.jpg")}
+              description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+            />
+            <RecipeCard
+              title="Fish and Chips"
+              imagePath={require("../assets/fishandchips.jpg")}
+              description="A classic British dish with crispy fried fish and golden fries."
+            />
+          </View>
+        </ScrollView>
       </View>
 
       {/* Show "Configure Pantry" button only for first-time users */}
@@ -223,8 +190,12 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.firstMenuItem}
           onPress={() => handleMenuSelect("Recipes")}
+          disabled
         >
           <Text style={styles.menuText}>Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
+          <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
           <Text style={styles.menuText}>Pantry</Text>
@@ -240,9 +211,6 @@ const HomeScreen = () => {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
