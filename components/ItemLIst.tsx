@@ -19,8 +19,9 @@ import {
   getItems as getItemsFromDatabase,
   deleteItem as deleteItemFromDatabase,
   updateItem as updateItemFromDatabase,
-} from "../firebase/pantryService";
+} from "../firebase/pantryService"; // Import updated pantry service
 import Icon from "react-native-vector-icons/Ionicons"; // Import the Icon
+import { getAuth } from "firebase/auth"; // For accessing the current user's auth state
 
 export default function ItemList({ itemType }) {
   const [items, setItems] = useState([]);
@@ -33,38 +34,49 @@ export default function ItemList({ itemType }) {
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const items = await getItemsFromDatabase(itemType);
-        setItems(items);
+        const user = getAuth().currentUser;
+        if (user) {
+          const items = await getItemsFromDatabase(itemType, user.uid); // Pass user ID to fetch items
+          setItems(items);
+        } else {
+          Alert.alert("Error", "User not authenticated");
+        }
       } catch (e) {
         console.error(`Error retrieving items from ${itemType}:`, e);
       }
     };
     fetchItems();
-  }, [itemType]);
+  }, [itemType]); // Re-run when itemType changes
 
   const addItem = async () => {
     if (newItemName.trim() && newItemQuantity.trim()) {
       const newItem = {
         name: newItemName,
         quantity: newItemQuantity,
-        dateAdded: new Date().toISOString(),
+        dateAdded: new Date().toISOString(), // Ensure this is a valid ISO string
       };
-      try {
-        await addItemToDatabase(itemType, newItem);
-        setItems([
-          ...items,
-          {
-            id: (items.length + 1).toString(),
-            name: newItemName,
-            quantity: newItemQuantity,
-            dateAdded: newItem.dateAdded,
-          },
-        ]);
-        setNewItemName("");
-        setNewItemQuantity("");
-        setModalVisible(false);
-      } catch (e) {
-        console.error(`Error adding item to ${itemType}:`, e);
+
+      const user = getAuth().currentUser; // Get the current user
+
+      if (user) {
+        try {
+          // Add the item to Firestore under the user's pantry
+          await addItemToDatabase(itemType, user.uid, newItem); // Passing the correct object
+          setItems([
+            ...items,
+            {
+              id: (items.length + 1).toString(),
+              name: newItemName,
+              quantity: newItemQuantity,
+              dateAdded: newItem.dateAdded,
+            },
+          ]);
+          setNewItemName("");
+          setNewItemQuantity("");
+          setModalVisible(false);
+        } catch (e) {
+          console.error(`Error adding item to ${itemType}:`, e);
+        }
       }
     }
   };
@@ -82,31 +94,44 @@ export default function ItemList({ itemType }) {
         name: newItemName,
         quantity: newItemQuantity,
       };
-      try {
-        await updateItemFromDatabase(itemType, editingItem.id, updatedItem);
-        setItems(
-          items.map((item) =>
-            item.id === editingItem.id ? { ...item, ...updatedItem } : item
-          )
-        );
-        setModalVisible(false);
-        setNewItemName("");
-        setNewItemQuantity("");
-      } catch (e) {
-        console.error(`Error updating item in ${itemType}:`, e);
+      const user = getAuth().currentUser;
+      if (user) {
+        try {
+          await updateItemFromDatabase(
+            itemType,
+            user.uid,
+            editingItem.id,
+            updatedItem
+          ); // Pass user ID to update item
+          setItems(
+            items.map((item) =>
+              item.id === editingItem.id ? { ...item, ...updatedItem } : item
+            )
+          );
+          setModalVisible(false);
+          setNewItemName("");
+          setNewItemQuantity("");
+        } catch (e) {
+          console.error(`Error updating item in ${itemType}:`, e);
+        }
       }
     }
   };
 
   const deleteItem = async (id) => {
-    try {
-      setLoading(true);
-      await deleteItemFromDatabase(itemType, id);
-      setItems((prevItems) => prevItems.filter((item) => item.id !== id));
-      setLoading(false);
-    } catch (e) {
-      console.error(`Error deleting item from ${itemType}:`, e);
-      setLoading(false);
+    const user = getAuth().currentUser; // Get the current authenticated user
+    if (user) {
+      try {
+        setLoading(true);
+        await deleteItemFromDatabase(itemType, user.uid, id); // Pass user ID and item ID to delete
+        setItems((prevItems) => prevItems.filter((item) => item.id !== id)); // Remove item from local state
+        setLoading(false);
+      } catch (e) {
+        console.error(`Error deleting item from ${itemType}:`, e);
+        setLoading(false);
+      }
+    } else {
+      console.error("User not authenticated");
     }
   };
 
@@ -144,7 +169,10 @@ export default function ItemList({ itemType }) {
           </Text>
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setModalVisible(true)}
+            onPress={() => {
+              setEditingItem(null); // Reset the editingItem to null for adding a new item
+              setModalVisible(true);
+            }}
           >
             <Text style={styles.addButtonText}>+</Text>
           </TouchableOpacity>
@@ -183,7 +211,6 @@ export default function ItemList({ itemType }) {
                     <Text style={styles.itemLabel}>Date added: </Text>
                     <Text style={styles.itemDate}>{formattedDate}</Text>
                   </View>
-                  {/* Pencil Icon positioned at the bottom-right */}
                   <TouchableOpacity
                     style={styles.editButton}
                     onPress={() => editItem(item)}
