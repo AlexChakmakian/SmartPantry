@@ -101,7 +101,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <ImageBackground
-        source={require("../assets/images/foodBackground.png")}
+        source={require("../assets/images/grocery-food-doodle-drawing-set (1).png")}
         style={styles.background}
       >
         <View style={styles.overlay} />
