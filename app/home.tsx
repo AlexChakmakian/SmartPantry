@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the notification icon
 
 const { width } = Dimensions.get("window");
 
@@ -147,6 +148,10 @@ const HomeScreen = () => {
         <View style={styles.line} />
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.notificationIcon} onPress={() => Alert.alert("Notifications", "You have no new notifications.")}>
+        <Ionicons name="notifications-outline" size={30} color="#fff" />
+      </TouchableOpacity>
+
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.contentContainer}>
@@ -268,6 +273,12 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
+    zIndex: 1,
+  },
+  notificationIcon: {
+    position: "absolute",
+    top: 40,
+    right: 20,
     zIndex: 1,
   },
   line: {
