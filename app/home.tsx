@@ -9,11 +9,13 @@ import {
   Image,
   ScrollView,
   Modal,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the notification icon
 
 const { width } = Dimensions.get("window");
 
@@ -147,9 +149,27 @@ const HomeScreen = () => {
         <View style={styles.line} />
       </TouchableOpacity>
 
+      <TouchableOpacity style={styles.notificationIcon} onPress={() => Alert.alert("Notifications", "You have no new notifications.")}>
+        <Ionicons name="notifications-outline" size={30} color="#fff" />
+      </TouchableOpacity>
+
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.contentContainer}>
+        <View style={styles.topButtonsContainer}>
+          <TouchableOpacity
+            style={styles.squareButton}
+            onPress={() => router.push("/screens/AIRecipes")}
+          >
+            <Text style={styles.squareButtonText}>My AI Recipes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.squareButton}
+            onPress={() => router.push("/screens/Pantry")}
+          >
+            <Text style={styles.squareButtonText}>Add to Pantry</Text>
+          </TouchableOpacity>
+        </View>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
@@ -366,6 +386,12 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 1,
   },
+  notificationIcon: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
   line: {
     width: 30,
     height: 4,
@@ -386,6 +412,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flex: 1,
     width: "100%",
+  },
+  topButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "90%",
+    marginBottom: 20,
+  },
+  squareButton: {
+    width: width * 0.4,
+    height: width * 0.125, // Make the button more like a square vertically
+    backgroundColor: "rgba(0, 170, 255, 0.7)", // Adjust the opacity
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 25,
+    marginHorizontal: 10,
+    borderWidth: 1, // Add border width
+    borderColor: "#fff", // Border color
+  },
+  squareButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    textAlign: "center",
   },
   recipesHeader: {
     fontSize: 24,
