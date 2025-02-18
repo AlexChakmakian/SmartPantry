@@ -8,6 +8,7 @@ import {
   Dimensions,
   Image,
   ScrollView,
+  Modal,
 } from "react-native";
 
 import { useRouter } from "expo-router";
@@ -17,30 +18,34 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 
 const { width } = Dimensions.get("window");
 
-const RecipeCard = ({ title, imagePath, description }) => (
-  <View style={styles.recipeCard}>
-    <View style={styles.imageContainer}>
-      {imagePath ? (
-        <Image
-          source={imagePath}
-          style={styles.recipeImage}
-          resizeMode="cover"
-        />
-      ) : (
-        <View style={styles.placeholder} />
-      )}
+const RecipeCard = ({ title, imagePath, description, onPress }) => (
+  <TouchableOpacity onPress={onPress}>
+    <View style={styles.recipeCard}>
+      <View style={styles.imageContainer}>
+        {imagePath ? (
+          <Image
+            source={imagePath}
+            style={styles.recipeImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.placeholder} />
+        )}
+      </View>
+      <View style={styles.recipeContent}>
+        <Text style={styles.recipeTitle}>{title}</Text>
+        <Text style={styles.recipeText}>{description}</Text>
+      </View>
     </View>
-    <View style={styles.recipeContent}>
-      <Text style={styles.recipeTitle}>{title}</Text>
-      <Text style={styles.recipeText}>{description}</Text>
-    </View>
-  </View>
+  </TouchableOpacity>
 );
 
 const HomeScreen = () => {
   const router = useRouter();
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [showButton, setShowButton] = useState(true);
+
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
@@ -132,6 +137,11 @@ const HomeScreen = () => {
     }
   };
 
+  const handleRecipePress = (recipe) => {
+    setSelectedRecipe(recipe);
+    setModalVisible(true);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -147,27 +157,115 @@ const HomeScreen = () => {
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
         >
-          <Text style={styles.recipesHeader}>Your Recipes</Text>
+          <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
           <View style={styles.recipeContainer}>
             <RecipeCard
               title="Spaghetti Alfredo"
               imagePath={require("../assets/spaghetti.jpg")}
               description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Spaghetti Alfredo",
+                  imagePath: require("../assets/spaghetti.jpg"),
+                  description: `Ingredients:
+- 12 ounces fettuccine
+- 1 cup heavy cream
+- 1/2 cup unsalted butter
+- 1 cup grated Parmesan cheese
+- Salt and pepper to taste
+- Chopped parsley for garnish
+
+Instructions:
+1. Cook the fettuccine according to package instructions. Drain and set aside.
+2. In a large skillet, heat the heavy cream and butter over medium heat until the butter is melted and the mixture is hot.
+3. Add the Parmesan cheese and stir until the cheese is melted and the sauce is smooth.
+4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
+5. Season with salt and pepper to taste.
+6. Garnish with chopped parsley and serve immediately.`,
+                })
+              }
             />
             <RecipeCard
               title="Steak and Potatoes"
               imagePath={require("../assets/steakpotatoes.jpg")}
               description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Steak and Potatoes",
+                  imagePath: require("../assets/steakpotatoes.jpg"),
+                  description: `Ingredients:
+- 2 ribeye steaks
+- 4 large potatoes
+- 2 tablespoons olive oil
+- 2 cloves garlic, minced
+- Salt and pepper to taste
+- Fresh rosemary for garnish
+
+Instructions:
+1. Preheat the oven to 400°F (200°C).
+2. Rub the steaks with olive oil, minced garlic, salt, and pepper.
+3. Heat a skillet over high heat and sear the steaks for 2-3 minutes on each side.
+4. Transfer the steaks to a baking sheet and bake in the preheated oven for 10-15 minutes, or until desired doneness.
+5. While the steaks are baking, wash and dry the potatoes. Rub them with olive oil, salt, and pepper.
+6. Place the potatoes on a baking sheet and bake in the preheated oven for 45-60 minutes, or until tender.
+7. Serve the steaks with the baked potatoes and garnish with fresh rosemary.`,
+                })
+              }
             />
             <RecipeCard
               title="Tacos"
               imagePath={require("../assets/tacos.jpg")}
               description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Tacos",
+                  imagePath: require("../assets/tacos.jpg"),
+                  description: `Ingredients:
+- 1 pound ground beef
+- 1 packet taco seasoning
+- 8 small tortillas
+- 1 cup shredded lettuce
+- 1 cup shredded cheese
+- 1/2 cup salsa
+- 1/2 cup sour cream
+
+Instructions:
+1. In a skillet, cook the ground beef over medium heat until browned. Drain any excess fat.
+2. Add the taco seasoning and water according to the packet instructions. Simmer for 5 minutes.
+3. Warm the tortillas in a dry skillet or microwave.
+4. Fill each tortilla with the seasoned beef, shredded lettuce, shredded cheese, salsa, and sour cream.
+5. Serve immediately.`,
+                })
+              }
             />
             <RecipeCard
               title="Fish and Chips"
               imagePath={require("../assets/fishandchips.jpg")}
               description="A classic British dish with crispy fried fish and golden fries."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Fish and Chips",
+                  imagePath: require("../assets/fishandchips.jpg"),
+                  description: `Ingredients:
+- 4 cod fillets
+- 1 cup all-purpose flour
+- 1 teaspoon baking powder
+- 1 cup cold sparkling water
+- 4 large potatoes
+- Salt and pepper to taste
+- Vegetable oil for frying
+- Lemon wedges for serving
+
+Instructions:
+1. Peel and cut the potatoes into thick fries. Soak them in cold water for 30 minutes.
+2. In a bowl, whisk together the flour, baking powder, and cold sparkling water to make the batter.
+3. Heat the vegetable oil in a deep fryer or large pot to 350°F (175°C).
+4. Drain and pat the potatoes dry. Fry them in batches until golden and crispy. Drain on paper towels and season with salt.
+5. Dip the cod fillets into the batter, allowing any excess to drip off.
+6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
+7. Serve the fish with the fries and lemon wedges.`,
+                })
+              }
             />
           </View>
         </ScrollView>
@@ -182,6 +280,38 @@ const HomeScreen = () => {
           <Text style={styles.buttonText}>Configure</Text>
           <Text style={styles.buttonText}>Pantry 🍽️</Text>
         </TouchableOpacity>
+      )}
+
+      {selectedRecipe && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+                {selectedRecipe.imagePath && (
+                  <Image
+                    source={selectedRecipe.imagePath}
+                    style={styles.modalImage}
+                  />
+                )}
+                <Text style={styles.modalText}>
+                  {selectedRecipe.description}
+                </Text>
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
 
       <Animated.View
@@ -355,43 +485,41 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
   },
-  configureContainer: {
-    alignItems: "center",
-    marginTop: 30,
-    padding: 20,
-    backgroundColor: "#E0F7FA",
-    borderRadius: 10,
-  },
-  configureText: {
-    fontSize: 16,
-    color: "#333",
-  },
-  contentText: {
-    fontSize: 18,
-    color: "#333",
-  },
-  modalView: {
+  modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "white",
-    padding: 20,
-    margin: 20,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
-  closeButton: {
-    position: "absolute",
-    top: 10,
-    right: 10,
-    zIndex: 1,
+  modalContent: {
+    width: "90%",
+    height: "75%",
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+  },
+  modalScrollViewContent: {
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  modalImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+  modalText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  closeButtonText: {
+    color: "#FFF",
+    fontSize: 16,
   },
 });
 

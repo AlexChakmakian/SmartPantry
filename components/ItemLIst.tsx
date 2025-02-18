@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   Modal,
   Alert,
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -21,7 +24,10 @@ import {
   updateItem as updateItemFromDatabase,
 } from "../firebase/pantryService"; // Import updated pantry service
 import Icon from "react-native-vector-icons/Ionicons"; // Import the Icon
-import { getAuth } from "firebase/auth"; // For accessing the current user's auth state
+import { getAuth, signOut } from "firebase/auth"; // For accessing the current user's auth state
+import { useRouter } from "expo-router"; // Import useRouter for navigation
+
+const { width } = Dimensions.get("window");
 
 export default function ItemList({ itemType }) {
   const [items, setItems] = useState([]);
@@ -30,6 +36,11 @@ export default function ItemList({ itemType }) {
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-width)).current;
+
+  const router = useRouter();
+  const auth = getAuth();
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -160,9 +171,58 @@ export default function ItemList({ itemType }) {
     </TouchableOpacity>
   );
 
+  const toggleMenu = () => {
+    setMenuOpen(!isMenuOpen);
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? -width : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleMenuSelect = async (page) => {
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    if (page === "Log out") {
+      try {
+        await signOut(auth);
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    } else {
+      const paths = {
+        Recipes: "/home",
+        Appliances: "/screens/Appliances",
+        AIRecipes: "/screens/AIRecipes",
+        Freezer: "/screens/Freezer",
+        Fridge: "/screens/Fridge",
+        Pantry: "/screens/Pantry",
+        Spices: "/screens/Spices",
+      };
+      router.push({
+        pathname: paths[page] || "/",
+      });
+    }
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
+        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+          <View style={styles.line} />
+          <View style={styles.line} />
+          <View style={styles.line} />
+        </TouchableOpacity>
+
+        <Image source={require("../assets/Logo.png")} style={styles.logo} />
+
         <View style={styles.headerContainer}>
           <Text style={styles.header}>
             {itemType.charAt(0).toUpperCase() + itemType.slice(1)} Items
@@ -265,19 +325,89 @@ export default function ItemList({ itemType }) {
             </View>
           </View>
         </Modal>
+
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
+          <TouchableOpacity
+            style={styles.firstMenuItem}
+            onPress={() => handleMenuSelect("Recipes")}
+          >
+            <Text style={styles.menuText}>Recipes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
+            <Text style={styles.menuText}>AI Recipes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+            <Text style={styles.menuText}>Pantry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+            <Text style={styles.menuText}>Fridge</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+            <Text style={styles.menuText}>Freezer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+            <Text style={styles.menuText}>Spices</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+            <Text style={styles.menuText}>Appliances</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+            <Text style={styles.menuText}>Log out</Text>
+          </TouchableOpacity>
+        </Animated.View>
       </View>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  // The same styles you used before, including itemContainer, itemRow, itemLabel, etc.
   container: {
     flex: 1,
     padding: 20,
     backgroundColor: "#ADD8E6",
   },
-  // ... other styles
+  logo: {
+    width: 85,
+    height: 85,
+    alignSelf: "center",
+    marginTop: -10,
+  },
+  hamburger: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    zIndex: 1,
+  },
+  line: {
+    width: 30,
+    height: 4,
+    backgroundColor: "#fff",
+    marginVertical: 4,
+  },
+  menuContainer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: width * 0.4,
+    backgroundColor: "#4C5D6B",
+    padding: 20,
+    paddingTop: 40,
+    zIndex: 0,
+  },
+  firstMenuItem: {
+    paddingTop: 40,
+  },
+  menuText: {
+    fontSize: 18,
+    color: "#fff",
+    marginVertical: 10,
+  },
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
