@@ -9,6 +9,7 @@ import {
   Image,
   ScrollView,
 } from "react-native";
+
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
@@ -40,6 +41,7 @@ const HomeScreen = () => {
   const router = useRouter();
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [showButton, setShowButton] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const auth = getAuth();
@@ -122,6 +124,7 @@ const HomeScreen = () => {
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
         Spices: "/screens/Spices",
+        Settings: "/screens/Settings",
       };
       router.push({
         pathname: paths[page] || "/",
@@ -212,6 +215,9 @@ const HomeScreen = () => {
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
+          <Text style={styles.menuText}>Settings</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
         </TouchableOpacity>
@@ -238,6 +244,7 @@ const styles = StyleSheet.create({
     left: 20,
     zIndex: 1,
   },
+
   line: {
     width: 30,
     height: 4,
@@ -362,6 +369,29 @@ const styles = StyleSheet.create({
   contentText: {
     fontSize: 18,
     color: "#333",
+  },
+  modalView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "white",
+    padding: 20,
+    margin: 20,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  closeButton: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 1,
   },
 });
 
