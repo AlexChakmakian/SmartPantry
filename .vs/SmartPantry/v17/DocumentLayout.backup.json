@@ -1,0 +1,233 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\codyl\\Desktop\\SmartPantry\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\app\\home.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\home.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useThemeColor.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:hooks\\useThemeColor.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\firebase\\firebaseConfig.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:firebase\\firebaseConfig.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useColorScheme.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:hooks\\useColorScheme.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\firebase\\pantryService.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:firebase\\pantryService.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useColorScheme.web.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:hooks\\useColorScheme.web.ts||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\ItemLIst.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\ItemLIst.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\HelloWave.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\HelloWave.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\googleSignInButton.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\googleSignInButton.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\ExternalLink.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\ExternalLink.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\createAccountButton.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\createAccountButton.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\Collapsible.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\Collapsible.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\authButton.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:components\\authButton.tsx||{0F2454B1-A556-402D-A7D0-1FDE7F99DEE0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "home.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\app\\home.tsx",
+              "RelativeDocumentMoniker": "app\\home.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\app\\home.tsx",
+              "RelativeToolTip": "app\\home.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAALAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-30T22:46:06.201Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "useThemeColor.ts",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useThemeColor.ts",
+              "RelativeDocumentMoniker": "hooks\\useThemeColor.ts",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useThemeColor.ts",
+              "RelativeToolTip": "hooks\\useThemeColor.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:24:11.83Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "useColorScheme.ts",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useColorScheme.ts",
+              "RelativeDocumentMoniker": "hooks\\useColorScheme.ts",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useColorScheme.ts",
+              "RelativeToolTip": "hooks\\useColorScheme.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:22:46.409Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "useColorScheme.web.ts",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useColorScheme.web.ts",
+              "RelativeDocumentMoniker": "hooks\\useColorScheme.web.ts",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\hooks\\useColorScheme.web.ts",
+              "RelativeToolTip": "hooks\\useColorScheme.web.ts",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:22:44.755Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "pantryService.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\firebase\\pantryService.tsx",
+              "RelativeDocumentMoniker": "firebase\\pantryService.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\firebase\\pantryService.tsx",
+              "RelativeToolTip": "firebase\\pantryService.tsx",
+              "ViewState": "AgIAABIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:22:40.461Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "firebaseConfig.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\firebase\\firebaseConfig.tsx",
+              "RelativeDocumentMoniker": "firebase\\firebaseConfig.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\firebase\\firebaseConfig.tsx",
+              "RelativeToolTip": "firebase\\firebaseConfig.tsx",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAwAAAAgAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:22:38.45Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "ItemLIst.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\ItemLIst.tsx",
+              "RelativeDocumentMoniker": "components\\ItemLIst.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\ItemLIst.tsx",
+              "RelativeToolTip": "components\\ItemLIst.tsx",
+              "ViewState": "AgIAADgAAAAAAAAAAAAQwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:20:56.49Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "HelloWave.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\HelloWave.tsx",
+              "RelativeDocumentMoniker": "components\\HelloWave.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\HelloWave.tsx",
+              "RelativeToolTip": "components\\HelloWave.tsx",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:20:03.602Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "googleSignInButton.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\googleSignInButton.tsx",
+              "RelativeDocumentMoniker": "components\\googleSignInButton.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\googleSignInButton.tsx",
+              "RelativeToolTip": "components\\googleSignInButton.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:19:54.284Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "ExternalLink.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\ExternalLink.tsx",
+              "RelativeDocumentMoniker": "components\\ExternalLink.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\ExternalLink.tsx",
+              "RelativeToolTip": "components\\ExternalLink.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:19:27.252Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "createAccountButton.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\createAccountButton.tsx",
+              "RelativeDocumentMoniker": "components\\createAccountButton.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\createAccountButton.tsx",
+              "RelativeToolTip": "components\\createAccountButton.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:19:06.255Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "Collapsible.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\Collapsible.tsx",
+              "RelativeDocumentMoniker": "components\\Collapsible.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\Collapsible.tsx",
+              "RelativeToolTip": "components\\Collapsible.tsx",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAAAsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:18:31.44Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "authButton.tsx",
+              "DocumentMoniker": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\authButton.tsx",
+              "RelativeDocumentMoniker": "components\\authButton.tsx",
+              "ToolTip": "C:\\Users\\codyl\\Desktop\\SmartPantry\\components\\authButton.tsx",
+              "RelativeToolTip": "components\\authButton.tsx",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003213|",
+              "WhenOpened": "2025-01-29T00:17:50.791Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
