@@ -128,6 +128,7 @@ const HomeScreen = () => {
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
         Spices: "/screens/Spices",
       };
       router.push({
@@ -359,6 +360,9 @@ Instructions:
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
+          <Text style={styles.menuText}>Receipt Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
