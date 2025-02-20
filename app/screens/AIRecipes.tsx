@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions, Animated } from "react-native";
+
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
+
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
+import { useRouter } from "expo-router";
+import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
+import ItemList from "../../components/ItemLIst";
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
+
 const { width, height } = Dimensions.get('window');
+
 
 export default function AIRecipes() {
   const router = useRouter();
@@ -13,6 +20,7 @@ export default function AIRecipes() {
   const [loading, setLoading] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
@@ -25,6 +33,7 @@ export default function AIRecipes() {
     const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
     setEmoji(randomEmoji);
   }, []);
+
 
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -131,6 +140,62 @@ export default function AIRecipes() {
     }
   };
 
+  const toggleMenu = () => {
+    setMenuOpen(!isMenuOpen);
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? -width : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleMenuSelect = async (page) => {
+    if (page === selectedMenu) {
+      setMenuOpen(false);
+      Animated.timing(slideAnim, {
+        toValue: -width,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    setShowConfigurePage(false);
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    if (page === "Recipes") {
+      setSelectedMenu(page);
+      setShowRecipes(true);
+    } else if (page === "Log out") {
+      try {
+        await signOut(auth);
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    } else {
+      setSelectedMenu(page);
+      setShowRecipes(false);
+      const paths = {
+        Appliances: "/screens/Appliances",
+        AIRecipes: "/screens/AIRecipes", // Add the path for AIRecipes
+        Freezer: "/screens/Freezer",
+        Fridge: "/screens/Fridge",
+        Pantry: "/screens/Pantry",
+        Spices: "/screens/Spices",
+      };
+      router.push({
+        pathname: paths[page] || "/",
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -139,8 +204,11 @@ export default function AIRecipes() {
         <View style={styles.line} />
       </TouchableOpacity>
 
+
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <Text style={styles.title}>Your Recipes {emoji}</Text>
+      <Text style={styles.title}>Your Recipes {emoji}</Text>      
+
+
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
@@ -356,6 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     marginVertical: 4,
   },
+
   menuContainer: {
     position: "absolute",
     top: 0,
@@ -375,4 +444,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
   },
+
 });
+

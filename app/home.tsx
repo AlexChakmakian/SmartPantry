@@ -124,7 +124,10 @@ const HomeScreen = () => {
     } else {
       const paths = {
         Appliances: "/screens/Appliances",
+
         AIRecipes: "/screens/AIRecipes",
+
+
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
@@ -162,6 +165,7 @@ const HomeScreen = () => {
             style={styles.squareButton}
             onPress={() => router.push("/screens/AIRecipes")}
           >
+
             <Text style={styles.squareButtonText}>My AI Recipes</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -287,6 +291,7 @@ Instructions:
             />
           </View>
         </ScrollView>
+
       </View>
 
       {/* Show "Configure Pantry" button only for first-time users */}
@@ -361,8 +366,12 @@ Instructions:
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
         </TouchableOpacity>
+
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
+
+       
+
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
