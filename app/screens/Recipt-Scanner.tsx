@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, TextInput, ScrollView } from "react-native";
+import React, { useState, useRef } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, TextInput, ScrollView, Animated, Alert } from "react-native";
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system';
 import axios from 'axios';
+import { useRouter } from "expo-router";
+import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 
 const { width } = Dimensions.get('window');
 
@@ -11,6 +13,58 @@ const GOOGLE_API_KEY = "ask cody"; // Replace with your actual API key
 export default function ReciptScanner() {
   const [image, setImage] = useState<string | null>(null);
   const [ocrText, setOcrText] = useState<string | null>(null);
+  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isPantryDropdownOpen, setPantryDropdownOpen] = useState(false);
+  const slideAnim = useRef(new Animated.Value(-width)).current;
+  const router = useRouter();
+  const auth = getAuth();
+
+  const toggleMenu = () => {
+    setMenuOpen(!isMenuOpen);
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? -width : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handleMenuSelect = async (page) => {
+    if (page === "Pantry") {
+      setPantryDropdownOpen(!isPantryDropdownOpen);
+      return;
+    }
+
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    if (page === "Log out") {
+      try {
+        await signOut(auth);
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    } else {
+      const paths = {
+        Appliances: "/screens/Appliances",
+        AIRecipes: "/screens/AIRecipes",
+        Recipes: "/home",
+        Freezer: "/screens/Freezer",
+        Fridge: "/screens/Fridge",
+        Pantry: "/screens/Pantry",
+        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
+        Spices: "/screens/Spices",
+      };
+      router.push({
+        pathname: paths[page] || "/",
+      });
+    }
+  };
 
   // Function to handle image selection and OCR processing
   const pickImageAndProcess = async () => {
@@ -82,21 +136,71 @@ export default function ReciptScanner() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Receipt Scanner</Text>
-      <TouchableOpacity style={styles.button} onPress={pickImageAndProcess}>
-        <Text style={styles.buttonText}>Scan Receipt!</Text>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+        <View style={styles.line} />
+        <View style={styles.line} />
+        <View style={styles.line} />
       </TouchableOpacity>
-      {image && <Image source={{ uri: image }} style={styles.image} />}
-      {ocrText && (
-        <TextInput
-          style={styles.ocrText}
-          multiline
-          editable={false}
-          value={ocrText}
-        />
-      )}
-    </ScrollView>
+
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Receipt Scanner</Text>
+        <TouchableOpacity style={styles.button} onPress={pickImageAndProcess}>
+          <Text style={styles.buttonText}>Scan Receipt!</Text>
+        </TouchableOpacity>
+        {image && <Image source={{ uri: image }} style={styles.image} />}
+        {ocrText && (
+          <TextInput
+            style={styles.ocrText}
+            multiline
+            editable={false}
+            value={ocrText}
+          />
+        )}
+      </ScrollView>
+
+      <Animated.View
+        style={[
+          styles.menuContainer,
+          { transform: [{ translateX: slideAnim }] },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.firstMenuItem}
+          onPress={() => handleMenuSelect("Recipes")}
+        >
+          <Text style={styles.menuText}>Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
+          <Text style={styles.menuText}>AI Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+          <Text style={styles.menuText}>Pantry {isPantryDropdownOpen ? '▼' : '▶'}</Text>
+        </TouchableOpacity>
+        {isPantryDropdownOpen && (
+          <View style={styles.dropdownContainer}>
+            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+              <Text style={[styles.menuText, styles.dropdownText]}>Fridge</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+              <Text style={[styles.menuText, styles.dropdownText]}>Freezer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+              <Text style={[styles.menuText, styles.dropdownText]}>Spices</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+              <Text style={[styles.menuText, styles.dropdownText]}>Appliances</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
+          <Text style={styles.menuText}>Receipt Scanner</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -137,5 +241,54 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     backgroundColor: '#fff',
+  },
+  hamburger: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    zIndex: 1,
+  },
+  line: {
+    width: 30,
+    height: 4,
+    backgroundColor: "#fff",
+    marginVertical: 4,
+  },
+  menuContainer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: width * 0.4,
+    backgroundColor: "#4C5D6B",
+    padding: 20,
+    paddingTop: 40,
+    zIndex: 0,
+  },
+  firstMenuItem: {
+    paddingTop: 40,
+  },
+  menuText: {
+    fontSize: 18,
+    color: "#fff",
+    marginVertical: 10,
+  },
+  logoutText: {
+    fontSize: 18,
+    color: 'red',
+    marginVertical: 10,
+  },
+  rightPadding: {
+    paddingLeft: 20, // Adjust the value as needed
+  },
+  dropdownContainer: {
+    paddingLeft: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderRadius: 5,
+    marginVertical: 5,
+  },
+  dropdownText: {
+    fontSize: 16,
+    paddingLeft: 5,
   },
 });

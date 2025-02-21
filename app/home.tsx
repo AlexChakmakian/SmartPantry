@@ -350,22 +350,22 @@ Instructions:
           <Text style={styles.menuText}>Pantry</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={styles.menuText}>Fridge</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={styles.menuText}>Freezer</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={styles.menuText}>Spices</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={styles.menuText}>Appliances</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={styles.menuText}>Log out</Text>
+          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -572,6 +572,14 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "#FFF",
     fontSize: 16,
+  },
+  logoutText: {
+    fontSize: 18,
+    color: 'red',
+    marginVertical: 10,
+  },
+  rightPadding: {
+    paddingLeft: 20, // Adjust the value as needed
   },
 });
 
