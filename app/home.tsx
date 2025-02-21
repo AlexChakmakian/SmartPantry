@@ -128,6 +128,8 @@ const HomeScreen = () => {
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
         ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
         Spices: "/screens/Spices",
       };
@@ -289,7 +291,8 @@ Instructions:
         </ScrollView>
       </View>
 
-      {/* Show "Configure Pantry" button only for first-time users */}
+      {/* Show "Configure Pantry" button only for first-time users this is still not configured right we need to add conditional call to firebase */}
+
       {showButton && (
         <TouchableOpacity
           style={styles.circleButton}
@@ -360,6 +363,12 @@ Instructions:
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
+          <Text style={[styles.menuText]}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
+          <Text style={[styles.menuText]}>Bookmarked</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>

@@ -1,50 +1,35 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions, Animated } from "react-native";
 import { useRouter } from "expo-router";
-import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
-import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
+import { getAuth, signOut } from "firebase/auth";
+import { getItems } from "../../firebase/pantryService";
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get('window');
 
-export default function AIRecipes() {
+export default function History() {
   const router = useRouter();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
-
-  const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
 
   const auth = getAuth();
 
   useEffect(() => {
-    const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-    setEmoji(randomEmoji);
+    fetchRecipes();
   }, []);
-
-  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      // Randomize the emoji
-      const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
-      setEmoji(randomEmoji);
-
-      // Fetch ingredients from Firebase
       const ingredients = await getItems('pantry');
-      console.log("Fetched ingredients from Firebase:", ingredients); // Debugging line
       const ingredientNames = ingredients.map(item => item.name).join(',');
-      console.log("Ingredients:", ingredientNames); // Debugging line
 
-      // Fetch recipes from Spoonacular API using the ingredients
       const response = await fetch(`https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=20`);
       const data = await response.json();
-      console.log("Spoonacular response:", data); // Debugging line
 
       if (response.status === 401) {
         console.error("Unauthorized: Check your Spoonacular API key.");
@@ -58,16 +43,12 @@ export default function AIRecipes() {
         return;
       }
 
-      // Fetch detailed information for each recipe
-      const detailedRecipes = await Promise.all(data.map(async (recipe, index) => {
+      const detailedRecipes = await Promise.all(data.map(async (recipe) => {
         const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
         const detailedRecipe = await recipeResponse.json();
-        console.log("Detailed recipe:", detailedRecipe); // Debugging line
-        await delay(1000); // Add a delay to avoid hitting the rate limit
         return detailedRecipe;
       }));
 
-      console.log("Detailed recipes:", detailedRecipes); // Debugging line
       setRecipes(detailedRecipes);
     } catch (error) {
       console.error("Error fetching recipes:", error);
@@ -76,10 +57,6 @@ export default function AIRecipes() {
     }
   };
 
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
-
   const handleRecipePress = (recipe) => {
     setSelectedRecipe(recipe);
     setModalVisible(true);
@@ -87,8 +64,7 @@ export default function AIRecipes() {
 
   const formatInstructions = (instructions) => {
     if (!instructions) return "No instructions available.";
-    return instructions
-      .replace(/<\/?[^>]+(>|$)/g, "\n") // Replace HTML tags with new lines
+    return instructions.replace(/<\/?[^>]+(>|$)/g, "\n");
   };
 
   const toggleMenu = () => {
@@ -111,8 +87,7 @@ export default function AIRecipes() {
     if (page === "Log out") {
       try {
         await signOut(auth);
-        console.log("User signed out");
-        router.push("/"); // Redirect to the login screen
+        router.push("/");
       } catch (error) {
         console.error("Error signing out:", error);
       }
@@ -139,8 +114,7 @@ export default function AIRecipes() {
         <View style={styles.line} />
       </TouchableOpacity>
 
-      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <Text style={styles.title}>Your Recipes {emoji}</Text>
+      <Text style={styles.title}>Recipe History</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
@@ -155,15 +129,11 @@ export default function AIRecipes() {
               </TouchableOpacity>
             ))
           ) : (
-            <Text>Limit reached. Please try again later!</Text>
+            <Text>No recipes found.</Text>
           )}
           <View style={styles.spacer} />
         </ScrollView>
       )}
-
-      <TouchableOpacity style={styles.resetButton} onPress={fetchRecipes}>
-        <Text style={styles.resetButtonText}>Get New Recipes</Text>
-      </TouchableOpacity>
 
       {selectedRecipe && (
         <Modal
@@ -203,6 +173,7 @@ export default function AIRecipes() {
         <TouchableOpacity
           style={styles.firstMenuItem}
           onPress={() => handleMenuSelect("Home")}
+          disabled
         >
           <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
@@ -246,28 +217,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 50, // Adjust this value to position the text at the top
+    paddingTop: 50,
     backgroundColor: '#ADD8E6',
-  },
-  logo: {
-    width: 85,
-    height: 85,
-    marginBottom: 10,
-    marginTop: -40,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    //textDecorationLine: 'underline', // Add underline to the text
-    // textShadowColor: '#FFFFFF', // White shadow color
-    //textShadowOffset: { width: -1, height: 1 }, // Shadow offset
-    //textShadowRadius: 2, // Shadow radius
   },
   scrollViewContent: {
     alignItems: 'center',
     paddingVertical: 20,
-    paddingBottom: 50, // Add padding to the bottom to ensure the last item is fully visible
+    paddingBottom: 50,
   },
   recipeContainer: {
     marginTop: 20,
@@ -290,24 +251,11 @@ const styles = StyleSheet.create({
   },
   recipeImage: {
     width: '100%',
-    height: 250, // Increase the height of the recipe image
+    height: 250,
     borderRadius: 10,
   },
   spacer: {
-    height: 50, // Adjust this value to add space at the bottom
-  },
-  resetButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  resetButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    fontSize: 16,
+    height: 50,
   },
   modalContainer: {
     flex: 1,
@@ -317,9 +265,9 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    height: height * 0.75, // Set the height to 75% of the screen height
+    height: height * 0.75,
     backgroundColor: '#fff',
-    padding: 10, // Reduced padding
+    padding: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -329,13 +277,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5, // Reduced margin
+    marginBottom: 5,
   },
   modalImage: {
     width: '100%',
-    height: 150, // Reduced height
+    height: 150,
     borderRadius: 10,
-    marginBottom: 5, // Reduced margin
+    marginBottom: 5,
   },
   modalText: {
     fontSize: 16,
@@ -343,11 +291,11 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     backgroundColor: '#007BFF',
-    paddingVertical: 5, // Reduced padding
-    paddingHorizontal: 10, // Reduced padding
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 5,
-    marginTop: 10, // Reduced margin
-    alignSelf: 'center', // Center the button horizontally
+    marginTop: 10,
+    alignSelf: 'center',
   },
   closeButtonText: {
     color: '#FFF',
