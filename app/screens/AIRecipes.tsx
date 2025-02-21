@@ -225,7 +225,7 @@ export default function AIRecipes() {
           <Text style={styles.menuText}>Appliances</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={styles.menuText}>Log out</Text>
+          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -373,6 +373,11 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: 18,
     color: "#fff",
+    marginVertical: 10,
+  },
+  logoutText: {
+    fontSize: 18,
+    color: 'red',
     marginVertical: 10,
   },
 });
