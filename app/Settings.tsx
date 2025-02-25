@@ -19,7 +19,7 @@ import NotificationBell from "../components/NotificationBell"; // Adjust the imp
 
 const { width } = Dimensions.get("window");
 
-export default function HomeScreen() {
+export default function SettingsScreen() {
   const [expiryThreshold, setExpiryThreshold] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -67,13 +67,13 @@ export default function HomeScreen() {
       }
     } else {
       const paths = {
+        Recipes: "/home",
         Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes",
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
         Spices: "/screens/Spices",
-        Settings: "/Settings",
       };
       router.push({
         pathname: paths[page] || "/",
@@ -122,7 +122,6 @@ export default function HomeScreen() {
         <TouchableOpacity
           style={styles.firstMenuItem}
           onPress={() => handleMenuSelect("Recipes")}
-          disabled
         >
           <Text style={styles.menuText}>Recipes</Text>
         </TouchableOpacity>
@@ -144,13 +143,35 @@ export default function HomeScreen() {
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
           <Text style={styles.menuText}>Appliances</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
-          <Text style={styles.menuText}>Settings</Text>
-        </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={styles.menuText}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
+
+      <View style={styles.card}>
+        <Text style={styles.header}>Set Expiry Threshold</Text>
+        <Text style={styles.subHeader}>
+          Notify me when items are older than:
+        </Text>
+        <TextInput
+          style={styles.input}
+          keyboardType="numeric"
+          value={expiryThreshold}
+          onChangeText={setExpiryThreshold}
+          placeholder="Number of days"
+        />
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#007BFF" />
+        ) : (
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSaveThreshold}
+            disabled={isLoading}
+          >
+            <Text style={styles.saveButtonText}>Save</Text>
+          </TouchableOpacity>
+        )}
+      </View>
     </View>
   );
 }
@@ -158,20 +179,22 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#ADD8E6",
-    paddingTop: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ADD8E6", // Soft blue background
+    padding: 20,
   },
   hamburger: {
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 2, // Ensure the hamburger icon is above other elements
   },
   notificationIcon: {
     position: "absolute",
     top: 40,
     right: 20,
-    zIndex: 1,
+    zIndex: 2, // Ensure the notification icon is above other elements
   },
   line: {
     width: 30,
@@ -184,18 +207,18 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     left: 0,
-    width: width * 0.4,
-    backgroundColor: "#4C5D6B",
+    width: width * 0.75,
+    backgroundColor: "#4C5D6B", // Match the color scheme from HomeScreen
     padding: 20,
-    paddingTop: 40,
-    zIndex: 0,
+    zIndex: 3, // Ensure the menu is above other elements
+    elevation: 5,
   },
   firstMenuItem: {
     paddingTop: 40,
   },
   menuText: {
     fontSize: 18,
-    color: "#fff",
+    color: "#fff", // Match the text color from HomeScreen
     marginVertical: 10,
   },
   card: {
@@ -208,17 +231,21 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 10 },
     elevation: 5,
+    alignItems: "center", // Center content horizontally
+    justifyContent: "center", // Center content vertically
   },
   header: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 20,
+    textAlign: "center", // Center text
   },
   subHeader: {
     fontSize: 18,
     color: "#555",
     marginBottom: 15,
+    textAlign: "center", // Center text
   },
   input: {
     width: "100%",
