@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Touchable
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the bookmark icon
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get('window');
@@ -15,6 +16,7 @@ export default function AIRecipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false); // State for bookmark icon
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
@@ -131,6 +133,10 @@ export default function AIRecipes() {
     }
   };
 
+  const toggleBookmark = () => {
+    setIsBookmarked(!isBookmarked);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -140,6 +146,9 @@ export default function AIRecipes() {
       </TouchableOpacity>
 
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+      <TouchableOpacity style={styles.bookmarkIcon} onPress={toggleBookmark}>
+        <Ionicons name="bookmark" size={30} color={isBookmarked ? "gold" : "#fff"} />
+      </TouchableOpacity>
       <Text style={styles.title}>Your Recipes {emoji}</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
@@ -245,6 +254,12 @@ const styles = StyleSheet.create({
     height: 85,
     marginBottom: 10,
     marginTop: -40,
+  },
+  bookmarkIcon: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 1,
   },
   title: {
     fontSize: 24,
