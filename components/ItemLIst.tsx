@@ -1,5 +1,3 @@
-//old item list
-
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -28,6 +26,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons"; // Import the Icon
 import { getAuth, signOut } from "firebase/auth"; // For accessing the current user's auth state
 import { useRouter } from "expo-router"; // Import useRouter for navigation
+import { Picker } from '@react-native-picker/picker'; // Correct import for Picker
 
 const { width } = Dimensions.get("window");
 
@@ -37,6 +36,7 @@ export default function ItemList({ itemType }) {
   const [editingItem, setEditingItem] = useState(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
+  const [newItemUnit, setNewItemUnit] = useState("lbs"); // Default unit
   const [loading, setLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
@@ -65,7 +65,7 @@ export default function ItemList({ itemType }) {
     if (newItemName.trim() && newItemQuantity.trim()) {
       const newItem = {
         name: newItemName,
-        quantity: newItemQuantity,
+        quantity: `${newItemQuantity} ${newItemUnit}`, // Append unit to quantity
         dateAdded: new Date().toISOString(), // Ensure this is a valid ISO string
       };
 
@@ -80,12 +80,13 @@ export default function ItemList({ itemType }) {
             {
               id: (items.length + 1).toString(),
               name: newItemName,
-              quantity: newItemQuantity,
+              quantity: newItem.quantity,
               dateAdded: newItem.dateAdded,
             },
           ]);
           setNewItemName("");
           setNewItemQuantity("");
+          setNewItemUnit("lbs"); // Reset unit to default
           setModalVisible(false);
         } catch (e) {
           console.error(`Error adding item to ${itemType}:`, e);
@@ -97,7 +98,17 @@ export default function ItemList({ itemType }) {
   const editItem = (item) => {
     setEditingItem(item);
     setNewItemName(item.name);
-    setNewItemQuantity(item.quantity);
+    
+    // More robust parsing of quantity and unit
+    const parts = item.quantity.split(' ');
+    if (parts.length >= 2) {
+      setNewItemQuantity(parts[0]);
+      setNewItemUnit(parts[1]);
+    } else {
+      setNewItemQuantity(item.quantity);
+      setNewItemUnit("lbs"); // Default if no unit is found
+    }
+    
     setModalVisible(true);
   };
 
@@ -105,7 +116,8 @@ export default function ItemList({ itemType }) {
     if (newItemName.trim() && newItemQuantity.trim() && editingItem) {
       const updatedItem = {
         name: newItemName,
-        quantity: newItemQuantity,
+        quantity: `${newItemQuantity} ${newItemUnit}`, // Append unit to quantity
+        dateAdded: editingItem.dateAdded // Preserve the original date added
       };
       const user = getAuth().currentUser;
       if (user) {
@@ -124,6 +136,7 @@ export default function ItemList({ itemType }) {
           setModalVisible(false);
           setNewItemName("");
           setNewItemQuantity("");
+          setNewItemUnit("lbs"); // Reset unit to default
         } catch (e) {
           console.error(`Error updating item in ${itemType}:`, e);
         }
@@ -233,6 +246,9 @@ export default function ItemList({ itemType }) {
             style={styles.addButton}
             onPress={() => {
               setEditingItem(null); // Reset the editingItem to null for adding a new item
+              setNewItemName("");
+              setNewItemQuantity("");
+              setNewItemUnit("lbs"); // Reset to default unit
               setModalVisible(true);
             }}
           >
@@ -298,17 +314,39 @@ export default function ItemList({ itemType }) {
               <TextInput
                 style={[styles.input, styles.blackText]}
                 placeholder="Enter item name"
-                placeholderTextColor="#000000"
+                placeholderTextColor="#999999"
                 value={newItemName}
                 onChangeText={setNewItemName}
               />
-              <TextInput
-                style={[styles.input, styles.blackText]}
-                placeholder="Enter quantity"
-                placeholderTextColor="#000000"
-                value={newItemQuantity}
-                onChangeText={setNewItemQuantity}
-              />
+              <View style={styles.quantityUnitContainer}>
+                <TextInput
+                  style={[styles.quantityInput, styles.blackText]}
+                  placeholder="Quantity"
+                  placeholderTextColor="#999999"
+                  value={newItemQuantity}
+                  onChangeText={setNewItemQuantity}
+                  keyboardType="numeric"
+                />
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={newItemUnit}
+                    style={styles.picker}
+                    itemStyle={styles.pickerItem}
+                    onValueChange={(itemValue) => setNewItemUnit(itemValue)}
+                  >
+                    <Picker.Item label="lbs" value="lbs" />
+                    <Picker.Item label="oz" value="oz" />
+                    <Picker.Item label="g" value="g" />
+                    <Picker.Item label="kg" value="kg" />
+                    <Picker.Item label="cups" value="cups" />
+                    <Picker.Item label="tbsp" value="tbsp" />
+                    <Picker.Item label="tsp" value="tsp" />
+                    <Picker.Item label="ml" value="ml" />
+                    <Picker.Item label="L" value="L" />
+                    <Picker.Item label="pcs" value="pcs" />
+                  </Picker>
+                </View>
+              </View>
 
               <TouchableOpacity
                 style={styles.modalAddButton}
@@ -359,7 +397,7 @@ export default function ItemList({ itemType }) {
             <Text style={styles.menuText}>Appliances</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-            <Text style={styles.menuText}>Log out</Text>
+            <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -409,6 +447,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     marginVertical: 10,
+  },
+  logoutText: {
+    color: 'red',
   },
   headerContainer: {
     flexDirection: "row",
@@ -482,6 +523,8 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 20,
     marginBottom: 15,
+    color: "#333",
+    fontWeight: "bold",
   },
   input: {
     width: "100%",
@@ -494,20 +537,58 @@ const styles = StyleSheet.create({
   blackText: {
     color: "#000000", // Make the font black
   },
+  quantityUnitContainer: {
+    flexDirection: "row",
+    width: "100%",
+    marginBottom: 15,
+    justifyContent: "space-between",
+  },
+  quantityInput: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  pickerContainer: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: "#f0f0f0",
+  },
+  picker: {
+    width: "100%",
+    height: 40,
+    color: "#000",
+  },
+  pickerItem: {
+    fontSize: 16,
+    height: 40,
+    color: "#000",
+  },
   modalAddButton: {
     backgroundColor: "#007BFF",
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
+    width: "100%",
+    alignItems: "center",
   },
   modalAddButtonText: {
     color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   modalCancelButton: {
     padding: 10,
   },
   modalCancelButtonText: {
     color: "#007BFF",
+    fontSize: 16,
   },
   deleteButton: {
     backgroundColor: "#FF3B30",
