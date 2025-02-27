@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
 
-const API_KEY = "b90e71d18a854a71b40b917b255177a3";
+const API_KEY = "968acb5051ae4bb6ae3358446d08f8fb";
 const { width, height } = Dimensions.get('window');
 
 export default function AIRecipes() {
@@ -58,16 +58,27 @@ export default function AIRecipes() {
         return;
       }
 
-      // Fetch detailed information for each recipe
+      // Fetch detailed information and nutrition data for each recipe
       const detailedRecipes = await Promise.all(data.map(async (recipe, index) => {
         const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
         const detailedRecipe = await recipeResponse.json();
         console.log("Detailed recipe:", detailedRecipe); // Debugging line
+
+        const nutritionResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json?apiKey=${API_KEY}`);
+        const nutritionData = await nutritionResponse.json();
+        console.log("Nutrition data:", nutritionData); // Debugging line
+
         await delay(1000); // Add a delay to avoid hitting the rate limit
-        return detailedRecipe;
+
+        return {
+          ...detailedRecipe,
+          calories: Math.round(nutritionData.nutrients.find(nutrient => nutrient.name === "Calories")?.amount),
+          servingSize: nutritionData.weightPerServing,
+          estimatedServings: detailedRecipe.servings > 1 ? `${detailedRecipe.servings - 1}-${detailedRecipe.servings}` : "1",
+        };
       }));
 
-      console.log("Detailed recipes:", detailedRecipes); // Debugging line
+      console.log("Detailed recipes with nutrition:", detailedRecipes); // Debugging line
       setRecipes(detailedRecipes);
     } catch (error) {
       console.error("Error fetching recipes:", error);
@@ -152,6 +163,9 @@ export default function AIRecipes() {
                 {recipe.image && (
                   <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
                 )}
+                <Text style={styles.recipeInfo}>Calories: {recipe.calories} cal</Text>
+                <Text style={styles.recipeInfo}>Serving Size: {recipe.servingSize.amount} {recipe.servingSize.unit}</Text>
+                <Text style={styles.recipeInfo}>Estimated Servings: {recipe.estimatedServings}</Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -179,6 +193,8 @@ export default function AIRecipes() {
                 {selectedRecipe.image && (
                   <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
                 )}
+                <Text style={styles.modalText}>Calories: {selectedRecipe.calories} cal</Text>
+                <Text style={styles.modalText}>Serving Size: {selectedRecipe.servingSize.amount} {selectedRecipe.servingSize.unit}</Text>
                 <Text style={styles.modalText}>Ingredients:</Text>
                 {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
                   <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
@@ -283,6 +299,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 250, // Increase the height of the recipe image
     borderRadius: 10,
+  },
+  recipeInfo: {
+    fontSize: 16,
+    color: '#333',
+    marginTop: 5,
   },
   spacer: {
     height: 50, // Adjust this value to add space at the bottom
