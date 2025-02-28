@@ -10,12 +10,15 @@ import {
   ScrollView,
   Modal,
   Alert,
+  TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the notification icon
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
+import NotificationBell from "../components/NotificationBell"; // Component for notifications
 
 const { width } = Dimensions.get("window");
 
@@ -47,6 +50,9 @@ const HomeScreen = () => {
   const [showButton, setShowButton] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [expiryThreshold, setExpiryThreshold] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const auth = getAuth();
@@ -66,6 +72,10 @@ const HomeScreen = () => {
           if (userData.hasSeenConfigureButton) {
             setShowButton(false); // Do not show the button if the flag is true
           }
+
+          // Set expiry threshold from user data
+          const threshold = userData.expiryThreshold || 30; // Default to 30 days
+          setExpiryThreshold(threshold.toString());
         } else {
           console.log("User document does not exist.");
         }
@@ -116,11 +126,14 @@ const HomeScreen = () => {
     if (page === "Log out") {
       try {
         await signOut(auth);
+
         console.log("User signed out");
         router.push("/"); // Redirect to the login screen
       } catch (error) {
         console.error("Error signing out:", error);
       }
+    } else if (page === "Settings") {
+      setShowSettings(true);
     } else {
       const paths = {
         Appliances: "/screens/Appliances",
@@ -130,7 +143,7 @@ const HomeScreen = () => {
         Pantry: "/screens/Pantry",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
-        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
+        ReciptScanner: "/screens/Recipt-Scanner", // receipt scanner
         Spices: "/screens/Spices",
       };
       router.push({
@@ -144,6 +157,28 @@ const HomeScreen = () => {
     setModalVisible(true);
   };
 
+  const handleSaveThreshold = async () => {
+    const thresholdNumber = Number(expiryThreshold);
+    if (!expiryThreshold || isNaN(thresholdNumber) || thresholdNumber <= 0) {
+      Alert.alert("Error", "Please enter a valid number of days.");
+      return;
+    }
+
+    setIsLoading(true);
+    const user = auth.currentUser;
+    if (user) {
+      try {
+        const userRef = doc(db, "users", user.uid);
+        await updateDoc(userRef, { expiryThreshold: thresholdNumber });
+        Alert.alert("Success", "Expiry threshold updated.");
+      } catch (error) {
+        console.error("Error saving threshold:", error);
+        Alert.alert("Error", "Failed to save expiry threshold.");
+      }
+    }
+    setIsLoading(false);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -152,42 +187,83 @@ const HomeScreen = () => {
         <View style={styles.line} />
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.notificationIcon} onPress={() => Alert.alert("Notifications", "You have no new notifications.")}>
-        <Ionicons name="notifications-outline" size={30} color="#fff" />
-      </TouchableOpacity>
+      <NotificationBell />
 
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
-      <View style={styles.contentContainer}>
-        <View style={styles.topButtonsContainer}>
-          <TouchableOpacity
-            style={styles.squareButton}
-            onPress={() => router.push("/screens/AIRecipes")}
-          >
-            <Text style={styles.squareButtonText}>My AI Recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.squareButton}
-            onPress={() => router.push("/screens/Pantry")}
-          >
-            <Text style={styles.squareButtonText}>Add to Pantry</Text>
-          </TouchableOpacity>
-        </View>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
+      {showSettings ? (
+        <View
+          style={[
+            styles.contentContainer,
+            { justifyContent: "center", alignItems: "center" },
+          ]}
         >
-          <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
-          <View style={styles.recipeContainer}>
-            <RecipeCard
-              title="Spaghetti Alfredo"
-              imagePath={require("../assets/spaghetti.jpg")}
-              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Spaghetti Alfredo",
-                  imagePath: require("../assets/spaghetti.jpg"),
-                  description: `Ingredients:
+          <View style={styles.card}>
+            <Text style={styles.header}>Settings</Text>
+            <Text style={styles.subHeader}>
+              Set the number of days before you want to be notified about
+              expiring items
+            </Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Number of days"
+              value={expiryThreshold}
+              onChangeText={setExpiryThreshold}
+              keyboardType="numeric"
+            />
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveThreshold}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.saveButton,
+                { marginTop: 10, backgroundColor: "#6c757d" },
+              ]}
+              onPress={() => setShowSettings(false)}
+            >
+              <Text style={styles.saveButtonText}>Back to Home</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <View style={styles.contentContainer}>
+          <View style={styles.topButtonsContainer}>
+            <TouchableOpacity
+              style={styles.squareButton}
+              onPress={() => router.push("/screens/AIRecipes")}
+            >
+              <Text style={styles.squareButtonText}>My AI Recipes</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.squareButton}
+              onPress={() => router.push("/screens/Pantry")}
+            >
+              <Text style={styles.squareButtonText}>Add to Pantry</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+          >
+            <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
+            <View style={styles.recipeContainer}>
+              <RecipeCard
+                title="Spaghetti Alfredo"
+                imagePath={require("../assets/spaghetti.jpg")}
+                description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Spaghetti Alfredo",
+                    imagePath: require("../assets/spaghetti.jpg"),
+                    description: `Ingredients:
 - 12 ounces fettuccine
 - 1 cup heavy cream
 - 1/2 cup unsalted butter
@@ -202,18 +278,18 @@ Instructions:
 4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
 5. Season with salt and pepper to taste.
 6. Garnish with chopped parsley and serve immediately.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Steak and Potatoes"
-              imagePath={require("../assets/steakpotatoes.jpg")}
-              description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Steak and Potatoes",
-                  imagePath: require("../assets/steakpotatoes.jpg"),
-                  description: `Ingredients:
+                  })
+                }
+              />
+              <RecipeCard
+                title="Steak and Potatoes"
+                imagePath={require("../assets/steakpotatoes.jpg")}
+                description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Steak and Potatoes",
+                    imagePath: require("../assets/steakpotatoes.jpg"),
+                    description: `Ingredients:
 - 2 ribeye steaks
 - 4 large potatoes
 - 2 tablespoons olive oil
@@ -229,18 +305,18 @@ Instructions:
 5. While the steaks are baking, wash and dry the potatoes. Rub them with olive oil, salt, and pepper.
 6. Place the potatoes on a baking sheet and bake in the preheated oven for 45-60 minutes, or until tender.
 7. Serve the steaks with the baked potatoes and garnish with fresh rosemary.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Tacos"
-              imagePath={require("../assets/tacos.jpg")}
-              description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Tacos",
-                  imagePath: require("../assets/tacos.jpg"),
-                  description: `Ingredients:
+                  })
+                }
+              />
+              <RecipeCard
+                title="Tacos"
+                imagePath={require("../assets/tacos.jpg")}
+                description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Tacos",
+                    imagePath: require("../assets/tacos.jpg"),
+                    description: `Ingredients:
 - 1 pound ground beef
 - 1 packet taco seasoning
 - 8 small tortillas
@@ -255,18 +331,18 @@ Instructions:
 3. Warm the tortillas in a dry skillet or microwave.
 4. Fill each tortilla with the seasoned beef, shredded lettuce, shredded cheese, salsa, and sour cream.
 5. Serve immediately.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Fish and Chips"
-              imagePath={require("../assets/fishandchips.jpg")}
-              description="A classic British dish with crispy fried fish and golden fries."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Fish and Chips",
-                  imagePath: require("../assets/fishandchips.jpg"),
-                  description: `Ingredients:
+                  })
+                }
+              />
+              <RecipeCard
+                title="Fish and Chips"
+                imagePath={require("../assets/fishandchips.jpg")}
+                description="A classic British dish with crispy fried fish and golden fries."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Fish and Chips",
+                    imagePath: require("../assets/fishandchips.jpg"),
+                    description: `Ingredients:
 - 4 cod fillets
 - 1 cup all-purpose flour
 - 1 teaspoon baking powder
@@ -284,16 +360,17 @@ Instructions:
 5. Dip the cod fillets into the batter, allowing any excess to drip off.
 6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
 7. Serve the fish with the fries and lemon wedges.`,
-                })
-              }
-            />
-          </View>
-        </ScrollView>
-      </View>
+                  })
+                }
+              />
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
       {/* Show "Configure Pantry" button only for first-time users this is still not configured right we need to add conditional call to firebase */}
 
-      {showButton && (
+      {showButton && !showSettings && (
         <TouchableOpacity
           style={styles.circleButton}
           onPress={handleConfigurePantry}
@@ -320,7 +397,9 @@ Instructions:
                     style={styles.modalImage}
                   />
                 )}
-                <Text style={styles.modalText}>{selectedRecipe.description}</Text>
+                <Text style={styles.modalText}>
+                  {selectedRecipe.description}
+                </Text>
               </ScrollView>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -372,6 +451,9 @@ Instructions:
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
+          <Text style={styles.menuText}>Settings</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
@@ -434,14 +516,14 @@ const styles = StyleSheet.create({
   },
   squareButton: {
     width: width * 0.4,
-    height: width * 0.125, // Make the button more like a square vertically
-    backgroundColor: "rgba(0, 170, 255, 0.7)", // Adjust the opacity
+    height: width * 0.125,
+    backgroundColor: "rgba(0, 170, 255, 0.7)",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 25,
     marginHorizontal: 10,
-    borderWidth: 1, // Add border width
-    borderColor: "#fff", // Border color
+    borderWidth: 1,
+    borderColor: "#fff",
   },
   squareButtonText: {
     color: "#fff",
@@ -584,11 +666,56 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 18,
-    color: 'red',
+    color: "red",
     marginVertical: 10,
   },
   rightPadding: {
-    paddingLeft: 20, // Adjust the value as needed
+    paddingLeft: 20,
+  },
+  // Settings styles
+  card: {
+    backgroundColor: "white",
+    borderRadius: 15,
+    width: "90%",
+    padding: 25,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 5,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 20,
+  },
+  subHeader: {
+    fontSize: 18,
+    color: "#555",
+    marginBottom: 15,
+  },
+  input: {
+    width: "100%",
+    height: 50,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingLeft: 15,
+    fontSize: 16,
+    marginBottom: 20,
+  },
+  saveButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "100%",
+  },
+  saveButtonText: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
 
