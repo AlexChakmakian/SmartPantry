@@ -47,6 +47,8 @@ export const loginWithEmailAndPassword = (email: string, password: string) => {
 export const registerWithEmailAndPassword = async (
   email: string,
   password: string,
+  firstName: string,
+  lastName: string,
   pantryItems: any[] // Add pantryItems as a parameter
 ) => {
   try {
@@ -63,10 +65,15 @@ export const registerWithEmailAndPassword = async (
 
     // Initialize the user's pantry (you can set it to an empty array or predefined items)
     await setDoc(userRef, {
+      email: user.email,
+      firstName,
+      lastName,
+      photoURL: null, // Set photoURL to null initially
       pantry: pantryItems || [], // Set pantry items, or an empty array if no items provided
     });
 
     console.log("User created and pantry data saved");
+    console.log("User data:", user.providerData);
   } catch (error) {
     console.error("Error creating user:", error);
     throw error;

@@ -67,7 +67,7 @@ export default function SettingsScreen() {
       }
     } else {
       const paths = {
-        Recipes: "/Home",
+        Recipes: "/home",
         Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes",
         Freezer: "/screens/Freezer",

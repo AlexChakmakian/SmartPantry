@@ -7,12 +7,14 @@ import { registerWithEmailAndPassword } from "../firebase/authService"; // Fireb
 export default function CreateAccount() {
   const [email, setEmail] = useState(""); // Email input
   const [password, setPassword] = useState(""); // Password input
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState(""); // Confirm password
   const router = useRouter(); // Use router for navigation
 
   const handleCreateAccount = async () => {
     try {
-      if (!email || !password || !confirmPassword) {
+      if (!email || !password || !firstName || !lastName || !confirmPassword) {
         Alert.alert("All fields are required");
         return;
       }
@@ -25,7 +27,13 @@ export default function CreateAccount() {
       const initialPantry = [];
 
       // Create a new user with Firebase and pass pantry items
-      await registerWithEmailAndPassword(email, password, []);
+      await registerWithEmailAndPassword(
+        email,
+        password,
+        firstName,
+        lastName,
+        []
+      );
 
       Alert.alert("Account created successfully!");
       router.push("/home"); // Navigate to the home screen after successful registration
@@ -42,6 +50,22 @@ export default function CreateAccount() {
         resizeMode="contain" // This ensures the logo maintains its aspect ratio
       />
       <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          placeholderTextColor="#777"
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          placeholderTextColor="#777"
+          value={lastName}
+          onChangeText={setLastName}
+          autoCapitalize="words"
+        />
         <TextInput
           style={styles.input}
           placeholder="Email"
