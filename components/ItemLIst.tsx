@@ -12,6 +12,7 @@ import {
   Animated,
   Dimensions,
   Image,
+  ScrollView,
 } from "react-native";
 import {
   GestureHandlerRootView,
@@ -22,12 +23,69 @@ import {
   getItems as getItemsFromDatabase,
   deleteItem as deleteItemFromDatabase,
   updateItem as updateItemFromDatabase,
-} from "../firebase/pantryService"; // Import updated pantry service
-import Icon from "react-native-vector-icons/Ionicons"; // Import the Icon
-import { getAuth, signOut } from "firebase/auth"; // For accessing the current user's auth state
-import { useRouter } from "expo-router"; // Import useRouter for navigation
+} from "../firebase/pantryService";
+import Icon from "react-native-vector-icons/Ionicons";
+import { getAuth, signOut } from "firebase/auth";
+import { useRouter } from "expo-router";
 
 const { width } = Dimensions.get("window");
+
+// Custom dropdown component to replace Picker
+const CustomDropdown = ({ selectedValue, onValueChange, options }) => {
+  const [visible, setVisible] = useState(false);
+
+  return (
+    <View style={styles.dropdownContainer}>
+      <TouchableOpacity
+        style={styles.dropdownButton}
+        onPress={() => setVisible(true)}
+      >
+        <Text style={styles.dropdownButtonText}>{selectedValue}</Text>
+        <Icon name="chevron-down" size={18} color="#333" />
+      </TouchableOpacity>
+
+      <Modal
+        visible={visible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.dropdownOverlay}
+          activeOpacity={1}
+          onPress={() => setVisible(false)}
+        >
+          <View style={styles.dropdownModal}>
+            <ScrollView>
+              {options.map((option) => (
+                <TouchableOpacity
+                  key={option}
+                  style={[
+                    styles.dropdownItem,
+                    selectedValue === option && styles.dropdownItemSelected,
+                  ]}
+                  onPress={() => {
+                    onValueChange(option);
+                    setVisible(false);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.dropdownItemText,
+                      selectedValue === option && styles.dropdownItemTextSelected,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
 
 export default function ItemList({ itemType }) {
   const [items, setItems] = useState([]);
@@ -35,6 +93,7 @@ export default function ItemList({ itemType }) {
   const [editingItem, setEditingItem] = useState(null);
   const [newItemName, setNewItemName] = useState("");
   const [newItemQuantity, setNewItemQuantity] = useState("");
+  const [newItemUnit, setNewItemUnit] = useState("lbs");
   const [loading, setLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
@@ -42,12 +101,18 @@ export default function ItemList({ itemType }) {
   const router = useRouter();
   const auth = getAuth();
 
+  // Available unit options
+  const unitOptions = [
+    "lbs", "oz", "g", "kg", "cups", 
+    "tbsp", "tsp", "ml", "L", "pcs"
+  ];
+
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const user = getAuth().currentUser;
         if (user) {
-          const items = await getItemsFromDatabase(itemType, user.uid); // Pass user ID to fetch items
+          const items = await getItemsFromDatabase(itemType, user.uid);
           setItems(items);
         } else {
           Alert.alert("Error", "User not authenticated");
@@ -57,33 +122,33 @@ export default function ItemList({ itemType }) {
       }
     };
     fetchItems();
-  }, [itemType]); // Re-run when itemType changes
+  }, [itemType]);
 
   const addItem = async () => {
     if (newItemName.trim() && newItemQuantity.trim()) {
       const newItem = {
         name: newItemName,
-        quantity: newItemQuantity,
-        dateAdded: new Date().toISOString(), // Ensure this is a valid ISO string
+        quantity: `${newItemQuantity} ${newItemUnit}`,
+        dateAdded: new Date().toISOString(),
       };
 
-      const user = getAuth().currentUser; // Get the current user
+      const user = getAuth().currentUser;
 
       if (user) {
         try {
-          // Add the item to Firestore under the user's pantry
-          await addItemToDatabase(itemType, user.uid, newItem); // Passing the correct object
+          await addItemToDatabase(itemType, user.uid, newItem);
           setItems([
             ...items,
             {
               id: (items.length + 1).toString(),
               name: newItemName,
-              quantity: newItemQuantity,
+              quantity: newItem.quantity,
               dateAdded: newItem.dateAdded,
             },
           ]);
           setNewItemName("");
           setNewItemQuantity("");
+          setNewItemUnit("lbs");
           setModalVisible(false);
         } catch (e) {
           console.error(`Error adding item to ${itemType}:`, e);
@@ -95,7 +160,16 @@ export default function ItemList({ itemType }) {
   const editItem = (item) => {
     setEditingItem(item);
     setNewItemName(item.name);
-    setNewItemQuantity(item.quantity);
+    
+    const parts = item.quantity.split(' ');
+    if (parts.length >= 2) {
+      setNewItemQuantity(parts[0]);
+      setNewItemUnit(parts[1]);
+    } else {
+      setNewItemQuantity(item.quantity);
+      setNewItemUnit("lbs");
+    }
+    
     setModalVisible(true);
   };
 
@@ -103,7 +177,8 @@ export default function ItemList({ itemType }) {
     if (newItemName.trim() && newItemQuantity.trim() && editingItem) {
       const updatedItem = {
         name: newItemName,
-        quantity: newItemQuantity,
+        quantity: `${newItemQuantity} ${newItemUnit}`,
+        dateAdded: editingItem.dateAdded
       };
       const user = getAuth().currentUser;
       if (user) {
@@ -113,7 +188,7 @@ export default function ItemList({ itemType }) {
             user.uid,
             editingItem.id,
             updatedItem
-          ); // Pass user ID to update item
+          );
           setItems(
             items.map((item) =>
               item.id === editingItem.id ? { ...item, ...updatedItem } : item
@@ -122,6 +197,7 @@ export default function ItemList({ itemType }) {
           setModalVisible(false);
           setNewItemName("");
           setNewItemQuantity("");
+          setNewItemUnit("lbs");
         } catch (e) {
           console.error(`Error updating item in ${itemType}:`, e);
         }
@@ -130,12 +206,12 @@ export default function ItemList({ itemType }) {
   };
 
   const deleteItem = async (id) => {
-    const user = getAuth().currentUser; // Get the current authenticated user
+    const user = getAuth().currentUser;
     if (user) {
       try {
         setLoading(true);
-        await deleteItemFromDatabase(itemType, user.uid, id); // Pass user ID and item ID to delete
-        setItems((prevItems) => prevItems.filter((item) => item.id !== id)); // Remove item from local state
+        await deleteItemFromDatabase(itemType, user.uid, id);
+        setItems((prevItems) => prevItems.filter((item) => item.id !== id));
         setLoading(false);
       } catch (e) {
         console.error(`Error deleting item from ${itemType}:`, e);
@@ -192,13 +268,13 @@ export default function ItemList({ itemType }) {
       try {
         await signOut(auth);
         console.log("User signed out");
-        router.push("/"); // Redirect to the login screen
+        router.push("/");
       } catch (error) {
         console.error("Error signing out:", error);
       }
     } else {
       const paths = {
-        Recipes: "/home",
+        Home: "/home",
         Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes",
         Freezer: "/screens/Freezer",
@@ -230,7 +306,10 @@ export default function ItemList({ itemType }) {
           <TouchableOpacity
             style={styles.addButton}
             onPress={() => {
-              setEditingItem(null); // Reset the editingItem to null for adding a new item
+              setEditingItem(null);
+              setNewItemName("");
+              setNewItemQuantity("");
+              setNewItemUnit("lbs");
               setModalVisible(true);
             }}
           >
@@ -296,17 +375,27 @@ export default function ItemList({ itemType }) {
               <TextInput
                 style={[styles.input, styles.blackText]}
                 placeholder="Enter item name"
-                placeholderTextColor="#000000"
+                placeholderTextColor="#999999"
                 value={newItemName}
                 onChangeText={setNewItemName}
               />
-              <TextInput
-                style={[styles.input, styles.blackText]}
-                placeholder="Enter quantity"
-                placeholderTextColor="#000000"
-                value={newItemQuantity}
-                onChangeText={setNewItemQuantity}
-              />
+              <View style={styles.quantityUnitContainer}>
+                <TextInput
+                  style={[styles.quantityInput, styles.blackText]}
+                  placeholder="Quantity"
+                  placeholderTextColor="#999999"
+                  value={newItemQuantity}
+                  onChangeText={setNewItemQuantity}
+                  keyboardType="numeric"
+                />
+                
+                {/* Replace Picker with our CustomDropdown */}
+                <CustomDropdown
+                  selectedValue={newItemUnit}
+                  onValueChange={(value) => setNewItemUnit(value)}
+                  options={unitOptions}
+                />
+              </View>
 
               <TouchableOpacity
                 style={styles.modalAddButton}
@@ -332,35 +421,44 @@ export default function ItemList({ itemType }) {
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-          <TouchableOpacity
-            style={styles.firstMenuItem}
-            onPress={() => handleMenuSelect("Recipes")}
-          >
-            <Text style={styles.menuText}>Recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-            <Text style={styles.menuText}>AI Recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-            <Text style={styles.menuText}>Pantry</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-            <Text style={styles.menuText}>Fridge</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-            <Text style={styles.menuText}>Freezer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-            <Text style={styles.menuText}>Spices</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-            <Text style={styles.menuText}>Appliances</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-            <Text style={styles.menuText}>Log out</Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </View>
+        <TouchableOpacity
+          style={styles.firstMenuItem}
+          onPress={() => handleMenuSelect("Home")}
+        >
+          <Text style={styles.menuText}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
+          <Text style={styles.menuText}>AI Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+          <Text style={styles.menuText}>Pantry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
+          <Text style={[styles.menuText]}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
+          <Text style={[styles.menuText]}>Bookmarked</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
+          <Text style={styles.menuText}>Receipt Scanner</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
     </GestureHandlerRootView>
   );
 }
@@ -408,6 +506,9 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
   },
+  logoutText: {
+    color: 'red',
+  },
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -417,7 +518,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#004080", // Deep blue header text
+    color: "#004080",
   },
   addButton: {
     backgroundColor: "#007BFF",
@@ -438,12 +539,12 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
     borderLeftWidth: 5,
-    borderLeftColor: "#007BFF", // Accent line for style
+    borderLeftColor: "#007BFF",
   },
   itemRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 4, // Adds some spacing between each row for better readability
+    marginBottom: 4,
   },
   itemLabel: {
     fontSize: 16,
@@ -480,6 +581,8 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 20,
     marginBottom: 15,
+    color: "#333",
+    fontWeight: "bold",
   },
   input: {
     width: "100%",
@@ -490,22 +593,95 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   blackText: {
-    color: "#000000", // Make the font black
+    color: "#000000",
+  },
+  quantityUnitContainer: {
+    flexDirection: "row",
+    width: "100%",
+    marginBottom: 15,
+    justifyContent: "space-between",
+  },
+  quantityInput: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginRight: 10,
+  },
+  // Custom dropdown styles
+  dropdownContainer: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    backgroundColor: "#f9f9f9",
+  },
+  dropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    height: 40,
+  },
+  dropdownButtonText: {
+    fontSize: 16,
+    color: "#000",
+  },
+  dropdownOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  dropdownModal: {
+    width: "70%",
+    maxHeight: "50%",
+    backgroundColor: "white",
+    borderRadius: 10,
+    padding: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  dropdownItemSelected: {
+    backgroundColor: "#e6f7ff",
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  dropdownItemTextSelected: {
+    color: "#007BFF",
+    fontWeight: "bold",
   },
   modalAddButton: {
     backgroundColor: "#007BFF",
     padding: 10,
     borderRadius: 5,
     marginBottom: 10,
+    width: "100%",
+    alignItems: "center",
   },
   modalAddButtonText: {
     color: "#ffffff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   modalCancelButton: {
     padding: 10,
   },
   modalCancelButtonText: {
     color: "#007BFF",
+    fontSize: 16,
   },
   deleteButton: {
     backgroundColor: "#FF3B30",
@@ -519,6 +695,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  logoutText: {
+    fontSize: 18,
+    color: 'red',
+    marginVertical: 10,
+  },
+  rightPadding: {
+    paddingLeft: 20, // Adjust the value as needed
   },
   editButton: {
     position: "absolute",
