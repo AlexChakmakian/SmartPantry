@@ -341,10 +341,10 @@ Instructions:
       >
         <TouchableOpacity
           style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Recipes")}
+          onPress={() => handleMenuSelect("Home")}
           disabled
         >
-          <Text style={styles.menuText}>Recipes</Text>
+          <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
