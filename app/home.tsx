@@ -128,6 +128,9 @@ const HomeScreen = () => {
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
         Spices: "/screens/Spices",
       };
       router.push({
@@ -288,7 +291,8 @@ Instructions:
         </ScrollView>
       </View>
 
-      {/* Show "Configure Pantry" button only for first-time users */}
+      {/* Show "Configure Pantry" button only for first-time users this is still not configured right we need to add conditional call to firebase */}
+
       {showButton && (
         <TouchableOpacity
           style={styles.circleButton}
@@ -337,10 +341,10 @@ Instructions:
       >
         <TouchableOpacity
           style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Recipes")}
+          onPress={() => handleMenuSelect("Home")}
           disabled
         >
-          <Text style={styles.menuText}>Recipes</Text>
+          <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
@@ -349,19 +353,28 @@ Instructions:
           <Text style={styles.menuText}>Pantry</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={styles.menuText}>Fridge</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={styles.menuText}>Freezer</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={styles.menuText}>Spices</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={styles.menuText}>Appliances</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
+          <Text style={[styles.menuText]}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
+          <Text style={[styles.menuText]}>Bookmarked</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
+          <Text style={styles.menuText}>Receipt Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={styles.menuText}>Log out</Text>
+          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
     </View>
@@ -568,6 +581,14 @@ const styles = StyleSheet.create({
   closeButtonText: {
     color: "#FFF",
     fontSize: 16,
+  },
+  logoutText: {
+    fontSize: 18,
+    color: 'red',
+    marginVertical: 10,
+  },
+  rightPadding: {
+    paddingLeft: 20, // Adjust the value as needed
   },
 });
 
