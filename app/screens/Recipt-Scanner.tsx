@@ -53,7 +53,7 @@ export default function ReciptScanner() {
       const paths = {
         Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes",
-        Recipes: "/home",
+        Home: "/home",
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
@@ -167,32 +167,34 @@ export default function ReciptScanner() {
       >
         <TouchableOpacity
           style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Recipes")}
+          onPress={() => handleMenuSelect("Home")}
         >
-          <Text style={styles.menuText}>Recipes</Text>
+          <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-          <Text style={styles.menuText}>Pantry {isPantryDropdownOpen ? '▼' : '▶'}</Text>
+          <Text style={styles.menuText}>Pantry</Text>
         </TouchableOpacity>
-        {isPantryDropdownOpen && (
-          <View style={styles.dropdownContainer}>
-            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-              <Text style={[styles.menuText, styles.dropdownText]}>Fridge</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-              <Text style={[styles.menuText, styles.dropdownText]}>Freezer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-              <Text style={[styles.menuText, styles.dropdownText]}>Spices</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-              <Text style={[styles.menuText, styles.dropdownText]}>Appliances</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
+          <Text style={[styles.menuText]}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
+          <Text style={[styles.menuText]}>Bookmarked</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
         </TouchableOpacity>
