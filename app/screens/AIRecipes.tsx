@@ -17,6 +17,7 @@ export default function AIRecipes() {
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false); // State for bookmark icon
+  const [isModalBookmarked, setIsModalBookmarked] = useState(false); // State for modal bookmark icon
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
@@ -146,6 +147,10 @@ export default function AIRecipes() {
     setIsBookmarked(!isBookmarked);
   };
 
+  const toggleModalBookmark = () => {
+    setIsModalBookmarked(!isModalBookmarked);
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -195,6 +200,9 @@ export default function AIRecipes() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
+              <TouchableOpacity style={styles.modalBookmarkIcon} onPress={toggleModalBookmark}>
+                <Ionicons name="bookmark" size={30} color={isModalBookmarked ? "gold" : "#000"} />
+              </TouchableOpacity>
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                 {selectedRecipe.image && (
@@ -425,5 +433,11 @@ const styles = StyleSheet.create({
   },
   rightPadding: {
     paddingLeft: 20, // Adjust the value as needed
+  },
+  modalBookmarkIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 1,
   },
 });
