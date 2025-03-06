@@ -16,7 +16,6 @@ export default function AIRecipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [isBookmarked, setIsBookmarked] = useState(false); // State for bookmark icon
   const [isModalBookmarked, setIsModalBookmarked] = useState(false); // State for modal bookmark icon
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
@@ -143,10 +142,6 @@ export default function AIRecipes() {
     }
   };
 
-  const toggleBookmark = () => {
-    setIsBookmarked(!isBookmarked);
-  };
-
   const toggleModalBookmark = () => {
     setIsModalBookmarked(!isModalBookmarked);
   };
@@ -160,9 +155,6 @@ export default function AIRecipes() {
       </TouchableOpacity>
 
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <TouchableOpacity style={styles.bookmarkIcon} onPress={toggleBookmark}>
-        <Ionicons name="bookmark" size={30} color={isBookmarked ? "gold" : "#fff"} />
-      </TouchableOpacity>
       <Text style={styles.title}>Your Recipes {emoji}</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
@@ -201,7 +193,7 @@ export default function AIRecipes() {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <TouchableOpacity style={styles.modalBookmarkIcon} onPress={toggleModalBookmark}>
-                <Ionicons name="bookmark" size={30} color={isModalBookmarked ? "gold" : "#000"} />
+                <Ionicons name={isModalBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isModalBookmarked ? "gold" : "#000"} />
               </TouchableOpacity>
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
@@ -286,12 +278,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -40,
   },
-  bookmarkIcon: {
-    position: "absolute",
-    top: 40,
-    right: 20,
-    zIndex: 1,
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -372,6 +358,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 5, // Reduced margin
+    paddingRight: 40, // Add right padding to make room for the bookmark icon
   },
   modalImage: {
     width: '100%',
