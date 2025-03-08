@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Touchable
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { getItems } from "../../firebase/pantryService";
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the chevron icon
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get('window');
@@ -14,7 +15,9 @@ export default function History() {
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const auth = getAuth();
 
@@ -76,6 +79,20 @@ export default function History() {
     }).start();
   };
 
+  const toggleMyFood = () => {
+    setIsMyFoodOpen(!isMyFoodOpen);
+    Animated.timing(rotateAnim, {
+      toValue: isMyFoodOpen ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '90deg']
+  });
+
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
     Animated.timing(slideAnim, {
@@ -94,11 +111,16 @@ export default function History() {
     } else {
       const paths = {
         Home: "/home",
-        Appliances: "/screens/Appliances",
-        Freezer: "/screens/Freezer",
-        Fridge: "/screens/Fridge",
+        AIRecipes: "/screens/AIRecipes",
         Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReciptScanner: "/screens/Recipt-Scanner",
+        Settings: "/screens/Settings",
       };
       router.push({
         pathname: paths[page] || "/",
@@ -173,36 +195,58 @@ export default function History() {
         <TouchableOpacity
           style={styles.firstMenuItem}
           onPress={() => handleMenuSelect("Home")}
-          disabled
         >
           <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
+        
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-          <Text style={styles.menuText}>Pantry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
-        </TouchableOpacity>
+        
+        {/* My Food dropdown section */}
+        <View style={styles.menuItemWithSubmenu}>
+          <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
+            <Text style={styles.menuText}>My Food</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
+            <Animated.View style={{ transform: [{ rotate }] }}>
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Submenu items */}
+        {isMyFoodOpen && (
+          <>
+            <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Pantry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Fridge</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Freezer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Spices</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Appliances</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        
         <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={[styles.menuText]}>History</Text>
+          <Text style={styles.menuText}>History</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={[styles.menuText]}>Bookmarked</Text>
+          <Text style={styles.menuText}>Bookmarked</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
+          <Text style={styles.menuText}>Settings</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
@@ -331,6 +375,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     marginVertical: 10,
+  },
+  // Menu dropdown styles
+  menuItemWithSubmenu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginRight: 10,
+  },
+  menuItemMain: {
+    flex: 1,
+  },
+  triangleButton: {
+    padding: 5,
+  },
+  submenuItem: {
+    paddingLeft: 20,
+    fontSize: 16,
   },
   logoutText: {
     fontSize: 18,
