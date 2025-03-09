@@ -67,12 +67,13 @@ export default function SettingsScreen() {
       }
     } else {
       const paths = {
-        Recipes: "/home",
         Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes",
+        Home: "/home",
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
         Spices: "/screens/Spices",
       };
       router.push({
@@ -121,9 +122,9 @@ export default function SettingsScreen() {
       >
         <TouchableOpacity
           style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Recipes")}
+          onPress={() => handleMenuSelect("Home")}
         >
-          <Text style={styles.menuText}>Recipes</Text>
+          <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
@@ -132,19 +133,28 @@ export default function SettingsScreen() {
           <Text style={styles.menuText}>Pantry</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={styles.menuText}>Fridge</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={styles.menuText}>Freezer</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={styles.menuText}>Spices</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={styles.menuText}>Appliances</Text>
+          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
+          <Text style={[styles.menuText]}>History</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
+          <Text style={[styles.menuText]}>Bookmarked</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
+          <Text style={styles.menuText}>Receipt Scanner</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={styles.menuText}>Log out</Text>
+          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
         </TouchableOpacity>
       </Animated.View>
 
@@ -246,6 +256,14 @@ const styles = StyleSheet.create({
     color: "#555",
     marginBottom: 15,
     textAlign: "center", // Center text
+  },
+  rightPadding: {
+    paddingLeft: 20, // Adjust the value as needed
+  },
+  logoutText: {
+    fontSize: 18,
+    color: 'red',
+    marginVertical: 10,
   },
   input: {
     width: "100%",

@@ -5,8 +5,32 @@ import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functi
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
 import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the bookmark icon
 
+class FixedSizeArray<T> { //this must be before since type script is read from top to bottom
+  private items: T[];
+  private maxSize: number;
+
+  constructor(maxSize: number) {
+    this.items = [];
+    this.maxSize = maxSize;
+  }
+
+  add(item: T) {
+    if (this.items.length >= this.maxSize) {
+      this.items.shift(); // delete the oldest element
+    }
+    this.items.push(item);
+  }
+
+  getItems(): T[] {
+    return this.items;
+  }
+}
+
 const API_KEY = "968acb5051ae4bb6ae3358446d08f8fb";
 const { width, height } = Dimensions.get('window');
+const History = new FixedSizeArray<string>(10); //instate custom class array, stores last 10 recipes, replace 10 with whatever.
+//Roland Attempt to load the array from the firebase here.
+//Also please make sure we are saving the state into the firebase of course.
 
 export default function AIRecipes() {
   const router = useRouter();
@@ -63,6 +87,7 @@ export default function AIRecipes() {
       // Fetch detailed information and nutrition data for each recipe
       const detailedRecipes = await Promise.all(data.map(async (recipe, index) => {
         const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
+        History.add(recipe.id);// this should add the id of the recipe to the history array
         const detailedRecipe = await recipeResponse.json();
         console.log("Detailed recipe:", detailedRecipe); // Debugging line
         await delay(1000); // Add a delay to avoid hitting the rate limit
@@ -263,6 +288,7 @@ export default function AIRecipes() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

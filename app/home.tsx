@@ -421,7 +421,6 @@ Instructions:
         <TouchableOpacity
           style={styles.firstMenuItem}
           onPress={() => handleMenuSelect("Home")}
-          disabled
         >
           <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
