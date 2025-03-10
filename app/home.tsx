@@ -52,6 +52,7 @@ const HomeScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [expiryThreshold, setExpiryThreshold] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false); // State for bookmark icon
   const [showSettings, setShowSettings] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
@@ -380,37 +381,40 @@ Instructions:
         </TouchableOpacity>
       )}
 
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
+{selectedRecipe && (
+  <Modal
+    animationType="slide"
+    transparent={true}
+    visible={modalVisible}
+    onRequestClose={() => setModalVisible(false)}
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <TouchableOpacity style={styles.bookmarkIcon} onPress={() => setIsBookmarked(!isBookmarked)}>
+        <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isBookmarked ? "gold" : "#000"} />
+        </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+          <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+          {selectedRecipe.imagePath && (
+            <Image
+              source={selectedRecipe.imagePath}
+              style={styles.modalImage}
+            />
+          )}
+          <Text style={styles.modalText}>
+            {selectedRecipe.description}
+          </Text>
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                {selectedRecipe.imagePath && (
-                  <Image
-                    source={selectedRecipe.imagePath}
-                    style={styles.modalImage}
-                  />
-                )}
-                <Text style={styles.modalText}>
-                  {selectedRecipe.description}
-                </Text>
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+)}
 
       <Animated.View
         style={[
@@ -441,6 +445,12 @@ const styles = StyleSheet.create({
     top: 40,
     left: 20,
     zIndex: 10,
+  },
+  bookmarkIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 1,
   },
   notificationIcon: {
     position: "absolute",
