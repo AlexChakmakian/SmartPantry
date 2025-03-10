@@ -1,16 +1,27 @@
 import React, { useState, useRef } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image, TextInput, ScrollView, Animated, Alert } from "react-native";
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
-import axios from 'axios';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  Image,
+  TextInput,
+  ScrollView,
+  Animated,
+  Alert,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import axios from "axios";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const GOOGLE_API_KEY = "ask cody"; // Replace with your actual API key
 
-export default function ReciptScanner() {
+export default function ReceiptScanner() {
   const [image, setImage] = useState<string | null>(null);
   const [ocrText, setOcrText] = useState<string | null>(null);
   const [isMenuOpen, setMenuOpen] = useState(false);
@@ -57,7 +68,7 @@ export default function ReciptScanner() {
         Freezer: "/screens/Freezer",
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
-        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner 
+        ReciptScanner: "/screens/Recipt-Scanner", //reciept scanner
         Spices: "/screens/Spices",
       };
       router.push({
@@ -68,7 +79,8 @@ export default function ReciptScanner() {
 
   // Function to handle image selection and OCR processing
   const pickImageAndProcess = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (permissionResult.granted === false) {
       alert("You've refused to allow this app to access your media library!");
@@ -76,21 +88,25 @@ export default function ReciptScanner() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: false, // Set editing to false to avoid deprecation warnings
       quality: 1,
     });
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {  // Use 'cancelled' instead of 'canceled'
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      // Use 'cancelled' instead of 'canceled'
       const imageUri = result.assets[0].uri;
       setImage(imageUri);
 
       // Move the image to a local file path
-      const fileName = imageUri.split('/').pop();
+      const fileName = imageUri.split("/").pop();
       const newPath = `${FileSystem.documentDirectory}assets/images/${fileName}`;
 
       try {
-        await FileSystem.makeDirectoryAsync(`${FileSystem.documentDirectory}assets/images`, { intermediates: true });
+        await FileSystem.makeDirectoryAsync(
+          `${FileSystem.documentDirectory}assets/images`,
+          { intermediates: true }
+        );
         await FileSystem.moveAsync({
           from: imageUri,
           to: newPath,
@@ -128,7 +144,8 @@ export default function ReciptScanner() {
         }
       );
 
-      const ocrText = response.data.responses[0].fullTextAnnotation?.text || "No text found";
+      const ocrText =
+        response.data.responses[0].fullTextAnnotation?.text || "No text found";
       setOcrText(ocrText);
     } catch (error) {
       console.error("Error performing OCR:", error);
@@ -209,23 +226,23 @@ export default function ReciptScanner() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#ADD8E6',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#ADD8E6",
     padding: 20,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   button: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: '#000',
+    backgroundColor: "#000",
     borderRadius: 5,
   },
   buttonText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
   },
   image: {
@@ -238,11 +255,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
     width: width * 0.8,
     height: 200,
-    borderColor: '#000',
+    borderColor: "#000",
     borderWidth: 1,
     borderRadius: 10,
     padding: 10,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   hamburger: {
     position: "absolute",
@@ -277,7 +294,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 18,
-    color: 'red',
+    color: "red",
     marginVertical: 10,
   },
   rightPadding: {
@@ -285,7 +302,7 @@ const styles = StyleSheet.create({
   },
   dropdownContainer: {
     paddingLeft: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: "rgba(0, 0, 0, 0.2)",
     borderRadius: 5,
     marginVertical: 5,
   },

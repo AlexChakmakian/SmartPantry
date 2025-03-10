@@ -17,8 +17,8 @@ import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
 import NotificationBell from "../components/NotificationBell"; // Component for notifications
+import SideMenu from "@/components/SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -418,46 +418,7 @@ Instructions:
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <TouchableOpacity
-          style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Home")}
-          disabled
-        >
-          <Text style={styles.menuText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-          <Text style={styles.menuText}>Pantry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={[styles.menuText]}>History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={[styles.menuText]}>Bookmarked</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
-          <Text style={styles.menuText}>Receipt Scanner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
-          <Text style={styles.menuText}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-        </TouchableOpacity>
+        <SideMenu onSelectMenuItem={handleMenuSelect} />
       </Animated.View>
     </View>
   );
@@ -479,7 +440,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 10,
   },
   notificationIcon: {
     position: "absolute",
@@ -609,10 +570,14 @@ const styles = StyleSheet.create({
     width: width * 0.4,
     backgroundColor: "#4C5D6B",
     padding: 20,
-    paddingTop: 40,
+    paddingTop: 40, // Changed from 40 to 0
     zIndex: 0,
   },
+  menuItem: {
+    marginTop: 10, // Use this instead of firstMenuItem style
+  },
   firstMenuItem: {
+    // This can be removed if you're using menuItem instead
     paddingTop: 40,
   },
   menuText: {

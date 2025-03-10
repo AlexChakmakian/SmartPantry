@@ -27,6 +27,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
+import SideMenu from "./SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -72,7 +73,8 @@ const CustomDropdown = ({ selectedValue, onValueChange, options }) => {
                   <Text
                     style={[
                       styles.dropdownItemText,
-                      selectedValue === option && styles.dropdownItemTextSelected,
+                      selectedValue === option &&
+                        styles.dropdownItemTextSelected,
                     ]}
                   >
                     {option}
@@ -103,8 +105,16 @@ export default function ItemList({ itemType }) {
 
   // Available unit options
   const unitOptions = [
-    "lbs", "oz", "g", "kg", "cups", 
-    "tbsp", "tsp", "ml", "L", "pcs"
+    "lbs",
+    "oz",
+    "g",
+    "kg",
+    "cups",
+    "tbsp",
+    "tsp",
+    "ml",
+    "L",
+    "pcs",
   ];
 
   useEffect(() => {
@@ -160,8 +170,8 @@ export default function ItemList({ itemType }) {
   const editItem = (item) => {
     setEditingItem(item);
     setNewItemName(item.name);
-    
-    const parts = item.quantity.split(' ');
+
+    const parts = item.quantity.split(" ");
     if (parts.length >= 2) {
       setNewItemQuantity(parts[0]);
       setNewItemUnit(parts[1]);
@@ -169,7 +179,7 @@ export default function ItemList({ itemType }) {
       setNewItemQuantity(item.quantity);
       setNewItemUnit("lbs");
     }
-    
+
     setModalVisible(true);
   };
 
@@ -178,7 +188,7 @@ export default function ItemList({ itemType }) {
       const updatedItem = {
         name: newItemName,
         quantity: `${newItemQuantity} ${newItemUnit}`,
-        dateAdded: editingItem.dateAdded
+        dateAdded: editingItem.dateAdded,
       };
       const user = getAuth().currentUser;
       if (user) {
@@ -281,6 +291,9 @@ export default function ItemList({ itemType }) {
         Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
         Spices: "/screens/Spices",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReceiptScanner: "/screens/ReceiptScanner",
       };
       router.push({
         pathname: paths[page] || "/",
@@ -388,7 +401,7 @@ export default function ItemList({ itemType }) {
                   onChangeText={setNewItemQuantity}
                   keyboardType="numeric"
                 />
-                
+
                 {/* Replace Picker with our CustomDropdown */}
                 <CustomDropdown
                   selectedValue={newItemUnit}
@@ -421,44 +434,47 @@ export default function ItemList({ itemType }) {
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-        <TouchableOpacity
-          style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Home")}
-        >
-          <Text style={styles.menuText}>Home</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-          <Text style={styles.menuText}>Pantry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={[styles.menuText]}>History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={[styles.menuText]}>Bookmarked</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
-          <Text style={styles.menuText}>Receipt Scanner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </View>
+          {/* <TouchableOpacity
+            style={styles.firstMenuItem}
+            onPress={() => handleMenuSelect("Home")}
+          >
+            <Text style={styles.menuText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
+            <Text style={styles.menuText}>AI Recipes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+            <Text style={styles.menuText}>Pantry</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+            <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+            <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+            <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+            <Text style={[styles.menuText, styles.rightPadding]}>
+              Appliances
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("History")}>
+            <Text style={[styles.menuText]}>History</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
+            <Text style={[styles.menuText]}>Bookmarked</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("ReceiptScanner")}>
+            <Text style={styles.menuText}>Receipt Scanner</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+            <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
+          </TouchableOpacity> */}
+          <SideMenu onSelectMenuItem={handleMenuSelect} />
+        </Animated.View>
+      </View>
     </GestureHandlerRootView>
   );
 }
@@ -507,7 +523,7 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   logoutText: {
-    color: 'red',
+    color: "red",
   },
   headerContainer: {
     flexDirection: "row",
@@ -698,7 +714,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 18,
-    color: 'red',
+    color: "red",
     marginVertical: 10,
   },
   rightPadding: {

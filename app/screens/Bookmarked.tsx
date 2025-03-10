@@ -1,13 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions, Animated } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Modal,
+  Dimensions,
+  Animated,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { getItems } from "../../firebase/pantryService";
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
-export default function History() {
+export default function Bookmarked() {
   const router = useRouter();
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,10 +36,12 @@ export default function History() {
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      const ingredients = await getItems('pantry');
-      const ingredientNames = ingredients.map(item => item.name).join(',');
+      const ingredients = await getItems("pantry");
+      const ingredientNames = ingredients.map((item) => item.name).join(",");
 
-      const response = await fetch(`https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=20`);
+      const response = await fetch(
+        `https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=20`
+      );
       const data = await response.json();
 
       if (response.status === 401) {
@@ -37,17 +50,21 @@ export default function History() {
         return;
       }
 
-      if (data.status === 'failure') {
+      if (data.status === "failure") {
         console.error("Error fetching recipes:", data.message);
         setRecipes([]);
         return;
       }
 
-      const detailedRecipes = await Promise.all(data.map(async (recipe) => {
-        const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
-        const detailedRecipe = await recipeResponse.json();
-        return detailedRecipe;
-      }));
+      const detailedRecipes = await Promise.all(
+        data.map(async (recipe) => {
+          const recipeResponse = await fetch(
+            `https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`
+          );
+          const detailedRecipe = await recipeResponse.json();
+          return detailedRecipe;
+        })
+      );
 
       setRecipes(detailedRecipes);
     } catch (error) {
@@ -85,6 +102,7 @@ export default function History() {
     }).start();
 
     if (page === "Log out") {
+      console.log("User signed out in bookmarked");
       try {
         await signOut(auth);
         router.push("/");
@@ -121,10 +139,17 @@ export default function History() {
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
           {recipes.length > 0 ? (
             recipes.map((recipe, index) => (
-              <TouchableOpacity key={index} style={styles.recipeContainer} onPress={() => handleRecipePress(recipe)}>
+              <TouchableOpacity
+                key={index}
+                style={styles.recipeContainer}
+                onPress={() => handleRecipePress(recipe)}
+              >
                 <Text style={styles.recipeTitle}>{recipe.title}</Text>
                 {recipe.image && (
-                  <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
+                  <Image
+                    source={{ uri: recipe.image }}
+                    style={styles.recipeImage}
+                  />
                 )}
               </TouchableOpacity>
             ))
@@ -147,16 +172,29 @@ export default function History() {
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                 {selectedRecipe.image && (
-                  <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
+                  <Image
+                    source={{ uri: selectedRecipe.image }}
+                    style={styles.modalImage}
+                  />
                 )}
                 <Text style={styles.modalText}>Ingredients:</Text>
-                {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
-                  <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
-                ))}
+                {selectedRecipe.extendedIngredients &&
+                  selectedRecipe.extendedIngredients.map(
+                    (ingredient, index) => (
+                      <Text key={index} style={styles.modalText}>
+                        {ingredient.original}
+                      </Text>
+                    )
+                  )}
                 <Text style={styles.modalText}>Instructions:</Text>
-                <Text style={styles.modalText}>{formatInstructions(selectedRecipe.instructions)}</Text>
+                <Text style={styles.modalText}>
+                  {formatInstructions(selectedRecipe.instructions)}
+                </Text>
               </ScrollView>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
@@ -176,7 +214,10 @@ export default function History() {
         >
           <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")} disabled>
+        <TouchableOpacity
+          onPress={() => handleMenuSelect("AIRecipes")}
+          disabled
+        >
           <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
@@ -205,29 +246,29 @@ export default function History() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
+    justifyContent: "flex-start",
+    alignItems: "center",
     paddingTop: 50,
-    backgroundColor: '#ADD8E6',
+    backgroundColor: "#ADD8E6",
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   scrollViewContent: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 20,
     paddingBottom: 50,
   },
   recipeContainer: {
     marginTop: 20,
-    alignItems: 'center',
-    width: '90%',
-    backgroundColor: '#fff',
+    alignItems: "center",
+    width: "90%",
+    backgroundColor: "#fff",
     padding: 10,
     borderRadius: 10,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
@@ -235,12 +276,12 @@ const styles = StyleSheet.create({
   },
   recipeTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
     marginBottom: 10,
   },
   recipeImage: {
-    width: '100%',
+    width: "100%",
     height: 250,
     borderRadius: 10,
   },
@@ -249,28 +290,28 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: '90%',
+    width: "90%",
     height: height * 0.75,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     padding: 10,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalScrollViewContent: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
   },
   modalImage: {
-    width: '100%',
+    width: "100%",
     height: 150,
     borderRadius: 10,
     marginBottom: 5,
@@ -280,15 +321,15 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   closeButton: {
-    backgroundColor: '#007BFF',
+    backgroundColor: "#007BFF",
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
     marginTop: 10,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   closeButtonText: {
-    color: '#FFF',
+    color: "#FFF",
     fontSize: 16,
   },
   hamburger: {
@@ -324,10 +365,10 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 18,
-    color: 'red',
+    color: "red",
     marginVertical: 10,
   },
-    rightPadding: {
+  rightPadding: {
     paddingLeft: 20, // Adjust the value as needed
   },
 });
