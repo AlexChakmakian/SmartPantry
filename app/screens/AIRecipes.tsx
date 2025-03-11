@@ -16,7 +16,7 @@ export default function AIRecipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [isModalBookmarked, setIsModalBookmarked] = useState(false); // State for modal bookmark icon
+  const [bookmarkedRecipes, setBookmarkedRecipes] = useState({}); // Track bookmarked recipes by ID
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
@@ -60,25 +60,16 @@ export default function AIRecipes() {
         return;
       }
 
-      // Fetch detailed information and nutrition data for each recipe
+      // Fetch detailed information for each recipe
       const detailedRecipes = await Promise.all(data.map(async (recipe, index) => {
         const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
         const detailedRecipe = await recipeResponse.json();
         console.log("Detailed recipe:", detailedRecipe); // Debugging line
         await delay(1000); // Add a delay to avoid hitting the rate limit
-        const nutritionResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json?apiKey=${API_KEY}`);
-        const nutritionData = await nutritionResponse.json();
-        console.log("Nutrition data:", nutritionData); // Debugging line
-        //return detailedRecipe;
-        return {
-          ...detailedRecipe,
-          calories: Math.round(nutritionData.nutrients.find(nutrient => nutrient.name === "Calories")?.amount),
-          servingSize: nutritionData.weightPerServing,
-          estimatedServings: detailedRecipe.servings > 1 ? `${detailedRecipe.servings - 1}-${detailedRecipe.servings}` : "1",
-        };
+        return detailedRecipe;
       }));
 
-      console.log("Detailed recipes with nutrition:", detailedRecipes); // Debugging line
+      console.log("Detailed recipes:", detailedRecipes); // Debugging line
       setRecipes(detailedRecipes);
     } catch (error) {
       console.error("Error fetching recipes:", error);
@@ -109,6 +100,20 @@ export default function AIRecipes() {
       duration: 300,
       useNativeDriver: true,
     }).start();
+  };
+
+  const toggleBookmark = (recipeId, e) => {
+    if (e) {
+      e.stopPropagation(); // Prevent triggering the parent onPress
+    }
+    setBookmarkedRecipes(prev => ({
+      ...prev,
+      [recipeId]: !prev[recipeId]
+    }));
+  };
+
+  const isBookmarked = (recipeId) => {
+    return bookmarkedRecipes[recipeId] || false;
   };
 
   const handleMenuSelect = async (page) => {
@@ -142,10 +147,6 @@ export default function AIRecipes() {
     }
   };
 
-  const toggleModalBookmark = () => {
-    setIsModalBookmarked(!isModalBookmarked);
-  };
-
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
@@ -163,13 +164,19 @@ export default function AIRecipes() {
           {recipes.length > 0 ? (
             recipes.map((recipe, index) => (
               <TouchableOpacity key={index} style={styles.recipeContainer} onPress={() => handleRecipePress(recipe)}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <View style={styles.recipeHeader}>
+                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                  <TouchableOpacity onPress={(e) => toggleBookmark(recipe.id, e)}>
+                    <Ionicons 
+                      name={isBookmarked(recipe.id) ? "bookmark" : "bookmark-outline"} 
+                      size={24} 
+                      color={isBookmarked(recipe.id) ? "gold" : "#333"} 
+                    />
+                  </TouchableOpacity>
+                </View>
                 {recipe.image && (
                   <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
                 )}
-                <Text style={styles.recipeInfo}>Calories: {recipe.calories} cal</Text>
-                <Text style={styles.recipeInfo}>Serving Size: {recipe.servingSize.amount} {recipe.servingSize.unit}</Text>
-                <Text style={styles.recipeInfo}>Estimated Servings: {recipe.estimatedServings}</Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -192,21 +199,27 @@ export default function AIRecipes() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.modalBookmarkIcon} onPress={toggleModalBookmark}>
-                <Ionicons name={isModalBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isModalBookmarked ? "gold" : "#000"} />
+              <TouchableOpacity 
+                style={styles.modalBookmarkIcon} 
+                onPress={() => toggleBookmark(selectedRecipe.id)}
+              >
+                <Ionicons 
+                  name={isBookmarked(selectedRecipe.id) ? "bookmark" : "bookmark-outline"} 
+                  size={30} 
+                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"} 
+                />
               </TouchableOpacity>
+              
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                 {selectedRecipe.image && (
                   <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
                 )}
-                <Text style={styles.modalText}>Calories: {selectedRecipe.calories} cal</Text>
-                <Text style={styles.modalText}>Serving Size: {selectedRecipe.servingSize.amount} {selectedRecipe.servingSize.unit}</Text>
-                <Text style={styles.modalText}>Ingredients:</Text>
+                <Text style={styles.modalText}>Ingredients🥕:</Text>
                 {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
                   <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
                 ))}
-                <Text style={styles.modalText}>Instructions:</Text>
+                <Text style={styles.modalText}>Instructions📝:</Text>
                 <Text style={styles.modalText}>{formatInstructions(selectedRecipe.instructions)}</Text>
               </ScrollView>
               <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
@@ -255,6 +268,9 @@ export default function AIRecipes() {
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
+          <Text style={styles.menuText}>Settings</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
           <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
@@ -305,11 +321,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  recipeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
   recipeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 10,
   },
   recipeImage: {
     width: '100%',
