@@ -16,10 +16,8 @@ export default function AIRecipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [isModalBookmarked, setIsModalBookmarked] = useState(false); // State for modal bookmark icon
-  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
+  const [bookmarkedRecipes, setBookmarkedRecipes] = useState({}); // Track bookmarked recipes by ID
   const slideAnim = useRef(new Animated.Value(-width)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
 
@@ -62,25 +60,16 @@ export default function AIRecipes() {
         return;
       }
 
-      // Fetch detailed information and nutrition data for each recipe
+      // Fetch detailed information for each recipe
       const detailedRecipes = await Promise.all(data.map(async (recipe, index) => {
         const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
         const detailedRecipe = await recipeResponse.json();
         console.log("Detailed recipe:", detailedRecipe); // Debugging line
         await delay(1000); // Add a delay to avoid hitting the rate limit
-        const nutritionResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json?apiKey=${API_KEY}`);
-        const nutritionData = await nutritionResponse.json();
-        console.log("Nutrition data:", nutritionData); // Debugging line
-        //return detailedRecipe;
-        return {
-          ...detailedRecipe,
-          calories: Math.round(nutritionData.nutrients.find(nutrient => nutrient.name === "Calories")?.amount),
-          servingSize: nutritionData.weightPerServing,
-          estimatedServings: detailedRecipe.servings > 1 ? `${detailedRecipe.servings - 1}-${detailedRecipe.servings}` : "1",
-        };
+        return detailedRecipe;
       }));
 
-      console.log("Detailed recipes with nutrition:", detailedRecipes); // Debugging line
+      console.log("Detailed recipes:", detailedRecipes); // Debugging line
       setRecipes(detailedRecipes);
     } catch (error) {
       console.error("Error fetching recipes:", error);
@@ -113,19 +102,19 @@ export default function AIRecipes() {
     }).start();
   };
 
-  const toggleMyFood = () => {
-    setIsMyFoodOpen(!isMyFoodOpen);
-    Animated.timing(rotateAnim, {
-      toValue: isMyFoodOpen ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+  const toggleBookmark = (recipeId, e) => {
+    if (e) {
+      e.stopPropagation(); // Prevent triggering the parent onPress
+    }
+    setBookmarkedRecipes(prev => ({
+      ...prev,
+      [recipeId]: !prev[recipeId]
+    }));
   };
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '90deg']
-  });
+  const isBookmarked = (recipeId) => {
+    return bookmarkedRecipes[recipeId] || false;
+  };
 
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
@@ -146,25 +135,16 @@ export default function AIRecipes() {
     } else {
       const paths = {
         Home: "/home",
-        AIRecipes: "/screens/AIRecipes",
-        Pantry: "/screens/Pantry",
-        Fridge: "/screens/Fridge",
-        Freezer: "/screens/Freezer",
-        Spices: "/screens/Spices",
         Appliances: "/screens/Appliances",
-        History: "/screens/History",
-        Bookmarked: "/screens/Bookmarked",
-        ReciptScanner: "/screens/Recipt-Scanner",
-        Settings: "/screens/Settings",
+        Freezer: "/screens/Freezer",
+        Fridge: "/screens/Fridge",
+        Pantry: "/screens/Pantry",
+        Spices: "/screens/Spices",
       };
       router.push({
         pathname: paths[page] || "/",
       });
     }
-  };
-
-  const toggleModalBookmark = () => {
-    setIsModalBookmarked(!isModalBookmarked);
   };
 
   return (
@@ -184,13 +164,19 @@ export default function AIRecipes() {
           {recipes.length > 0 ? (
             recipes.map((recipe, index) => (
               <TouchableOpacity key={index} style={styles.recipeContainer} onPress={() => handleRecipePress(recipe)}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <View style={styles.recipeHeader}>
+                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                  <TouchableOpacity onPress={(e) => toggleBookmark(recipe.id, e)}>
+                    <Ionicons 
+                      name={isBookmarked(recipe.id) ? "bookmark" : "bookmark-outline"} 
+                      size={24} 
+                      color={isBookmarked(recipe.id) ? "gold" : "#333"} 
+                    />
+                  </TouchableOpacity>
+                </View>
                 {recipe.image && (
                   <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
                 )}
-                <Text style={styles.recipeInfo}>Calories: {recipe.calories} cal</Text>
-                <Text style={styles.recipeInfo}>Serving Size: {recipe.servingSize.amount} {recipe.servingSize.unit}</Text>
-                <Text style={styles.recipeInfo}>Estimated Servings: {recipe.estimatedServings}</Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -213,21 +199,27 @@ export default function AIRecipes() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.modalBookmarkIcon} onPress={toggleModalBookmark}>
-                <Ionicons name={isModalBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isModalBookmarked ? "gold" : "#000"} />
+              <TouchableOpacity 
+                style={styles.modalBookmarkIcon} 
+                onPress={() => toggleBookmark(selectedRecipe.id)}
+              >
+                <Ionicons 
+                  name={isBookmarked(selectedRecipe.id) ? "bookmark" : "bookmark-outline"} 
+                  size={30} 
+                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"} 
+                />
               </TouchableOpacity>
+              
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                 {selectedRecipe.image && (
                   <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
                 )}
-                <Text style={styles.modalText}>Calories: {selectedRecipe.calories} cal</Text>
-                <Text style={styles.modalText}>Serving Size: {selectedRecipe.servingSize.amount} {selectedRecipe.servingSize.unit}</Text>
-                <Text style={styles.modalText}>Ingredients:</Text>
+                <Text style={styles.modalText}>Ingredients🥕:</Text>
                 {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
                   <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
                 ))}
-                <Text style={styles.modalText}>Instructions:</Text>
+                <Text style={styles.modalText}>Instructions📝:</Text>
                 <Text style={styles.modalText}>{formatInstructions(selectedRecipe.instructions)}</Text>
               </ScrollView>
               <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
@@ -250,49 +242,29 @@ export default function AIRecipes() {
         >
           <Text style={styles.menuText}>Home</Text>
         </TouchableOpacity>
-        
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
-        
-        {/* My Food dropdown section */}
-        <View style={styles.menuItemWithSubmenu}>
-          <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
-            <Text style={styles.menuText}>My Food</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
-            <Animated.View style={{ transform: [{ rotate }] }}>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Submenu items */}
-        {isMyFoodOpen && (
-          <>
-            <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Pantry</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Fridge</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Freezer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Spices</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Appliances</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+          <Text style={styles.menuText}>Pantry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={styles.menuText}>History</Text>
+          <Text style={[styles.menuText]}>History</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={styles.menuText}>Bookmarked</Text>
+          <Text style={[styles.menuText]}>Bookmarked</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
@@ -326,6 +298,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
+    //textDecorationLine: 'underline', // Add underline to the text
+    // textShadowColor: '#FFFFFF', // White shadow color
+    //textShadowOffset: { width: -1, height: 1 }, // Shadow offset
+    //textShadowRadius: 2, // Shadow radius
   },
   scrollViewContent: {
     alignItems: 'center',
@@ -345,11 +321,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  recipeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
   recipeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 10,
   },
   recipeImage: {
     width: '100%',
@@ -452,23 +436,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     marginVertical: 10,
-  },
-  // Menu dropdown styles
-  menuItemWithSubmenu: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginRight: 10,
-  },
-  menuItemMain: {
-    flex: 1,
-  },
-  triangleButton: {
-    padding: 5,
-  },
-  submenuItem: {
-    paddingLeft: 20,
-    fontSize: 16,
   },
   logoutText: {
     fontSize: 18,
