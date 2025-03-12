@@ -8,7 +8,7 @@ const MAX_HISTORY_ITEMS = 5;
 interface RecipeHistoryItem {
   id: number;
   title: string;
-  image: string;
+  image?: string; // Add optional image URL
   timestamp: number;
 }
 
@@ -16,7 +16,7 @@ interface RecipeHistoryItem {
 export const addRecipeToHistory = async (recipe: {
   id: number;
   title: string;
-  image: string;
+  image?: string; // Make image optional
 }) => {
   const user = getAuth().currentUser;
   if (!user) return null;

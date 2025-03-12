@@ -21,7 +21,7 @@ import {
   getRecipeHistory,
 } from "@/firebase/recipeHistoryService";
 
-const API_KEY = "3ed17488fef64dc29ea2922cc79eccdc";
+const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
 const { width, height } = Dimensions.get("window");
 
 export default function AIRecipes() {
@@ -74,7 +74,7 @@ export default function AIRecipes() {
 
       // Fetch recipes from Spoonacular API using the ingredients
       const response = await fetch(
-        `https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=20`
+        `https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=6`
       );
       const data = await response.json();
       console.log("Spoonacular response:", data); // Debugging line
@@ -187,7 +187,7 @@ export default function AIRecipes() {
         Spices: "/screens/Spices",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -205,13 +205,13 @@ export default function AIRecipes() {
       </TouchableOpacity>
 
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <TouchableOpacity style={styles.bookmarkIcon} onPress={toggleBookmark}>
+      {/* <TouchableOpacity style={styles.bookmarkIcon} onPress={toggleBookmark}>
         <Ionicons
           name="bookmark"
           size={30}
           color={isBookmarked ? "gold" : "#fff"}
         />
-      </TouchableOpacity>
+      </TouchableOpacity> */}
       <Text style={styles.title}>Your Recipes {emoji}</Text>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />

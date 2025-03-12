@@ -33,7 +33,7 @@ const ProfileHeader = () => {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
-            console.log("User profile found in database:", userData);
+            // console.log("User profile found in database:", userData);
             setProfile({
               firstName: userData.firstName || "",
               lastName: userData.lastName || "",
