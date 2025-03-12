@@ -35,6 +35,7 @@ export default function History() {
   const [recipeDetails, setRecipeDetails] = useState(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const auth = getAuth();
 
@@ -162,10 +163,10 @@ export default function History() {
     } else {
       const paths = {
         Home: "/home",
-        Appliances: "/screens/Appliances",
-        Freezer: "/screens/Freezer",
-        Fridge: "/screens/Fridge",
+        AIRecipes: "/screens/AIRecipes",
         Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
         AIRecipes: "/screens/AIRecipes",
       };

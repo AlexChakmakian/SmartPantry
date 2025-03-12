@@ -98,7 +98,9 @@ export default function ItemList({ itemType }) {
   const [newItemUnit, setNewItemUnit] = useState("lbs");
   const [loading, setLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const router = useRouter();
   const auth = getAuth();
@@ -266,6 +268,20 @@ export default function ItemList({ itemType }) {
     }).start();
   };
 
+  const toggleMyFood = () => {
+    setIsMyFoodOpen(!isMyFoodOpen);
+    Animated.timing(rotateAnim, {
+      toValue: isMyFoodOpen ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "90deg"],
+  });
+
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
     Animated.timing(slideAnim, {
@@ -285,11 +301,10 @@ export default function ItemList({ itemType }) {
     } else {
       const paths = {
         Home: "/home",
-        Appliances: "/screens/Appliances",
         AIRecipes: "/screens/AIRecipes",
-        Freezer: "/screens/Freezer",
-        Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
@@ -434,45 +449,82 @@ export default function ItemList({ itemType }) {
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-          {/* <TouchableOpacity
+          <TouchableOpacity
             style={styles.firstMenuItem}
             onPress={() => handleMenuSelect("Home")}
           >
             <Text style={styles.menuText}>Home</Text>
           </TouchableOpacity>
+
           <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
             <Text style={styles.menuText}>AI Recipes</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-            <Text style={styles.menuText}>Pantry</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-            <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-            <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-            <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-            <Text style={[styles.menuText, styles.rightPadding]}>
-              Appliances
-            </Text>
-          </TouchableOpacity>
+
+          {/* My Food dropdown section */}
+          <View style={styles.menuItemWithSubmenu}>
+            <TouchableOpacity
+              style={styles.menuItemMain}
+              onPress={toggleMyFood}
+            >
+              <Text style={styles.menuText}>My Food</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={toggleMyFood}
+              style={styles.triangleButton}
+            >
+              <Animated.View style={{ transform: [{ rotate }] }}>
+                <Icon name="chevron-forward" size={20} color="#fff" />
+              </Animated.View>
+            </TouchableOpacity>
+          </View>
+
+          {/* Submenu items */}
+          {isMyFoodOpen && (
+            <>
+              <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+                <Text style={[styles.menuText, styles.submenuItem]}>
+                  Pantry
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+                <Text style={[styles.menuText, styles.submenuItem]}>
+                  Fridge
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+                <Text style={[styles.menuText, styles.submenuItem]}>
+                  Freezer
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+                <Text style={[styles.menuText, styles.submenuItem]}>
+                  Spices
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+                <Text style={[styles.menuText, styles.submenuItem]}>
+                  Appliances
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          {/* Regular menu items */}
           <TouchableOpacity onPress={() => handleMenuSelect("History")}>
             <Text style={[styles.menuText]}>History</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
             <Text style={[styles.menuText]}>Bookmarked</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("ReceiptScanner")}>
+          <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
             <Text style={styles.menuText}>Receipt Scanner</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
+            <Text style={styles.menuText}>Settings</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
             <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-          </TouchableOpacity> */}
-          <SideMenu onSelectMenuItem={handleMenuSelect} />
+          </TouchableOpacity>
         </Animated.View>
       </View>
     </GestureHandlerRootView>
@@ -521,6 +573,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     marginVertical: 10,
+  },
+  // Menu dropdown styles
+  menuItemWithSubmenu: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginRight: 10,
+  },
+  menuItemMain: {
+    flex: 1,
+  },
+  triangleButton: {
+    padding: 5,
+  },
+  submenuItem: {
+    paddingLeft: 20,
+    fontSize: 16,
   },
   logoutText: {
     color: "red",

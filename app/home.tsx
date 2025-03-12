@@ -54,7 +54,9 @@ const HomeScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false); // State for bookmark icon
   const [showSettings, setShowSettings] = useState(false);
+  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const auth = getAuth();
 
@@ -116,6 +118,20 @@ const HomeScreen = () => {
     }).start();
   };
 
+  const toggleMyFood = () => {
+    setIsMyFoodOpen(!isMyFoodOpen);
+    Animated.timing(rotateAnim, {
+      toValue: isMyFoodOpen ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "90deg"],
+  });
+
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
     Animated.timing(slideAnim, {
@@ -137,15 +153,16 @@ const HomeScreen = () => {
       setShowSettings(true);
     } else {
       const paths = {
-        Appliances: "/screens/Appliances",
+        Home: "/home",
         AIRecipes: "/screens/AIRecipes",
-        Freezer: "/screens/Freezer",
-        Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
+        Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
         ReciptScanner: "/screens/Recipt-Scanner", // receipt scanner
-        Spices: "/screens/Spices",
       };
       router.push({
         pathname: paths[page] || "/",
@@ -369,8 +386,7 @@ Instructions:
         </View>
       )}
 
-      {/* Show "Configure Pantry" button only for first-time users this is still not configured right we need to add conditional call to firebase */}
-
+      {/* Show "Configure Pantry" button only for first-time users */}
       {showButton && !showSettings && (
         <TouchableOpacity
           style={styles.circleButton}
@@ -381,40 +397,47 @@ Instructions:
         </TouchableOpacity>
       )}
 
-{selectedRecipe && (
-  <Modal
-    animationType="slide"
-    transparent={true}
-    visible={modalVisible}
-    onRequestClose={() => setModalVisible(false)}
-  >
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <TouchableOpacity style={styles.bookmarkIcon} onPress={() => setIsBookmarked(!isBookmarked)}>
-        <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isBookmarked ? "gold" : "#000"} />
-        </TouchableOpacity>
-        <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-          <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-          {selectedRecipe.imagePath && (
-            <Image
-              source={selectedRecipe.imagePath}
-              style={styles.modalImage}
-            />
-          )}
-          <Text style={styles.modalText}>
-            {selectedRecipe.description}
-          </Text>
-        </ScrollView>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setModalVisible(false)}
+      {selectedRecipe && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
         >
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-)}
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={styles.bookmarkIcon}
+                onPress={() => setIsBookmarked(!isBookmarked)}
+              >
+                <Ionicons
+                  name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                  size={30}
+                  color={isBookmarked ? "gold" : "#000"}
+                />
+              </TouchableOpacity>
+              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+                {selectedRecipe.imagePath && (
+                  <Image
+                    source={selectedRecipe.imagePath}
+                    style={styles.modalImage}
+                  />
+                )}
+                <Text style={styles.modalText}>
+                  {selectedRecipe.description}
+                </Text>
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
 
       <Animated.View
         style={[
@@ -594,6 +617,23 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#fff",
     marginVertical: 10,
+  },
+  // Menu dropdown styles
+  menuItemWithSubmenu: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginRight: 10,
+  },
+  menuItemMain: {
+    flex: 1,
+  },
+  triangleButton: {
+    padding: 5,
+  },
+  submenuItem: {
+    paddingLeft: 20,
+    fontSize: 16,
   },
   modalContainer: {
     flex: 1,
