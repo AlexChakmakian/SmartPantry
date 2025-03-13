@@ -199,6 +199,15 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
         <View style={styles.line} />
@@ -508,6 +517,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#ADD8E6",
     paddingTop: 10,
   },
+  // Add overlay style for closing menu when tapping anywhere
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   logo: {
     width: 85,
     height: 85,
@@ -518,7 +537,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 3, // Increased to be above everything, including the menu overlay
   },
   bookmarkIcon: {
     position: "absolute",
@@ -655,7 +674,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4C5D6B",
     padding: 20,
     paddingTop: 40,
-    zIndex: 0,
+    zIndex: 2, // Set to 2, above menuOverlay but below hamburger
   },
   firstMenuItem: {
     paddingTop: 40,
