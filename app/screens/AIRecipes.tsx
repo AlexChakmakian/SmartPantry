@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Touchable
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the bookmark icon
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the bookmark and chevron icons
 
 const API_KEY = "968acb5051ae4bb6ae3358446d08f8fb";
 const { width, height } = Dimensions.get('window');
@@ -16,8 +16,10 @@ export default function AIRecipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState({}); // Track bookmarked recipes by ID
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const emojis = ["📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳","🥞", "🍜", "🍰", "🍪", "🍩"];
 
@@ -101,6 +103,20 @@ export default function AIRecipes() {
       useNativeDriver: true,
     }).start();
   };
+  
+  const toggleMyFood = () => {
+    setIsMyFoodOpen(!isMyFoodOpen);
+    Animated.timing(rotateAnim, {
+      toValue: isMyFoodOpen ? 0 : 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '90deg']
+  });
 
   const toggleBookmark = (recipeId, e) => {
     if (e) {
@@ -135,11 +151,16 @@ export default function AIRecipes() {
     } else {
       const paths = {
         Home: "/home",
-        Appliances: "/screens/Appliances",
-        Freezer: "/screens/Freezer",
-        Fridge: "/screens/Fridge",
+        AIRecipes: "/screens/AIRecipes",
         Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReciptScanner: "/screens/Recipt-Scanner",
+        Settings: "/screens/Settings",
       };
       router.push({
         pathname: paths[page] || "/",
@@ -149,6 +170,15 @@ export default function AIRecipes() {
 
   return (
     <View style={styles.container}>
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+      
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
         <View style={styles.line} />
@@ -215,11 +245,11 @@ export default function AIRecipes() {
                 {selectedRecipe.image && (
                   <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
                 )}
-                <Text style={styles.modalText}>Ingredients🥕:</Text>
+                <Text style={styles.modalText}>Ingredients 🥕:</Text>
                 {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
                   <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
                 ))}
-                <Text style={styles.modalText}>Instructions📝:</Text>
+                <Text style={styles.modalText}>{"\n"}Instructions 📝:</Text>
                 <Text style={styles.modalText}>{formatInstructions(selectedRecipe.instructions)}</Text>
               </ScrollView>
               <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
@@ -245,26 +275,45 @@ export default function AIRecipes() {
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
           <Text style={styles.menuText}>AI Recipes</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-          <Text style={styles.menuText}>Pantry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Fridge</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Freezer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Spices</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={[styles.menuText, styles.rightPadding]}>Appliances</Text>
-        </TouchableOpacity>
+        
+        {/* My Food dropdown section */}
+        <View style={styles.menuItemWithSubmenu}>
+          <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
+            <Text style={styles.menuText}>My Food</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
+            <Animated.View style={{ transform: [{ rotate }] }}>
+              <Ionicons name="chevron-forward" size={20} color="#fff" />
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+        
+        {/* Submenu items */}
+        {isMyFoodOpen && (
+          <>
+            <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Pantry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Fridge</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Freezer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Spices</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+              <Text style={[styles.menuText, styles.submenuItem]}>Appliances</Text>
+            </TouchableOpacity>
+          </>
+        )}
+        
         <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={[styles.menuText]}>History</Text>
+          <Text style={styles.menuText}>History</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={[styles.menuText]}>Bookmarked</Text>
+          <Text style={styles.menuText}>Bookmarked</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
           <Text style={styles.menuText}>Receipt Scanner</Text>
@@ -285,8 +334,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    paddingTop: 50, // Adjust this value to position the text at the top
+    paddingTop: 50,
     backgroundColor: '#ADD8E6',
+  },
+  // Add overlay style for closing menu when tapping anywhere
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
   },
   logo: {
     width: 85,
@@ -298,15 +357,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    //textDecorationLine: 'underline', // Add underline to the text
-    // textShadowColor: '#FFFFFF', // White shadow color
-    //textShadowOffset: { width: -1, height: 1 }, // Shadow offset
-    //textShadowRadius: 2, // Shadow radius
   },
   scrollViewContent: {
     alignItems: 'center',
     paddingVertical: 20,
-    paddingBottom: 50, // Add padding to the bottom to ensure the last item is fully visible
+    paddingBottom: 50,
   },
   recipeContainer: {
     marginTop: 20,
@@ -337,7 +392,7 @@ const styles = StyleSheet.create({
   },
   recipeImage: {
     width: '100%',
-    height: 250, // Increase the height of the recipe image
+    height: 250,
     borderRadius: 10,
   },
   recipeInfo: {
@@ -346,7 +401,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   spacer: {
-    height: 50, // Adjust this value to add space at the bottom
+    height: 50,
   },
   resetButton: {
     backgroundColor: '#007BFF',
@@ -369,9 +424,9 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: '90%',
-    height: height * 0.75, // Set the height to 75% of the screen height
+    height: height * 0.75,
     backgroundColor: '#fff',
-    padding: 10, // Reduced padding
+    padding: 10,
     borderRadius: 10,
     alignItems: 'center',
   },
@@ -381,14 +436,14 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 5, // Reduced margin
-    paddingRight: 40, // Add right padding to make room for the bookmark icon
+    marginBottom: 5,
+    paddingRight: 40,
   },
   modalImage: {
     width: '100%',
-    height: 150, // Reduced height
+    height: 150,
     borderRadius: 10,
-    marginBottom: 5, // Reduced margin
+    marginBottom: 5,
   },
   modalText: {
     fontSize: 16,
@@ -396,11 +451,11 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     backgroundColor: '#007BFF',
-    paddingVertical: 5, // Reduced padding
-    paddingHorizontal: 10, // Reduced padding
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     borderRadius: 5,
-    marginTop: 10, // Reduced margin
-    alignSelf: 'center', // Center the button horizontally
+    marginTop: 10,
+    alignSelf: 'center',
   },
   closeButtonText: {
     color: '#FFF',
@@ -410,7 +465,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 3, // Increased to be above everything, including the menu
   },
   line: {
     width: 30,
@@ -427,7 +482,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4C5D6B",
     padding: 20,
     paddingTop: 40,
-    zIndex: 0,
+    zIndex: 2, // Above the overlay but below the hamburger button
   },
   firstMenuItem: {
     paddingTop: 40,
@@ -437,13 +492,30 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
   },
+  // Menu dropdown styles
+  menuItemWithSubmenu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginRight: 10,
+  },
+  menuItemMain: {
+    flex: 1,
+  },
+  triangleButton: {
+    padding: 5,
+  },
+  submenuItem: {
+    paddingLeft: 20,
+    fontSize: 16,
+  },
   logoutText: {
     fontSize: 18,
     color: 'red',
     marginVertical: 10,
   },
   rightPadding: {
-    paddingLeft: 20, // Adjust the value as needed
+    paddingLeft: 20,
   },
   modalBookmarkIcon: {
     position: "absolute",
