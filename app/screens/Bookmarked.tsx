@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, Touchable
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { getItems } from "../../firebase/pantryService";
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the chevron icon
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the bookmark and chevron icons
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get('window');
@@ -16,6 +16,7 @@ export default function Bookmarked() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
+  const [bookmarkedRecipes, setBookmarkedRecipes] = useState({}); // Track bookmarked recipes by ID
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -51,6 +52,13 @@ export default function Bookmarked() {
         const detailedRecipe = await recipeResponse.json();
         return detailedRecipe;
       }));
+
+      // Initialize all recipes as bookmarked since this is the Bookmarked page
+      const initialBookmarks = {};
+      detailedRecipes.forEach(recipe => {
+        initialBookmarks[recipe.id] = true;
+      });
+      setBookmarkedRecipes(initialBookmarks);
 
       setRecipes(detailedRecipes);
     } catch (error) {
@@ -93,6 +101,32 @@ export default function Bookmarked() {
     outputRange: ['0deg', '90deg']
   });
 
+  const toggleBookmark = (recipeId, e) => {
+    if (e) {
+      e.stopPropagation(); // Prevent triggering the parent onPress
+    }
+    
+    const newBookmarkedState = !bookmarkedRecipes[recipeId];
+    setBookmarkedRecipes(prev => ({
+      ...prev,
+      [recipeId]: newBookmarkedState
+    }));
+    
+    // If unbookmarking a recipe from the bookmarked page, remove it from the list
+    if (!newBookmarkedState) {
+      setRecipes(prevRecipes => prevRecipes.filter(recipe => recipe.id !== recipeId));
+      
+      // If the modal is open and we're unbookmarking the current recipe, close the modal
+      if (modalVisible && selectedRecipe && selectedRecipe.id === recipeId) {
+        setModalVisible(false);
+      }
+    }
+  };
+
+  const isBookmarked = (recipeId) => {
+    return bookmarkedRecipes[recipeId] || false;
+  };
+
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
     Animated.timing(slideAnim, {
@@ -128,6 +162,8 @@ export default function Bookmarked() {
     }
   };
 
+  const filteredRecipes = recipes.filter(recipe => bookmarkedRecipes[recipe.id]);
+
   return (
     <View style={styles.container}>
       {/* Add overlay to close menu when clicking anywhere on the screen */}
@@ -150,10 +186,19 @@ export default function Bookmarked() {
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {recipes.length > 0 ? (
-            recipes.map((recipe, index) => (
+          {filteredRecipes.length > 0 ? (
+            filteredRecipes.map((recipe, index) => (
               <TouchableOpacity key={index} style={styles.recipeContainer} onPress={() => handleRecipePress(recipe)}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                <View style={styles.recipeHeader}>
+                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
+                  <TouchableOpacity onPress={(e) => toggleBookmark(recipe.id, e)}>
+                    <Ionicons 
+                      name={isBookmarked(recipe.id) ? "bookmark" : "bookmark-outline"} 
+                      size={24} 
+                      color={isBookmarked(recipe.id) ? "gold" : "#333"} 
+                    />
+                  </TouchableOpacity>
+                </View>
                 {recipe.image && (
                   <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
                 )}
@@ -175,16 +220,27 @@ export default function Bookmarked() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
+              <TouchableOpacity 
+                style={styles.modalBookmarkIcon} 
+                onPress={() => toggleBookmark(selectedRecipe.id)}
+              >
+                <Ionicons 
+                  name={isBookmarked(selectedRecipe.id) ? "bookmark" : "bookmark-outline"} 
+                  size={30} 
+                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"} 
+                />
+              </TouchableOpacity>
+              
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                 {selectedRecipe.image && (
                   <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
                 )}
-                <Text style={styles.modalText}>Ingredients:</Text>
+                <Text style={styles.modalText}>Ingredients 🥕:</Text>
                 {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
                   <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
                 ))}
-                <Text style={styles.modalText}>Instructions:</Text>
+                <Text style={styles.modalText}>{"\n"}Instructions 📝:</Text>
                 <Text style={styles.modalText}>{formatInstructions(selectedRecipe.instructions)}</Text>
               </ScrollView>
               <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
@@ -273,7 +329,6 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     backgroundColor: '#ADD8E6',
   },
-  // Add overlay style for closing menu when tapping anywhere
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -306,11 +361,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  recipeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
+  },
   recipeTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 10,
+    flex: 1,
+    marginRight: 10,
   },
   recipeImage: {
     width: '100%',
@@ -341,6 +404,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 5,
+    paddingRight: 40,
   },
   modalImage: {
     width: '100%',
@@ -418,6 +482,12 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   rightPadding: {
-    paddingLeft: 20, // Adjust the value as needed
+    paddingLeft: 20,
+  },
+  modalBookmarkIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 1,
   },
 });
