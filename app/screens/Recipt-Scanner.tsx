@@ -10,7 +10,7 @@ import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the chevro
 
 const { width, height } = Dimensions.get('window');
 
-const GOOGLE_API_KEY = "AIzaSyAXsWcZNxwtjW6DbI25VXJ7rb2mv-vipIg";
+const GOOGLE_API_KEY = "";
 
 export default function ReciptScanner() {
   const [items, setItems] = useState<{ name: string, quantity: string }[]>([]);
