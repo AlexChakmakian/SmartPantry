@@ -279,7 +279,7 @@ export default function ReciptScanner() {
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
+          <Text style={styles.menuText}>Smart Recipes</Text>
         </TouchableOpacity>
         
         {/* My Food dropdown section */}

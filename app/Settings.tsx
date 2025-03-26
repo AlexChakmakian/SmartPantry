@@ -126,7 +126,7 @@ export default function SettingsScreen() {
           <Text style={styles.menuText}>Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
+          <Text style={styles.menuText}>Smart Recipes</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
           <Text style={styles.menuText}>Pantry</Text>

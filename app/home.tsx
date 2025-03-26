@@ -267,13 +267,13 @@ const HomeScreen = () => {
               style={styles.squareButton}
               onPress={() => router.push("/screens/AIRecipes")}
             >
-              <Text style={styles.squareButtonText}>My AI Recipes</Text>
+              <Text style={styles.squareButtonText}>Smart Recipes</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.squareButton}
-              onPress={() => router.push("/screens/Pantry")}
+              onPress={() => router.push("/screens/Recipt-Scanner")}
             >
-              <Text style={styles.squareButtonText}>Add to Pantry</Text>
+              <Text style={styles.squareButtonText}>Scan Receipt</Text>
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -455,7 +455,7 @@ Instructions:
         </TouchableOpacity>
         
         <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
+          <Text style={styles.menuText}>Smart Recipes</Text>
         </TouchableOpacity>
         
         {/* My Food dropdown section */}
