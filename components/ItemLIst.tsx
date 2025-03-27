@@ -309,9 +309,10 @@ export default function ItemList({ itemType }) {
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
         ReceiptScanner: "/screens/ReceiptScanner",
+        Settings: "/Settings",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -449,82 +450,7 @@ export default function ItemList({ itemType }) {
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-          <TouchableOpacity
-            style={styles.firstMenuItem}
-            onPress={() => handleMenuSelect("Home")}
-          >
-            <Text style={styles.menuText}>Home</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-            <Text style={styles.menuText}>AI Recipes</Text>
-          </TouchableOpacity>
-
-          {/* My Food dropdown section */}
-          <View style={styles.menuItemWithSubmenu}>
-            <TouchableOpacity
-              style={styles.menuItemMain}
-              onPress={toggleMyFood}
-            >
-              <Text style={styles.menuText}>My Food</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={toggleMyFood}
-              style={styles.triangleButton}
-            >
-              <Animated.View style={{ transform: [{ rotate }] }}>
-                <Icon name="chevron-forward" size={20} color="#fff" />
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
-
-          {/* Submenu items */}
-          {isMyFoodOpen && (
-            <>
-              <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>
-                  Pantry
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>
-                  Fridge
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>
-                  Freezer
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>
-                  Spices
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>
-                  Appliances
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
-
-          {/* Regular menu items */}
-          <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-            <Text style={[styles.menuText]}>History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-            <Text style={[styles.menuText]}>Bookmarked</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
-            <Text style={styles.menuText}>Receipt Scanner</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
-            <Text style={styles.menuText}>Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-            <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-          </TouchableOpacity>
+          <SideMenu onSelectMenuItem={handleMenuSelect} />
         </Animated.View>
       </View>
     </GestureHandlerRootView>

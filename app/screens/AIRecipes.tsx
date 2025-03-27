@@ -16,10 +16,12 @@ import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functi
 import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
 import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the bookmark icon
 import SideMenu from "@/components/SideMenu";
+import { addRecipeToHistory } from "@/firebase/recipeHistoryService";
 import {
-  addRecipeToHistory,
-  getRecipeHistory,
-} from "@/firebase/recipeHistoryService";
+  addBookmark,
+  removeBookmark,
+  isRecipeBookmarked,
+} from "@/firebase/bookmarkService";
 
 const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
 const { width, height } = Dimensions.get("window");
@@ -115,7 +117,21 @@ export default function AIRecipes() {
 
   useEffect(() => {
     fetchRecipes();
+    fetchBookmarkedStatus();
   }, []);
+
+  const fetchBookmarkedStatus = async () => {
+    try {
+      // For each recipe in recipes array, check if it's bookmarked
+      const bookmarkedStatus = {};
+      for (const recipe of recipes) {
+        bookmarkedStatus[recipe.id] = await isRecipeBookmarked(recipe.id);
+      }
+      setBookmarkedRecipes(bookmarkedStatus);
+    } catch (error) {
+      console.error("Error fetching bookmarked status:", error);
+    }
+  };
 
   const handleRecipePress = (recipe) => {
     //log this recipe to the history
@@ -143,14 +159,43 @@ export default function AIRecipes() {
     }).start();
   };
 
-  const toggleBookmark = (recipeId, e) => {
+  const toggleBookmark = async (recipeId, e) => {
     if (e) {
       e.stopPropagation(); // Prevent triggering the parent onPress
     }
-    setBookmarkedRecipes((prev) => ({
-      ...prev,
-      [recipeId]: !prev[recipeId],
-    }));
+
+    try {
+      // Get the recipe from recipes array
+      const recipe = recipes.find((r) => r.id === recipeId);
+      if (!recipe) return;
+
+      // Check current bookmark status
+      const isCurrentlyBookmarked = bookmarkedRecipes[recipeId] || false;
+
+      // Update UI immediately for responsive feel
+      setBookmarkedRecipes((prev) => ({
+        ...prev,
+        [recipeId]: !prev[recipeId],
+      }));
+
+      // Update in Firebase
+      if (isCurrentlyBookmarked) {
+        await removeBookmark(recipeId);
+      } else {
+        await addBookmark({
+          id: recipe.id,
+          title: recipe.title,
+          image: recipe.image,
+        });
+      }
+    } catch (error) {
+      console.error("Error toggling bookmark:", error);
+      // Revert UI if operation failed
+      setBookmarkedRecipes((prev) => ({
+        ...prev,
+        [recipeId]: !prev[recipeId],
+      }));
+    }
   };
 
   const isBookmarked = (recipeId) => {

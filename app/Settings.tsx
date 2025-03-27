@@ -16,6 +16,7 @@ import { db } from "../firebase/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 import NotificationBell from "../components/NotificationBell"; // Adjust the import path as needed
+import SideMenu from "@/components/SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -76,7 +77,7 @@ export default function SettingsScreen() {
         Spices: "/screens/Spices",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -119,33 +120,7 @@ export default function SettingsScreen() {
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <TouchableOpacity
-          style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Recipes")}
-        >
-          <Text style={styles.menuText}>Recipes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-          <Text style={styles.menuText}>Pantry</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-          <Text style={styles.menuText}>Fridge</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-          <Text style={styles.menuText}>Freezer</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-          <Text style={styles.menuText}>Spices</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-          <Text style={styles.menuText}>Appliances</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={styles.menuText}>Log out</Text>
-        </TouchableOpacity>
+        <SideMenu onSelectMenuItem={handleMenuSelect} />
       </Animated.View>
 
       <View style={styles.card}>
@@ -207,11 +182,12 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     left: 0,
-    width: width * 0.75,
+    width: width * 0.4,
     backgroundColor: "#4C5D6B", // Match the color scheme from HomeScreen
     padding: 20,
-    zIndex: 3, // Ensure the menu is above other elements
-    elevation: 5,
+    paddingTop: 40,
+    zIndex: 1, // Ensure the menu is above other elements
+    // elevation: 5,
   },
   firstMenuItem: {
     paddingTop: 40,

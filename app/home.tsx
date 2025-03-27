@@ -19,6 +19,8 @@ import { db } from "../firebase/firebaseConfig"; // Import the Firestore databas
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import NotificationBell from "../components/NotificationBell"; // Component for notifications
 import SideMenu from "@/components/SideMenu";
+import { Ionicons } from "@expo/vector-icons";
+import ProfileSettings from "./screens/ProfileSettings";
 
 const { width } = Dimensions.get("window");
 
@@ -162,7 +164,8 @@ const HomeScreen = () => {
         Appliances: "/screens/Appliances",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
-        ReciptScanner: "/screens/Recipt-Scanner", // receipt scanner
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
       };
       router.push({
         pathname: paths[page] || "/",

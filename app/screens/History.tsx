@@ -11,6 +11,7 @@ import {
   Dimensions,
   Animated,
   Alert,
+  Settings,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
@@ -21,6 +22,10 @@ import {
   clearRecipeHistory,
   removeRecipeFromHistory,
 } from "@/firebase/recipeHistoryService";
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
 
 const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
 const { width, height } = Dimensions.get("window");
@@ -74,6 +79,8 @@ export default function History() {
 
       setRecipeDetails({
         ...detailedRecipe,
+        // Use the image from history if API doesn't return one
+        image: detailedRecipe.image || recipe.image,
         calories: Math.round(
           nutritionData.nutrients.find(
             (nutrient) => nutrient.name === "Calories"
@@ -83,7 +90,15 @@ export default function History() {
       });
     } catch (error) {
       console.error("Error fetching recipe details:", error);
-      Alert.alert("Error", "Failed to load recipe details");
+      // Set fallback data if API call fails
+      setRecipeDetails({
+        ...recipe,
+        extendedIngredients: [],
+        instructions: "Failed to load detailed instructions.",
+        calories: 0,
+        servingSize: { amount: 0, unit: "" },
+      });
+      Alert.alert("Error", "Failed to load complete recipe details");
     } finally {
       setLoadingRecipe(false);
     }
@@ -144,6 +159,31 @@ export default function History() {
     }
   };
 
+  const renderRightActions = (id) => (
+    <TouchableOpacity
+      style={styles.deleteButton}
+      onPress={() => {
+        Alert.alert(
+          "Delete Item",
+          "Are you sure you want to remove this recipe from history?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => handleRemoveItem(id),
+            },
+          ]
+        );
+      }}
+    >
+      <Text style={styles.deleteButtonText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
     Animated.timing(slideAnim, {
@@ -168,7 +208,8 @@ export default function History() {
         Fridge: "/screens/Fridge",
         Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
-        AIRecipes: "/screens/AIRecipes",
+        Bookmarked: "/screens/Bookmarked",
+        Settings: "/Settings",
       };
       router.push({
         pathname: paths[page] || "/home",
@@ -177,137 +218,136 @@ export default function History() {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
-        <View style={styles.line} />
-        <View style={styles.line} />
-        <View style={styles.line} />
-      </TouchableOpacity>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+          <View style={styles.line} />
+          <View style={styles.line} />
+          <View style={styles.line} />
+        </TouchableOpacity>
 
-      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <Text style={styles.title}>Viewing History</Text>
+        <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+        <Text style={styles.title}>Viewing History</Text>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {historyItems.length > 0 ? (
-            historyItems.map((item, index) => (
-              <View key={index} style={styles.recipeContainer}>
-                <Text style={styles.recipeTitle}>{item.title}</Text>
-                {item.image && (
-                  <Image
-                    source={{ uri: item.image }}
-                    style={styles.recipeImage}
-                  />
-                )}
-                <Text style={styles.recipeInfo}>
-                  Viewed: {formatDate(item.timestamp)}
-                </Text>
-                <View style={styles.buttonRow}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            {historyItems.length > 0 ? (
+              historyItems.map((item, index) => (
+                <Swipeable
+                  key={index}
+                  renderRightActions={() => renderRightActions(item.id)}
+                >
                   <TouchableOpacity
-                    style={styles.viewButton}
+                    style={styles.recipeContainer}
                     onPress={() => handleRecipePress(item)}
                   >
-                    <Text style={styles.buttonText}>View</Text>
+                    <Text style={styles.recipeTitle}>{item.title}</Text>
+                    {item.image && (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.recipeImage}
+                      />
+                    )}
+                    <Text style={styles.recipeInfo}>
+                      Viewed: {formatDate(item.timestamp)}
+                    </Text>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveItem(item.id)}
-                  >
-                    <Text style={styles.buttonText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No viewing history</Text>
-          )}
-          <View style={styles.spacer} />
-        </ScrollView>
-      )}
+                </Swipeable>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No viewing history</Text>
+            )}
+            <View style={styles.spacer} />
+          </ScrollView>
+        )}
 
-      {historyItems.length > 0 && (
-        <TouchableOpacity
-          style={styles.clearButton}
-          onPress={handleClearHistory}
-        >
-          <Text style={styles.clearButtonText}>Clear History</Text>
-        </TouchableOpacity>
-      )}
+        {historyItems.length > 0 && (
+          <TouchableOpacity
+            style={styles.clearButton}
+            onPress={handleClearHistory}
+          >
+            <Text style={styles.clearButtonText}>Clear History</Text>
+          </TouchableOpacity>
+        )}
 
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                {loadingRecipe ? (
-                  <ActivityIndicator
-                    size="large"
-                    color="#0000ff"
-                    style={styles.modalLoader}
-                  />
-                ) : (
-                  recipeDetails && (
-                    <>
-                      <Text style={styles.modalTitle}>
-                        {recipeDetails.title}
-                      </Text>
-                      {recipeDetails.image && (
-                        <Image
-                          source={{ uri: recipeDetails.image }}
-                          style={styles.modalImage}
-                        />
-                      )}
-                      <Text style={styles.modalText}>
-                        Calories: {recipeDetails.calories} cal
-                      </Text>
-                      <Text style={styles.modalText}>
-                        Serving Size: {recipeDetails.servingSize?.amount || ""}{" "}
-                        {recipeDetails.servingSize?.unit || ""}
-                      </Text>
-                      <Text style={styles.modalText}>Ingredients:</Text>
-                      {recipeDetails.extendedIngredients &&
-                        recipeDetails.extendedIngredients.map(
-                          (ingredient, index) => (
-                            <Text key={index} style={styles.modalText}>
-                              • {ingredient.original}
-                            </Text>
-                          )
+        {selectedRecipe && (
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <ScrollView
+                  contentContainerStyle={styles.modalScrollViewContent}
+                >
+                  {loadingRecipe ? (
+                    <ActivityIndicator
+                      size="large"
+                      color="#0000ff"
+                      style={styles.modalLoader}
+                    />
+                  ) : (
+                    recipeDetails && (
+                      <>
+                        <Text style={styles.modalTitle}>
+                          {recipeDetails.title}
+                        </Text>
+                        {recipeDetails.image && (
+                          <Image
+                            source={{ uri: recipeDetails.image }}
+                            style={styles.modalImage}
+                          />
                         )}
-                      <Text style={styles.modalText}>Instructions:</Text>
-                      <Text style={styles.modalText}>
-                        {formatInstructions(recipeDetails.instructions)}
-                      </Text>
-                    </>
-                  )
-                )}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
+                        <Text style={styles.modalText}>
+                          Calories: {recipeDetails.calories} cal
+                        </Text>
+                        <Text style={styles.modalText}>
+                          Serving Size:{" "}
+                          {recipeDetails.servingSize?.amount || ""}{" "}
+                          {recipeDetails.servingSize?.unit || ""}
+                        </Text>
+                        <Text style={styles.modalText}>Ingredients:</Text>
+                        {recipeDetails.extendedIngredients &&
+                          recipeDetails.extendedIngredients.map(
+                            (ingredient, index) => (
+                              <Text key={index} style={styles.modalText}>
+                                • {ingredient.original}
+                              </Text>
+                            )
+                          )}
+                        <Text style={styles.modalText}>Instructions:</Text>
+                        <Text style={styles.modalText}>
+                          {formatInstructions(recipeDetails.instructions)}
+                        </Text>
+                      </>
+                    )
+                  )}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        </Modal>
-      )}
+          </Modal>
+        )}
 
-      <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View>
-    </View>
+        <Animated.View
+          style={[
+            styles.menuContainer,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
+          <SideMenu onSelectMenuItem={handleMenuSelect} />
+        </Animated.View>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
@@ -364,35 +404,23 @@ const styles = StyleSheet.create({
   },
   recipeImage: {
     width: "100%",
-    height: 250, // Increase the height of the recipe image
+    height: 150,
     borderRadius: 10,
+    marginBottom: 10,
   },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    marginTop: 10,
-  },
-  viewButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
     alignItems: "center",
+    width: 80,
+    height: "100%",
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
   },
-  removeButton: {
-    backgroundColor: "#DC3545",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFF",
+  deleteButtonText: {
+    color: "#fff",
     fontWeight: "bold",
-    fontSize: 14,
+    fontSize: 16,
   },
   spacer: {
     height: 50,
@@ -423,30 +451,34 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "90%",
-    height: height * 0.75, // Set the height to 75% of the screen height
+    height: height * 0.75,
     backgroundColor: "#fff",
-    padding: 10, // Reduced padding
+    padding: 15,
     borderRadius: 10,
     alignItems: "center",
   },
   modalScrollViewContent: {
     alignItems: "center",
+    // width: "100%",
+    // paddingHorizontal: 10,
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 5, // Reduced margin
-    paddingRight: 40, // Add right padding to make room for the bookmark icon
+    marginBottom: 5,
+    textAlign: "center",
   },
   modalImage: {
     width: "100%",
-    height: 150, // Reduced height
+    height: 150,
     borderRadius: 10,
-    marginBottom: 5, // Reduced margin
+    marginBottom: 5,
   },
   modalText: {
     fontSize: 16,
     marginBottom: 5,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
   },
   closeButton: {
     backgroundColor: "#007BFF",
