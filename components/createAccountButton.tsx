@@ -12,7 +12,8 @@ const CreateAccountButton = ({ onPress }) => {
 const styles = StyleSheet.create({
   createAccountText: {
     color: "#ffffff",
-    fontSize: 14,
+    fontSize: 15,
+    paddingTop: 0,
   },
 });
 
