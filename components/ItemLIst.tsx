@@ -215,12 +215,37 @@ export default function ItemList({ itemType }) {
         await deleteItemFromDatabase(itemType, user.uid, id);
         setItems((prevItems) => prevItems.filter((item) => item.id !== id));
         setLoading(false);
+        
+        // If we're deleting an item that's currently being edited, close the modal
+        if (editingItem && editingItem.id === id) {
+          setModalVisible(false);
+        }
       } catch (e) {
         console.error(`Error deleting item from ${itemType}:`, e);
         setLoading(false);
       }
     } else {
       console.error("User not authenticated");
+    }
+  };
+
+  const confirmDeleteFromModal = () => {
+    if (editingItem) {
+      Alert.alert(
+        "Delete Item",
+        "Are you sure you want to delete this item?",
+        [
+          {
+            text: "Cancel",
+            style: "cancel",
+          },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: () => deleteItem(editingItem.id),
+          },
+        ]
+      );
     }
   };
 
@@ -367,26 +392,29 @@ export default function ItemList({ itemType }) {
             );
             return (
               <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-                <View style={styles.itemContainer}>
-                  <View style={styles.itemRow}>
-                    <Text style={styles.itemLabel}>Item: </Text>
-                    <Text style={styles.itemName}>{item.name}</Text>
+                {/* Make the entire item container clickable for editing */}
+                <TouchableOpacity onPress={() => editItem(item)}>
+                  <View style={styles.itemContainer}>
+                    <View style={styles.itemRow}>
+                      <Text style={styles.itemLabel}>Item: </Text>
+                      <Text style={styles.itemName}>{item.name}</Text>
+                    </View>
+                    <View style={styles.itemRow}>
+                      <Text style={styles.itemLabel}>Qty: </Text>
+                      <Text style={styles.itemQuantity}>{item.quantity}</Text>
+                    </View>
+                    <View style={styles.itemRow}>
+                      <Text style={styles.itemLabel}>Date added: </Text>
+                      <Text style={styles.itemDate}>{formattedDate}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => editItem(item)}
+                    >
+                      <Icon name="pencil" size={18} color="#007BFF" />
+                    </TouchableOpacity>
                   </View>
-                  <View style={styles.itemRow}>
-                    <Text style={styles.itemLabel}>Qty: </Text>
-                    <Text style={styles.itemQuantity}>{item.quantity}</Text>
-                  </View>
-                  <View style={styles.itemRow}>
-                    <Text style={styles.itemLabel}>Date added: </Text>
-                    <Text style={styles.itemDate}>{formattedDate}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => editItem(item)}
-                  >
-                    <Icon name="pencil" size={18} color="#007BFF" />
-                  </TouchableOpacity>
-                </View>
+                </TouchableOpacity>
               </Swipeable>
             );
           }}
@@ -397,8 +425,16 @@ export default function ItemList({ itemType }) {
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalView}>
+          <TouchableOpacity 
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          >
+            <TouchableOpacity 
+              style={styles.modalView} 
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()} // Prevent clicks on the modal content from closing it
+            >
               <Text style={styles.modalText}>
                 {editingItem ? "Edit Item" : "Add New Item"}
               </Text>
@@ -435,14 +471,27 @@ export default function ItemList({ itemType }) {
                   {editingItem ? "Update" : "Add"}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+              
+              <View style={styles.modalButtonsRow}>
+                <TouchableOpacity
+                  style={styles.modalCancelButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                
+                {/* Only show delete button when editing an existing item */}
+                {editingItem && (
+                  <TouchableOpacity
+                    style={styles.modalDeleteButton}
+                    onPress={confirmDeleteFromModal}
+                  >
+                    <Text style={styles.modalDeleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
 
         <Animated.View
@@ -646,7 +695,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#666",
   },
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -757,12 +806,27 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
+  // Add row for Cancel and Delete buttons
+  modalButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    paddingHorizontal: 10,
+  },
   modalCancelButton: {
     padding: 10,
   },
   modalCancelButtonText: {
     color: "#007BFF",
     fontSize: 16,
+  },
+  modalDeleteButton: {
+    padding: 10,
+  },
+  modalDeleteButtonText: {
+    color: "red",
+    fontSize: 16,
+    fontWeight: "bold",
   },
   deleteButton: {
     backgroundColor: "#FF3B30",

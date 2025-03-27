@@ -187,8 +187,8 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     color: "white",
-    marginTop: -15,
+    marginTop: 0,
     marginBottom: 20,
-    fontSize: 12,
+    fontSize: 15,
   },
 });
