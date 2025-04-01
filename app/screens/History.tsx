@@ -16,7 +16,6 @@ import {
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { Ionicons } from "@expo/vector-icons";
-import SideMenu from "@/components/SideMenu";
 import {
   getRecipeHistory,
   clearRecipeHistory,
@@ -26,6 +25,7 @@ import {
   GestureHandlerRootView,
   Swipeable,
 } from "react-native-gesture-handler";
+import AnimatedSideMenu from "@/components/SideMenu";
 
 const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
 const { width, height } = Dimensions.get("window");
@@ -116,11 +116,11 @@ export default function History() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   const handleClearHistory = async () => {
@@ -208,7 +208,11 @@ export default function History() {
         Fridge: "/screens/Fridge",
         Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
+        History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
         Settings: "/Settings",
       };
       router.push({
@@ -220,6 +224,15 @@ export default function History() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
+        {/* Add overlay to close menu when clicking anywhere on the screen */}
+        {isMenuOpen && (
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={toggleMenu}
+          />
+        )}
+
         <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
           <View style={styles.line} />
           <View style={styles.line} />
@@ -338,20 +351,33 @@ export default function History() {
           </Modal>
         )}
 
-        <Animated.View
+        {/* <Animated.View
           style={[
             styles.menuContainer,
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
           <SideMenu onSelectMenuItem={handleMenuSelect} />
-        </Animated.View>
+        </Animated.View> */}
+        <AnimatedSideMenu
+          isMenuOpen={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
       </View>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: "flex-start",
@@ -497,7 +523,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 5,
   },
   line: {
     width: 30,

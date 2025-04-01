@@ -10,17 +10,14 @@ import {
   ScrollView,
   Modal,
   Alert,
-  TextInput,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import NotificationBell from "../components/NotificationBell"; // Component for notifications
-import SideMenu from "@/components/SideMenu";
+import AnimatedSideMenu from "@/components/SideMenu";
 import { Ionicons } from "@expo/vector-icons";
-import ProfileSettings from "./screens/ProfileSettings";
 
 const { width } = Dimensions.get("window");
 
@@ -113,11 +110,11 @@ const HomeScreen = () => {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   const toggleMyFood = () => {
@@ -162,13 +159,14 @@ const HomeScreen = () => {
         Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
         Appliances: "/screens/Appliances",
-        History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
+        History: "/screens/History",
         ReceiptScanner: "/screens/ReceiptScanner",
         ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page],
       });
     }
   };
@@ -202,6 +200,15 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
         <View style={styles.line} />
@@ -212,79 +219,36 @@ const HomeScreen = () => {
 
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
-      {showSettings ? (
-        <View
-          style={[
-            styles.contentContainer,
-            { justifyContent: "center", alignItems: "center" },
-          ]}
-        >
-          <View style={styles.card}>
-            <Text style={styles.header}>Settings</Text>
-            <Text style={styles.subHeader}>
-              Set the number of days before you want to be notified about
-              expiring items
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Number of days"
-              value={expiryThreshold}
-              onChangeText={setExpiryThreshold}
-              keyboardType="numeric"
-            />
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSaveThreshold}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                { marginTop: 10, backgroundColor: "#6c757d" },
-              ]}
-              onPress={() => setShowSettings(false)}
-            >
-              <Text style={styles.saveButtonText}>Back to Home</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.contentContainer}>
-          <View style={styles.topButtonsContainer}>
-            <TouchableOpacity
-              style={styles.squareButton}
-              onPress={() => router.push("/screens/AIRecipes")}
-            >
-              <Text style={styles.squareButtonText}>My AI Recipes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.squareButton}
-              onPress={() => router.push("/screens/Pantry")}
-            >
-              <Text style={styles.squareButtonText}>Add to Pantry</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollViewContent}
+      <View style={styles.contentContainer}>
+        <View style={styles.topButtonsContainer}>
+          <TouchableOpacity
+            style={styles.squareButton}
+            onPress={() => router.push("/screens/AIRecipes")}
           >
-            <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
-            <View style={styles.recipeContainer}>
-              <RecipeCard
-                title="Spaghetti Alfredo"
-                imagePath={require("../assets/spaghetti.jpg")}
-                description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
-                onPress={() =>
-                  handleRecipePress({
-                    title: "Spaghetti Alfredo",
-                    imagePath: require("../assets/spaghetti.jpg"),
-                    description: `Ingredients:
+            <Text style={styles.squareButtonText}>My AI Recipes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.squareButton}
+            onPress={() => router.push("/screens/Pantry")}
+          >
+            <Text style={styles.squareButtonText}>Add to Pantry</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
+          <View style={styles.recipeContainer}>
+            <RecipeCard
+              title="Spaghetti Alfredo"
+              imagePath={require("../assets/spaghetti.jpg")}
+              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Spaghetti Alfredo",
+                  imagePath: require("../assets/spaghetti.jpg"),
+                  description: `Ingredients:
 - 12 ounces fettuccine
 - 1 cup heavy cream
 - 1/2 cup unsalted butter
@@ -299,18 +263,18 @@ Instructions:
 4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
 5. Season with salt and pepper to taste.
 6. Garnish with chopped parsley and serve immediately.`,
-                  })
-                }
-              />
-              <RecipeCard
-                title="Steak and Potatoes"
-                imagePath={require("../assets/steakpotatoes.jpg")}
-                description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
-                onPress={() =>
-                  handleRecipePress({
-                    title: "Steak and Potatoes",
-                    imagePath: require("../assets/steakpotatoes.jpg"),
-                    description: `Ingredients:
+                })
+              }
+            />
+            <RecipeCard
+              title="Steak and Potatoes"
+              imagePath={require("../assets/steakpotatoes.jpg")}
+              description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Steak and Potatoes",
+                  imagePath: require("../assets/steakpotatoes.jpg"),
+                  description: `Ingredients:
 - 2 ribeye steaks
 - 4 large potatoes
 - 2 tablespoons olive oil
@@ -326,18 +290,18 @@ Instructions:
 5. While the steaks are baking, wash and dry the potatoes. Rub them with olive oil, salt, and pepper.
 6. Place the potatoes on a baking sheet and bake in the preheated oven for 45-60 minutes, or until tender.
 7. Serve the steaks with the baked potatoes and garnish with fresh rosemary.`,
-                  })
-                }
-              />
-              <RecipeCard
-                title="Tacos"
-                imagePath={require("../assets/tacos.jpg")}
-                description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
-                onPress={() =>
-                  handleRecipePress({
-                    title: "Tacos",
-                    imagePath: require("../assets/tacos.jpg"),
-                    description: `Ingredients:
+                })
+              }
+            />
+            <RecipeCard
+              title="Tacos"
+              imagePath={require("../assets/tacos.jpg")}
+              description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Tacos",
+                  imagePath: require("../assets/tacos.jpg"),
+                  description: `Ingredients:
 - 1 pound ground beef
 - 1 packet taco seasoning
 - 8 small tortillas
@@ -352,18 +316,18 @@ Instructions:
 3. Warm the tortillas in a dry skillet or microwave.
 4. Fill each tortilla with the seasoned beef, shredded lettuce, shredded cheese, salsa, and sour cream.
 5. Serve immediately.`,
-                  })
-                }
-              />
-              <RecipeCard
-                title="Fish and Chips"
-                imagePath={require("../assets/fishandchips.jpg")}
-                description="A classic British dish with crispy fried fish and golden fries."
-                onPress={() =>
-                  handleRecipePress({
-                    title: "Fish and Chips",
-                    imagePath: require("../assets/fishandchips.jpg"),
-                    description: `Ingredients:
+                })
+              }
+            />
+            <RecipeCard
+              title="Fish and Chips"
+              imagePath={require("../assets/fishandchips.jpg")}
+              description="A classic British dish with crispy fried fish and golden fries."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Fish and Chips",
+                  imagePath: require("../assets/fishandchips.jpg"),
+                  description: `Ingredients:
 - 4 cod fillets
 - 1 cup all-purpose flour
 - 1 teaspoon baking powder
@@ -381,13 +345,12 @@ Instructions:
 5. Dip the cod fillets into the batter, allowing any excess to drip off.
 6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
 7. Serve the fish with the fries and lemon wedges.`,
-                  })
-                }
-              />
-            </View>
-          </ScrollView>
-        </View>
-      )}
+                })
+              }
+            />
+          </View>
+        </ScrollView>
+      </View>
 
       {/* Show "Configure Pantry" button only for first-time users */}
       {showButton && !showSettings && (
@@ -442,19 +405,25 @@ Instructions:
         </Modal>
       )}
 
-      <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View>
+      {/* Animated Side Menu */}
+      <AnimatedSideMenu
+        isMenuOpen={isMenuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#ADD8E6",

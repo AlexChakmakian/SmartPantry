@@ -4,10 +4,10 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "./firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
+import { Platform } from "react-native";
+import { uploadBytesResumable } from "firebase/storage";
 
 const storage = getStorage();
-
-console.log(storage);
 
 /**
  * Picks an image from the device's media library
@@ -79,6 +79,7 @@ export const takePhoto = async () => {
 
 /**
  * Uploads an image to Firebase Storage and updates the user's profile
+ * This version handles both gallery and camera photos reliably
  */
 export const uploadProfileImage = async (imageUri: string) => {
   const user = getAuth().currentUser;
@@ -87,62 +88,43 @@ export const uploadProfileImage = async (imageUri: string) => {
     return { success: false, error: "User not authenticated" };
   }
 
+  console.log(
+    "Starting upload process with URI:",
+    imageUri.substring(0, 30) + "..."
+  );
+  console.log("Running on platform:", Platform.OS);
+
   try {
-    // First, ensure the image isn't too large by resizing or compressing if needed
     // Create a file name with timestamp to avoid caching issues
     const fileName = `profile_${user.uid}_${Date.now()}.jpg`;
 
-    // Use FileSystem to read the file as base64
-    const base64Image = await FileSystem.readAsStringAsync(imageUri, {
-      encoding: FileSystem.EncodingType.Base64,
+    // First create a resized/processed copy of the image in app cache
+    // This helps normalize various image sources (camera, gallery, etc.)
+    const processedUri = `${FileSystem.cacheDirectory}${fileName}`;
+
+    console.log("Will save processed image to:", processedUri);
+
+    // Copy and potentially resize the image
+    await FileSystem.copyAsync({
+      from: imageUri,
+      to: processedUri,
     });
 
-    // Create a reference to the storage location with the new filename
+    console.log("Image processed and saved to cache");
+
+    // Create a storage reference
     const storageRef = ref(storage, `profile_images/${fileName}`);
+    console.log("Storage reference created");
 
-    // Convert base64 to blob
-    const blob = await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      xhr.onload = function () {
-        resolve(xhr.response);
-      };
-      xhr.onerror = function (e) {
-        console.error("Blob conversion error:", e);
-        reject(new Error("Blob conversion failed"));
-      };
-      xhr.responseType = "blob";
-      xhr.open("GET", `data:image/jpeg;base64,${base64Image}`, true);
-      xhr.send(null);
-    });
-
-    // Upload the blob with content type specified
-    const metadata = {
-      contentType: "image/jpeg",
-    };
-
-    console.log("Starting upload to Firebase Storage...");
-    await uploadBytes(storageRef, blob as Blob, metadata);
-    console.log("Upload successful!");
-
-    // Close the blob to prevent memory leaks
-    (blob as any).close?.();
-
-    // Get the download URL
-    const downloadURL = await getDownloadURL(storageRef);
-    console.log("Download URL obtained:", downloadURL);
-
-    // Update user's profile document in Firestore
-    const userRef = doc(db, "users", user.uid);
-    await updateDoc(userRef, {
-      photoURL: downloadURL,
-    });
-    console.log("User profile updated with new photo URL");
-
-    return { success: true, downloadURL };
+    // Different upload approach based on platform
+    if (Platform.OS === "web") {
+      return webUpload(processedUri, storageRef, user);
+    } else {
+      return nativeUpload(processedUri, storageRef, user);
+    }
   } catch (error) {
-    console.error("Error uploading profile image - detailed error:", error);
+    console.error("Error in upload preparation:", error);
 
-    // More detailed error information
     if (error instanceof Error) {
       console.error(`Error name: ${error.name}, message: ${error.message}`);
       if (error.stack) console.error(`Stack trace: ${error.stack}`);
@@ -150,8 +132,95 @@ export const uploadProfileImage = async (imageUri: string) => {
 
     return {
       success: false,
-      error:
-        "Failed to upload profile image. Please try again or choose a different image.",
+      error: "Failed to prepare image for upload",
     };
   }
+};
+
+// Helper function for web upload
+const webUpload = async (imageUri, storageRef, user) => {
+  try {
+    console.log("Using web upload approach");
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+
+    // Upload the blob
+    await uploadBytes(storageRef, blob);
+
+    return finalizeUpload(storageRef, user);
+  } catch (error) {
+    console.error("Web upload failed:", error);
+    return { success: false, error: "Web upload failed" };
+  }
+};
+
+// Helper function for native upload (iOS/Android)
+const nativeUpload = async (imageUri, storageRef, user) => {
+  try {
+    console.log("Using native upload approach");
+
+    // Read the file as binary data
+    const fileInfo = await FileSystem.getInfoAsync(imageUri);
+    console.log("File exists:", fileInfo.exists, "Size:", fileInfo.size);
+
+    if (!fileInfo.exists) {
+      console.error("File does not exist at path:", imageUri);
+      return { success: false, error: "File not found" };
+    }
+
+    // Convert file to blob using fetch API
+    // This is more reliable than the XMLHttpRequest approach
+    const response = await fetch(imageUri);
+    const blob = await response.blob();
+    console.log("File converted to blob, size:", blob.size);
+
+    // Upload with progress tracking
+    return new Promise((resolve, reject) => {
+      const uploadTask = uploadBytesResumable(storageRef, blob);
+
+      uploadTask.on(
+        "state_changed",
+        (snapshot) => {
+          // Track progress
+          const progress =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log(`Upload progress: ${progress.toFixed(2)}%`);
+        },
+        (error) => {
+          console.error("Upload error:", error);
+          reject({ success: false, error: "Upload failed during transfer" });
+        },
+        async () => {
+          // Upload completed successfully
+          console.log("Upload completed");
+          try {
+            const result = await finalizeUpload(storageRef, user);
+            resolve(result);
+          } catch (error) {
+            console.error("Finalization error:", error);
+            reject({ success: false, error: "Failed to complete upload" });
+          }
+        }
+      );
+    });
+  } catch (error) {
+    console.error("Native upload failed:", error);
+    return { success: false, error: "Native upload failed" };
+  }
+};
+
+// Helper function to finalize the upload (get URL and update profile)
+const finalizeUpload = async (storageRef, user) => {
+  // Get the download URL
+  const downloadURL = await getDownloadURL(storageRef);
+  console.log("Download URL obtained:", downloadURL);
+
+  // Update user's profile document in Firestore
+  const userRef = doc(db, "users", user.uid);
+  await updateDoc(userRef, {
+    photoURL: downloadURL,
+  });
+  console.log("User profile updated with new photo URL");
+
+  return { success: true, downloadURL };
 };

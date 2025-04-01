@@ -27,7 +27,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
-import SideMenu from "./SideMenu";
+import AnimatedSideMenu from "./SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -261,11 +261,12 @@ export default function ItemList({ itemType }) {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   const toggleMyFood = () => {
@@ -306,9 +307,11 @@ export default function ItemList({ itemType }) {
         Fridge: "/screens/Fridge",
         Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
         ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
         Settings: "/Settings",
       };
       router.push({
@@ -320,6 +323,15 @@ export default function ItemList({ itemType }) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
+        {/* Add overlay to close menu when clicking anywhere on the screen */}
+        {isMenuOpen && (
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={toggleMenu}
+          />
+        )}
+
         <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
           <View style={styles.line} />
           <View style={styles.line} />
@@ -444,20 +456,34 @@ export default function ItemList({ itemType }) {
           </View>
         </Modal>
 
-        <Animated.View
+        {/* <Animated.View
           style={[
             styles.menuContainer,
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
           <SideMenu onSelectMenuItem={handleMenuSelect} />
-        </Animated.View>
+        </Animated.View> */}
+        {/* Animated Side Menu */}
+        <AnimatedSideMenu
+          isMenuOpen={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
       </View>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -473,7 +499,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 5,
   },
   line: {
     width: 30,

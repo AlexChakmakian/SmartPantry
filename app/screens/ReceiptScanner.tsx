@@ -19,8 +19,8 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import Icon from "react-native-vector-icons/Ionicons";
-import SideMenu from "../../components/SideMenu"; // Import the SideMenu component
 import { addItem } from "@/firebase/pantryService"; // Import your database utility function
+import AnimatedSideMenu from "../../components/SideMenu";
 
 const { width, height } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
@@ -46,11 +46,11 @@ export default function ReceiptScanner() {
   // Toggle menu function - controls both state and animation
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   // Handle menu selection
@@ -82,7 +82,8 @@ export default function ReceiptScanner() {
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
         ReceiptScanner: "/screens/ReceiptScanner",
-        Settings: "/screens/Settings",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
       };
       router.push({
         pathname: paths[page] || "/home",
@@ -394,6 +395,15 @@ export default function ReceiptScanner() {
 
   return (
     <View style={styles.container}>
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+
       {/* Hamburger menu button */}
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
@@ -645,14 +655,18 @@ export default function ReceiptScanner() {
         </Modal>
       </View>
 
-      <Animated.View
+      {/* <Animated.View
         style={[
           styles.menuContainer,
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
         <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View>
+      </Animated.View> */}
+      <AnimatedSideMenu
+        isMenuOpen={isMenuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
     </View>
   );
 }
@@ -768,59 +782,6 @@ const additionalStyles = {
   },
 };
 
-// Add these styles
-const modalStyles = {
-  modalButtonContainer: {
-    flexDirection: "column",
-    width: "100%",
-    marginTop: 10,
-  },
-  categoryPickerContainer: {
-    width: "100%",
-    marginBottom: 15,
-  },
-  categoryPickerLabel: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-    color: "#333",
-    alignSelf: "flex-start",
-  },
-  categoryScroll: {
-    flexDirection: "row",
-    width: "100%",
-  },
-  categoryOption: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.1)",
-  },
-  categoryOptionSelected: {
-    borderColor: "#007BFF",
-  },
-  categoryOptionText: {
-    fontSize: 14,
-    color: "#333",
-  },
-  categoryOptionTextSelected: {
-    fontWeight: "bold",
-    color: "#007BFF",
-  },
-  input: {
-    height: 50,
-    width: "100%",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 15,
-    fontSize: 16,
-  },
-};
-
 // Merge with existing styles
 const styles = StyleSheet.create({
   ...additionalStyles,
@@ -875,6 +836,16 @@ const styles = StyleSheet.create({
   },
 
   // Main container styles
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
+
   container: {
     flex: 1,
     backgroundColor: "#ADD8E6",
@@ -993,7 +964,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 1,
+    zIndex: 5,
   },
   line: {
     width: 30,

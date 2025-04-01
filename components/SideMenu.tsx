@@ -3,19 +3,29 @@ import {
   View,
   Text,
   TouchableOpacity,
-  StyleSheet,
   Animated,
+  Dimensions,
+  StyleSheet,
+  Image,
 } from "react-native";
-import ProfileHeader from "./ProfileHeader";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter, usePathname } from "expo-router";
+import { getAuth, signOut } from "firebase/auth";
+import ProfileHeader from "./ProfileHeader";
 
-interface SideMenuProps {
-  onSelectMenuItem: (menuItem: string) => void;
-}
+const { width } = Dimensions.get("window");
 
-const SideMenu = ({ onSelectMenuItem }: SideMenuProps) => {
+const SideMenu = ({ onClose }) => {
+  const router = useRouter();
+  const currentPath = usePathname();
   const [isMyFoodOpen, setIsMyFoodOpen] = useState(false);
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const auth = getAuth();
+
+  // Check if a path matches the current route
+  const isActive = (path) => {
+    return currentPath === path;
+  };
 
   const toggleMyFood = () => {
     setIsMyFoodOpen(!isMyFoodOpen);
@@ -31,28 +41,87 @@ const SideMenu = ({ onSelectMenuItem }: SideMenuProps) => {
     outputRange: ["0deg", "90deg"],
   });
 
+  const handleMenuSelect = async (page) => {
+    onClose(); // Close the menu after selection
+
+    if (page === "Log out") {
+      try {
+        await signOut(auth);
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    } else {
+      const paths = {
+        Home: "/home",
+        AIRecipes: "/screens/AIRecipes",
+        Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
+        Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
+      };
+
+      const path = paths[page] || "/home";
+      router.push(path);
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <ProfileHeader />
+    <View style={styles.menuContainer}>
+      {/* Add ProfileHeader at the top */}
+      <View style={styles.profileHeaderContainer}>
+        <ProfileHeader />
+        <TouchableOpacity
+          style={styles.editProfileButton}
+          onPress={() => handleMenuSelect("ProfileSettings")}
+        >
+          <Ionicons name="pencil" size={16} color="#fff" />
+          <Text style={styles.editProfileText}>Edit Profile</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("Home")}
+        style={[styles.menuItem, isActive("/home") && styles.activeMenuItem]}
+        onPress={() => handleMenuSelect("Home")}
       >
-        <Text style={styles.menuText}>Home</Text>
+        <Ionicons name="home" size={22} color="#fff" style={styles.menuIcon} />
+        <Text
+          style={[styles.menuText, isActive("/home") && styles.activeMenuText]}
+        >
+          Home
+        </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("AIRecipes")}
+        style={[
+          styles.menuItem,
+          isActive("/screens/AIRecipes") && styles.activeMenuItem,
+        ]}
+        onPress={() => handleMenuSelect("AIRecipes")}
       >
-        <Text style={styles.menuText}>AI Recipes</Text>
+        <Ionicons name="flask" size={22} color="#fff" style={styles.menuIcon} />
+        <Text style={styles.menuText}>Smart Recipes</Text>
       </TouchableOpacity>
 
       {/* My Food dropdown section */}
       <View style={styles.menuItemWithSubmenu}>
         <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
-          <Text style={styles.menuText}>My Food</Text>
+          <View style={styles.menuItem}>
+            <Ionicons
+              name="restaurant"
+              size={22}
+              color="#fff"
+              style={styles.menuIcon}
+            />
+            <Text style={styles.menuText}>My Food</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
           <Animated.View style={{ transform: [{ rotate }] }}>
@@ -63,133 +132,295 @@ const SideMenu = ({ onSelectMenuItem }: SideMenuProps) => {
 
       {/* Submenu items */}
       {isMyFoodOpen && (
-        <>
+        <View style={styles.submenuContainer}>
           <TouchableOpacity
-            style={styles.submenuItem}
-            onPress={() => onSelectMenuItem("Pantry")}
+            style={[
+              styles.submenuItem,
+              isActive("/screens/Pantry") && styles.activeMenuItem,
+            ]}
+            onPress={() => handleMenuSelect("Pantry")}
           >
+            <Ionicons
+              name="cube"
+              size={18}
+              color="#fff"
+              style={styles.submenuIcon}
+            />
             <Text style={styles.submenuText}>Pantry</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.submenuItem}
-            onPress={() => onSelectMenuItem("Fridge")}
+            style={[
+              styles.submenuItem,
+              isActive("/screens/Fridge") && styles.activeMenuItem,
+            ]}
+            onPress={() => handleMenuSelect("Fridge")}
           >
+            <Ionicons
+              name="snow"
+              size={18}
+              color="#fff"
+              style={styles.submenuIcon}
+            />
             <Text style={styles.submenuText}>Fridge</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.submenuItem}
-            onPress={() => onSelectMenuItem("Freezer")}
+            style={[
+              styles.submenuItem,
+              isActive("/screens/Freezer") && styles.activeMenuItem,
+            ]}
+            onPress={() => handleMenuSelect("Freezer")}
           >
+            <Ionicons
+              name="thermometer"
+              size={18}
+              color="#fff"
+              style={styles.submenuIcon}
+            />
             <Text style={styles.submenuText}>Freezer</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.submenuItem}
-            onPress={() => onSelectMenuItem("Spices")}
+            style={[
+              styles.submenuItem,
+              isActive("/screens/Spices") && styles.activeMenuItem,
+            ]}
+            onPress={() => handleMenuSelect("Spices")}
           >
+            <Ionicons
+              name="flame"
+              size={18}
+              color="#fff"
+              style={styles.submenuIcon}
+            />
             <Text style={styles.submenuText}>Spices</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.submenuItem}
-            onPress={() => onSelectMenuItem("Appliances")}
+            style={[
+              styles.submenuItem,
+              isActive("/screens/Appliances") && styles.activeMenuItem,
+            ]}
+            onPress={() => handleMenuSelect("Appliances")}
           >
+            <Ionicons
+              name="calculator"
+              size={18}
+              color="#fff"
+              style={styles.submenuIcon}
+            />
             <Text style={styles.submenuText}>Appliances</Text>
           </TouchableOpacity>
-        </>
+        </View>
       )}
 
       <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("History")}
+        style={[
+          styles.menuItem,
+          isActive("/screens/History") && styles.activeMenuItem,
+        ]}
+        onPress={() => handleMenuSelect("History")}
       >
+        <Ionicons name="time" size={22} color="#fff" style={styles.menuIcon} />
         <Text style={styles.menuText}>History</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("Bookmarked")}
+        style={[
+          styles.menuItem,
+          isActive("/screens/Bookmarked") && styles.activeMenuItem,
+        ]}
+        onPress={() => handleMenuSelect("Bookmarked")}
       >
+        <Ionicons
+          name="bookmark"
+          size={22}
+          color="#fff"
+          style={styles.menuIcon}
+        />
         <Text style={styles.menuText}>Bookmarked</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("ReceiptScanner")}
+        style={[
+          styles.menuItem,
+          isActive("/screens/ReceiptScanner") && styles.activeMenuItem,
+        ]}
+        onPress={() => handleMenuSelect("ReceiptScanner")}
       >
+        <Ionicons name="scan" size={22} color="#fff" style={styles.menuIcon} />
         <Text style={styles.menuText}>Receipt Scanner</Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("Settings")}
+        style={[
+          styles.menuItem,
+          isActive("/Settings") && styles.activeMenuItem,
+        ]}
+        onPress={() => handleMenuSelect("Settings")}
       >
+        <Ionicons
+          name="settings"
+          size={22}
+          color="#fff"
+          style={styles.menuIcon}
+        />
         <Text style={styles.menuText}>Settings</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.menuItem}
-        onPress={() => onSelectMenuItem("ProfileSettings")}
-      >
-        <Text style={styles.menuText}>Profile Settings</Text>
-      </TouchableOpacity>
+      <View style={styles.divider} />
 
       <TouchableOpacity
-        style={[styles.menuItem, styles.logoutItem]}
-        onPress={() => onSelectMenuItem("Log out")}
+        style={styles.logoutButton}
+        onPress={() => handleMenuSelect("Log out")}
       >
-        <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
+        <Ionicons
+          name="log-out"
+          size={22}
+          color="#ff6b6b"
+          style={styles.menuIcon}
+        />
+        <Text style={styles.logoutText}>Log out</Text>
       </TouchableOpacity>
     </View>
   );
 };
 
+const AnimatedSideMenu = ({ isMenuOpen, onClose, onSelectMenuItem }) => {
+  const slideAnim = useRef(new Animated.Value(-width)).current;
+
+  // Update the SideMenu to pass the onSelectMenuItem prop
+  const handleMenuSelect = (menuItem) => {
+    if (onSelectMenuItem) {
+      onSelectMenuItem(menuItem);
+    } else {
+      onClose();
+    }
+  };
+
+  React.useEffect(() => {
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? 0 : -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [isMenuOpen]);
+
+  return (
+    <Animated.View
+      style={[
+        styles.animatedMenuContainer,
+        { transform: [{ translateX: slideAnim }] },
+      ]}
+    >
+      <SideMenu onClose={onClose} />
+    </Animated.View>
+  );
+};
+
 const styles = StyleSheet.create({
-  container: {
+  menuContainer: {
     flex: 1,
     backgroundColor: "#4C5D6B",
+    padding: 0,
+    paddingTop: 0,
+  },
+  animatedMenuContainer: {
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    left: 0,
+    width: width * 0.55,
+    backgroundColor: "#4C5D6B",
+    zIndex: 2,
+  },
+  profileHeaderContainer: {
+    padding: 20,
+    paddingTop: 50,
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  editProfileButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5,
+    paddingVertical: 5,
+  },
+  editProfileText: {
+    color: "#fff",
+    fontSize: 14,
+    marginLeft: 5,
   },
   menuItem: {
-    paddingVertical: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+  },
+  activeMenuItem: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+  },
+  menuIcon: {
+    marginRight: 12,
   },
   menuText: {
-    fontSize: 18,
+    fontSize: 16,
     color: "#fff",
   },
-  // Menu dropdown styles
+  activeMenuText: {
+    fontWeight: "bold",
+  },
   menuItemWithSubmenu: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginRight: 10,
-    paddingVertical: 10,
+    paddingRight: 15,
   },
   menuItemMain: {
     flex: 1,
   },
   triangleButton: {
-    padding: 5,
+    padding: 10,
+  },
+  submenuContainer: {
+    backgroundColor: "rgba(0,0,0,0.15)",
+    paddingTop: 5,
+    paddingBottom: 5,
   },
   submenuItem: {
-    paddingVertical: 8,
-    paddingLeft: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+  },
+  submenuIcon: {
+    marginRight: 10,
   },
   submenuText: {
-    fontSize: 16,
+    fontSize: 15,
     color: "#fff",
   },
-  rightPadding: {
-    paddingLeft: 20,
+  divider: {
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+    marginVertical: 10,
+    marginHorizontal: 20,
   },
-  logoutItem: {
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     marginTop: "auto",
-    paddingBottom: 30,
+    marginBottom: 30,
   },
   logoutText: {
-    color: "red",
+    fontSize: 16,
+    color: "#ff6b6b",
   },
 });
 
-export default SideMenu;
+export default AnimatedSideMenu;

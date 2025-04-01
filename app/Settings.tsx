@@ -16,7 +16,7 @@ import { db } from "../firebase/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 import NotificationBell from "../components/NotificationBell"; // Adjust the import path as needed
-import SideMenu from "@/components/SideMenu";
+import AnimatedSideMenu from "@/components/SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -43,11 +43,11 @@ export default function SettingsScreen() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   const handleMenuSelect = async (page) => {
@@ -68,13 +68,18 @@ export default function SettingsScreen() {
       }
     } else {
       const paths = {
-        Recipes: "/home",
-        Appliances: "/screens/Appliances",
+        Home: "/home",
         AIRecipes: "/screens/AIRecipes",
-        Freezer: "/screens/Freezer",
-        Fridge: "/screens/Fridge",
         Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
       };
       router.push({
         pathname: paths[page] || "/home",
@@ -106,6 +111,15 @@ export default function SettingsScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
         <View style={styles.line} />
@@ -114,14 +128,18 @@ export default function SettingsScreen() {
 
       <NotificationBell />
 
-      <Animated.View
+      {/* <Animated.View
         style={[
           styles.menuContainer,
           { transform: [{ translateX: slideAnim }] },
         ]}
       >
         <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View>
+      </Animated.View> */}
+      <AnimatedSideMenu
+        isMenuOpen={isMenuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
 
       <View style={styles.card}>
         <Text style={styles.header}>Set Expiry Threshold</Text>
@@ -152,6 +170,15 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -163,7 +190,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 2, // Ensure the hamburger icon is above other elements
+    zIndex: 5, // Ensure the hamburger icon is above other elements
   },
   notificationIcon: {
     position: "absolute",
