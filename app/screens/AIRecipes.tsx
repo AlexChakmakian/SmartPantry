@@ -35,8 +35,10 @@ export default function AIRecipes() {
   const [modalVisible, setModalVisible] = useState(false);
   const [emoji, setEmoji] = useState("");
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState({}); // Track bookmarked recipes by ID
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const emojis = [
     "📝",
@@ -153,11 +155,11 @@ export default function AIRecipes() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    // Animated.timing(slideAnim, {
-    //   toValue: isMenuOpen ? -width : 0,
-    //   duration: 300,
-    //   useNativeDriver: true,
-    // }).start();
+    Animated.timing(slideAnim, {
+      toValue: isMenuOpen ? -width : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   const toggleBookmark = async (recipeId, e) => {
@@ -402,6 +404,16 @@ const styles = StyleSheet.create({
     paddingTop: 50, // Adjust this value to position the text at the top
     backgroundColor: "#ADD8E6",
   },
+  // Add overlay style for closing menu when tapping anywhere
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   logo: {
     width: 85,
     height: 85,
@@ -420,7 +432,7 @@ const styles = StyleSheet.create({
   scrollViewContent: {
     alignItems: "center",
     paddingVertical: 20,
-    paddingBottom: 50, // Add padding to the bottom to ensure the last item is fully visible
+    paddingBottom: 50,
   },
   recipeContainer: {
     marginTop: 20,
@@ -460,7 +472,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   spacer: {
-    height: 50, // Adjust this value to add space at the bottom
+    height: 50,
   },
   resetButton: {
     backgroundColor: "#007BFF",
@@ -502,7 +514,7 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 150, // Reduced height
     borderRadius: 10,
-    marginBottom: 5, // Reduced margin
+    marginBottom: 5,
   },
   modalText: {
     fontSize: 16,
@@ -541,7 +553,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4C5D6B",
     padding: 20,
     paddingTop: 40,
-    zIndex: 0,
+    zIndex: 2, // Above the overlay but below the hamburger button
   },
   firstMenuItem: {
     paddingTop: 40,
@@ -551,13 +563,30 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
   },
+  // Menu dropdown styles
+  menuItemWithSubmenu: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginRight: 10,
+  },
+  menuItemMain: {
+    flex: 1,
+  },
+  triangleButton: {
+    padding: 5,
+  },
+  submenuItem: {
+    paddingLeft: 20,
+    fontSize: 16,
+  },
   logoutText: {
     fontSize: 18,
     color: "red",
     marginVertical: 10,
   },
   rightPadding: {
-    paddingLeft: 20, // Adjust the value as needed
+    paddingLeft: 20,
   },
   modalBookmarkIcon: {
     position: "absolute",

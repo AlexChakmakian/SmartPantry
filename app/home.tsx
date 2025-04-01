@@ -209,6 +209,15 @@ const HomeScreen = () => {
         />
       )}
 
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
+
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
         <View style={styles.line} />
@@ -290,18 +299,18 @@ Instructions:
 5. While the steaks are baking, wash and dry the potatoes. Rub them with olive oil, salt, and pepper.
 6. Place the potatoes on a baking sheet and bake in the preheated oven for 45-60 minutes, or until tender.
 7. Serve the steaks with the baked potatoes and garnish with fresh rosemary.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Tacos"
-              imagePath={require("../assets/tacos.jpg")}
-              description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Tacos",
-                  imagePath: require("../assets/tacos.jpg"),
-                  description: `Ingredients:
+    })
+  }
+/>
+<RecipeCard
+  title="Tacos"
+  imagePath={require("../assets/tacos.jpg")}
+  description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+  onPress={() =>
+    handleRecipePress({
+      title: "Tacos",
+      imagePath: require("../assets/tacos.jpg"),
+      description: `Ingredients:
 - 1 pound ground beef
 - 1 packet taco seasoning
 - 8 small tortillas
@@ -316,18 +325,18 @@ Instructions:
 3. Warm the tortillas in a dry skillet or microwave.
 4. Fill each tortilla with the seasoned beef, shredded lettuce, shredded cheese, salsa, and sour cream.
 5. Serve immediately.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Fish and Chips"
-              imagePath={require("../assets/fishandchips.jpg")}
-              description="A classic British dish with crispy fried fish and golden fries."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Fish and Chips",
-                  imagePath: require("../assets/fishandchips.jpg"),
-                  description: `Ingredients:
+    })
+  }
+/>
+<RecipeCard
+  title="Fish and Chips"
+  imagePath={require("../assets/fishandchips.jpg")}
+  description="A classic British dish with crispy fried fish and golden fries."
+  onPress={() =>
+    handleRecipePress({
+      title: "Fish and Chips",
+      imagePath: require("../assets/fishandchips.jpg"),
+      description: `Ingredients:
 - 4 cod fillets
 - 1 cup all-purpose flour
 - 1 teaspoon baking powder
@@ -345,12 +354,13 @@ Instructions:
 5. Dip the cod fillets into the batter, allowing any excess to drip off.
 6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
 7. Serve the fish with the fries and lemon wedges.`,
-                })
-              }
-            />
-          </View>
-        </ScrollView>
-      </View>
+    })
+  }
+/>
+            </View>
+          </ScrollView>
+        </View>
+      )}
 
       {/* Show "Configure Pantry" button only for first-time users */}
       {showButton && !showSettings && (
@@ -363,47 +373,82 @@ Instructions:
         </TouchableOpacity>
       )}
 
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
+{selectedRecipe && (
+  <Modal
+    animationType="slide"
+    transparent={true}
+    visible={modalVisible}
+    onRequestClose={() => setModalVisible(false)}
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <TouchableOpacity style={styles.bookmarkIcon} onPress={() => setIsBookmarked(!isBookmarked)}>
+          <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isBookmarked ? "gold" : "#000"} />
+        </TouchableOpacity>
+        <ScrollView 
+          contentContainerStyle={styles.modalScrollViewContent}
+          showsVerticalScrollIndicator={true}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity
-                style={styles.bookmarkIcon}
-                onPress={() => setIsBookmarked(!isBookmarked)}
-              >
-                <Ionicons
-                  name={isBookmarked ? "bookmark" : "bookmark-outline"}
-                  size={30}
-                  color={isBookmarked ? "gold" : "#000"}
-                />
-              </TouchableOpacity>
-              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                {selectedRecipe.imagePath && (
-                  <Image
-                    source={selectedRecipe.imagePath}
-                    style={styles.modalImage}
-                  />
-                )}
-                <Text style={styles.modalText}>
-                  {selectedRecipe.description}
-                </Text>
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
+          <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+          {selectedRecipe.imagePath && (
+            <Image
+              source={selectedRecipe.imagePath}
+              style={styles.modalImage}
+            />
+          )}
+          
+          {/* Format recipe description */}
+          <View style={styles.recipeContentContainer}>
+            {selectedRecipe.description.split('\n\n').map((section, index) => {
+              if (section.startsWith('Ingredients:')) {
+                return (
+                  <View key={index} style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Ingredients 🍝</Text>
+                    {section.split('\n').slice(1).map((ingredient, idx) => (
+                      <Text key={idx} style={styles.ingredientItem}>
+                        <Text style={{fontWeight: 'bold'}}>-</Text>{ingredient.substring(1)}
+                      </Text>
+                    ))}
+                  </View>
+                );
+              } else if (section.startsWith('Instructions:')) {
+                return (
+                  <View key={index} style={styles.sectionContainer}>
+                    <Text style={styles.sectionTitle}>Instructions 👨‍🍳</Text>
+                    {section.split('\n').slice(1).map((instruction, idx) => {
+                      const stepMatch = instruction.match(/^(\d+)\./);
+                      if (stepMatch) {
+                        const [fullMatch, stepNumber] = stepMatch;
+                        const stepText = instruction.replace(fullMatch, '').trim();
+                        return (
+                          <View key={idx} style={styles.instructionRow}>
+                            <Text style={styles.stepNumber}>{stepNumber}.</Text>
+                            <Text style={styles.instructionText}>{stepText}</Text>
+                          </View>
+                        );
+                      }
+                      return <Text key={idx} style={styles.instructionText}>{instruction}</Text>;
+                    })}
+                  </View>
+                );
+              }
+              return <Text key={index} style={styles.modalText}>{section}</Text>;
+            })}
           </View>
-        </Modal>
-      )}
+          
+          {/* Add extra padding space at the bottom to ensure scrollability */}
+          <View style={{height: 80}} />
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setModalVisible(false)}
+        >
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+)}
 
       {/* Animated Side Menu */}
       <AnimatedSideMenu
@@ -428,6 +473,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#ADD8E6",
     paddingTop: 10,
+  },
+  // Add overlay style for closing menu when tapping anywhere
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
   },
   logo: {
     width: 85,
@@ -621,36 +676,84 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-  modalScrollViewContent: {
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  modalImage: {
-    width: "100%",
-    height: 150,
-    borderRadius: 10,
-    marginBottom: 5,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  closeButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 5,
-    marginTop: 10,
-    alignSelf: "center",
-  },
-  closeButtonText: {
-    color: "#FFF",
-    fontSize: 16,
-  },
+// Update these styles in your StyleSheet
+modalScrollViewContent: {
+  alignItems: "center",
+  paddingBottom: 70, // Increased padding for better scrolling
+},
+modalContent: {
+  width: "90%",
+  height: "75%",
+  backgroundColor: "#fff",
+  padding: 10,
+  borderRadius: 10,
+  alignItems: "center",
+  position: "relative", // Added for proper layout
+},
+recipeContentContainer: {
+  width: "90%",
+  paddingHorizontal: 5,
+},
+sectionContainer: {
+  marginBottom: 10,
+  width: "100%",
+},
+sectionTitle: {
+  fontSize: 22,
+  fontWeight: "bold", 
+  marginVertical: 8,
+  color: "#333",
+},
+ingredientItem: {
+  fontSize: 16,
+  lineHeight: 22,
+  marginBottom: 3,
+},
+instructionRow: {
+  flexDirection: "row",
+  marginBottom: 5,
+  alignItems: "flex-start",
+},
+stepNumber: {
+  fontSize: 16,
+  fontWeight: "bold",
+  marginRight: 5,
+  width: 25,
+  color: "#333",
+},
+instructionText: {
+  fontSize: 16,
+  flex: 1,
+  lineHeight: 22,
+},
+modalTitle: {
+  fontSize: 24,
+  fontWeight: "bold",
+  marginBottom: 5,
+},
+modalImage: {
+  width: "100%",
+  height: 150,
+  borderRadius: 10,
+  marginBottom: 5,
+},
+modalText: {
+  fontSize: 16,
+  marginBottom: 5,
+},
+closeButton: {
+  backgroundColor: "#007BFF",
+  paddingVertical: 5,
+  paddingHorizontal: 10,
+  borderRadius: 5,
+  marginTop: 10,
+  alignSelf: "center",
+  marginBottom: 5, // Added to ensure proper spacing
+},
+closeButtonText: {
+  color: "#FFF",
+  fontSize: 16,
+},
   logoutText: {
     fontSize: 18,
     color: "red",

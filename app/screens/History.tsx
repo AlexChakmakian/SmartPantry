@@ -222,22 +222,21 @@ export default function History() {
   };
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        {/* Add overlay to close menu when clicking anywhere on the screen */}
-        {isMenuOpen && (
-          <TouchableOpacity
-            style={styles.menuOverlay}
-            activeOpacity={1}
-            onPress={toggleMenu}
-          />
-        )}
+    <View style={styles.container}>
+      {/* Add overlay to close menu when clicking anywhere on the screen */}
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={styles.menuOverlay}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        />
+      )}
 
-        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
-          <View style={styles.line} />
-          <View style={styles.line} />
-          <View style={styles.line} />
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+        <View style={styles.line} />
+        <View style={styles.line} />
+        <View style={styles.line} />
+      </TouchableOpacity>
 
         <Image source={require("../../assets/Logo.png")} style={styles.logo} />
         <Text style={styles.title}>Viewing History</Text>
@@ -391,6 +390,26 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -40,
   },
+  // Add overlay style for closing menu when tapping anywhere
+  : {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
+  // Add overlay style for closing menu when tapping anywhere
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -411,7 +430,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 10,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadomenuOverlaywOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,

@@ -152,6 +152,8 @@ export default function Bookmarked() {
     }
   };
 
+  const filteredRecipes = recipes.filter(recipe => bookmarkedRecipes[recipe.id]);
+
   return (
     <View style={styles.container}>
       {/* Add overlay to close menu when clicking anywhere on the screen */}
@@ -221,6 +223,17 @@ export default function Bookmarked() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
+              <TouchableOpacity 
+                style={styles.modalBookmarkIcon} 
+                onPress={() => toggleBookmark(selectedRecipe.id)}
+              >
+                <Ionicons 
+                  name={isBookmarked(selectedRecipe.id) ? "bookmark" : "bookmark-outline"} 
+                  size={30} 
+                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"} 
+                />
+              </TouchableOpacity>
+              
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 {loadingRecipe ? (
                   <ActivityIndicator
@@ -316,6 +329,15 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -40,
   },
+  // menuOverlay: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: "transparent",
+  //   zIndex: 1,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -340,6 +362,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  recipeHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    marginBottom: 10,
   },
   recipeTitle: {
     fontSize: 20,
@@ -463,7 +492,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4C5D6B",
     padding: 20,
     paddingTop: 40,
-    zIndex: 0,
+    zIndex: 2, // Above the overlay but below the hamburger button
   },
   modalLoader: {
     marginVertical: 30,
