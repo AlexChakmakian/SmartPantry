@@ -9,6 +9,8 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { getAuth, signOut } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
@@ -43,48 +45,6 @@ export default function SettingsScreen() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    // Animated.timing(slideAnim, {
-    //   toValue: isMenuOpen ? -width : 0,
-    //   duration: 300,
-    //   useNativeDriver: true,
-    // }).start();
-  };
-
-  const handleMenuSelect = async (page) => {
-    setMenuOpen(false);
-    Animated.timing(slideAnim, {
-      toValue: -width,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    if (page === "Log out") {
-      try {
-        await signOut(getAuth());
-        console.log("User signed out");
-        router.push("/"); // Redirect to the login screen
-      } catch (error) {
-        console.error("Error signing out:", error);
-      }
-    } else {
-      const paths = {
-        Home: "/home",
-        AIRecipes: "/screens/AIRecipes",
-        Pantry: "/screens/Pantry",
-        Fridge: "/screens/Fridge",
-        Freezer: "/screens/Freezer",
-        Spices: "/screens/Spices",
-        Appliances: "/screens/Appliances",
-        History: "/screens/History",
-        Bookmarked: "/screens/Bookmarked",
-        ReceiptScanner: "/screens/ReceiptScanner",
-        ProfileSettings: "/screens/ProfileSettings",
-        Settings: "/Settings",
-      };
-      router.push({
-        pathname: paths[page] || "/home",
-      });
-    }
   };
 
   const handleSaveThreshold = async () => {
@@ -110,62 +70,56 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Add overlay to close menu when clicking anywhere on the screen */}
-      {isMenuOpen && (
-        <TouchableOpacity
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={toggleMenu}
-        />
-      )}
-
-      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
-        <View style={styles.line} />
-        <View style={styles.line} />
-        <View style={styles.line} />
-      </TouchableOpacity>
-
-      <NotificationBell />
-
-      {/* <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View> */}
-      <AnimatedSideMenu
-        isMenuOpen={isMenuOpen}
-        onClose={() => setMenuOpen(false)}
-      />
-
-      <View style={styles.card}>
-        <Text style={styles.header}>Set Expiry Threshold</Text>
-        <Text style={styles.subHeader}>
-          Notify me when items are older than:
-        </Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          value={expiryThreshold}
-          onChangeText={setExpiryThreshold}
-          placeholder="Number of days"
-        />
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#007BFF" />
-        ) : (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={styles.container}>
+        {/* Add overlay to close menu when clicking anywhere on the screen */}
+        {isMenuOpen && (
           <TouchableOpacity
-            style={styles.saveButton}
-            onPress={handleSaveThreshold}
-            disabled={isLoading}
-          >
-            <Text style={styles.saveButtonText}>Save</Text>
-          </TouchableOpacity>
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={toggleMenu}
+          />
         )}
+
+        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+          <View style={styles.line} />
+          <View style={styles.line} />
+          <View style={styles.line} />
+        </TouchableOpacity>
+
+        <NotificationBell />
+
+        <AnimatedSideMenu
+          isMenuOpen={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
+
+        <View style={styles.card}>
+          <Text style={styles.header}>Set Expiry Threshold</Text>
+          <Text style={styles.subHeader}>
+            Notify me when items are older than:
+          </Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={expiryThreshold}
+            onChangeText={setExpiryThreshold}
+            placeholder="Number of days"
+          />
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#007BFF" />
+          ) : (
+            <TouchableOpacity
+              style={styles.saveButton}
+              onPress={handleSaveThreshold}
+              disabled={isLoading}
+            >
+              <Text style={styles.saveButtonText}>Save</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 }
 
