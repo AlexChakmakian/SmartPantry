@@ -282,7 +282,7 @@ const HomeScreen = () => {
           >
             <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
             <View style={styles.recipeContainer}>
-            // Update your recipe card definitions to use the same formatting
+
 <RecipeCard
   title="Spaghetti Alfredo"
   imagePath={require("../assets/spaghetti.jpg")}
