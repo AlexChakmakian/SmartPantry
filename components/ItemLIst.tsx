@@ -27,6 +27,7 @@ import {
 import Icon from "react-native-vector-icons/Ionicons";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
+import AnimatedSideMenu from "./SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -72,7 +73,8 @@ const CustomDropdown = ({ selectedValue, onValueChange, options }) => {
                   <Text
                     style={[
                       styles.dropdownItemText,
-                      selectedValue === option && styles.dropdownItemTextSelected,
+                      selectedValue === option &&
+                        styles.dropdownItemTextSelected,
                     ]}
                   >
                     {option}
@@ -105,8 +107,16 @@ export default function ItemList({ itemType }) {
 
   // Available unit options
   const unitOptions = [
-    "lbs", "oz", "g", "kg", "cups", 
-    "tbsp", "tsp", "ml", "L", "pcs"
+    "lbs",
+    "oz",
+    "g",
+    "kg",
+    "cups",
+    "tbsp",
+    "tsp",
+    "ml",
+    "L",
+    "pcs",
   ];
 
   useEffect(() => {
@@ -162,8 +172,8 @@ export default function ItemList({ itemType }) {
   const editItem = (item) => {
     setEditingItem(item);
     setNewItemName(item.name);
-    
-    const parts = item.quantity.split(' ');
+
+    const parts = item.quantity.split(" ");
     if (parts.length >= 2) {
       setNewItemQuantity(parts[0]);
       setNewItemUnit(parts[1]);
@@ -171,7 +181,7 @@ export default function ItemList({ itemType }) {
       setNewItemQuantity(item.quantity);
       setNewItemUnit("lbs");
     }
-    
+
     setModalVisible(true);
   };
 
@@ -180,7 +190,7 @@ export default function ItemList({ itemType }) {
       const updatedItem = {
         name: newItemName,
         quantity: `${newItemQuantity} ${newItemUnit}`,
-        dateAdded: editingItem.dateAdded
+        dateAdded: editingItem.dateAdded,
       };
       const user = getAuth().currentUser;
       if (user) {
@@ -215,7 +225,7 @@ export default function ItemList({ itemType }) {
         await deleteItemFromDatabase(itemType, user.uid, id);
         setItems((prevItems) => prevItems.filter((item) => item.id !== id));
         setLoading(false);
-        
+
         // If we're deleting an item that's currently being edited, close the modal
         if (editingItem && editingItem.id === id) {
           setModalVisible(false);
@@ -231,21 +241,17 @@ export default function ItemList({ itemType }) {
 
   const confirmDeleteFromModal = () => {
     if (editingItem) {
-      Alert.alert(
-        "Delete Item",
-        "Are you sure you want to delete this item?",
-        [
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: () => deleteItem(editingItem.id),
-          },
-        ]
-      );
+      Alert.alert("Delete Item", "Are you sure you want to delete this item?", [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deleteItem(editingItem.id),
+        },
+      ]);
     }
   };
 
@@ -276,11 +282,12 @@ export default function ItemList({ itemType }) {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   const toggleMyFood = () => {
@@ -294,7 +301,7 @@ export default function ItemList({ itemType }) {
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '90deg']
+    outputRange: ["0deg", "90deg"],
   });
 
   const handleMenuSelect = async (page) => {
@@ -324,11 +331,12 @@ export default function ItemList({ itemType }) {
         Appliances: "/screens/Appliances",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
-        ReciptScanner: "/screens/Recipt-Scanner",
-        Settings: "/screens/Settings",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -336,7 +344,7 @@ export default function ItemList({ itemType }) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={styles.container}>
-        {/* Add overlay to close menu when tapping anywhere */}
+        {/* Add overlay to close menu when clicking anywhere on the screen */}
         {isMenuOpen && (
           <TouchableOpacity
             style={styles.menuOverlay}
@@ -344,8 +352,7 @@ export default function ItemList({ itemType }) {
             onPress={toggleMenu}
           />
         )}
-      
-        {/* Always render the hamburger menu button - increased z-index to be above everything */}
+
         <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
           <View style={styles.line} />
           <View style={styles.line} />
@@ -425,13 +432,13 @@ export default function ItemList({ itemType }) {
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => setModalVisible(false)}
           >
-            <TouchableOpacity 
-              style={styles.modalView} 
+            <TouchableOpacity
+              style={styles.modalView}
               activeOpacity={1}
               onPress={(e) => e.stopPropagation()} // Prevent clicks on the modal content from closing it
             >
@@ -454,7 +461,7 @@ export default function ItemList({ itemType }) {
                   onChangeText={setNewItemQuantity}
                   keyboardType="numeric"
                 />
-                
+
                 {/* Replace Picker with our CustomDropdown */}
                 <CustomDropdown
                   selectedValue={newItemUnit}
@@ -471,7 +478,7 @@ export default function ItemList({ itemType }) {
                   {editingItem ? "Update" : "Add"}
                 </Text>
               </TouchableOpacity>
-              
+
               <View style={styles.modalButtonsRow}>
                 <TouchableOpacity
                   style={styles.modalCancelButton}
@@ -479,7 +486,7 @@ export default function ItemList({ itemType }) {
                 >
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                
+
                 {/* Only show delete button when editing an existing item */}
                 {editingItem && (
                   <TouchableOpacity
@@ -494,79 +501,34 @@ export default function ItemList({ itemType }) {
           </TouchableOpacity>
         </Modal>
 
-        <Animated.View
+        {/* <Animated.View
           style={[
             styles.menuContainer,
             { transform: [{ translateX: slideAnim }] },
           ]}
         >
-          <TouchableOpacity
-            style={styles.firstMenuItem}
-            onPress={() => handleMenuSelect("Home")}
-          >
-            <Text style={styles.menuText}>Home</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-            <Text style={styles.menuText}>Smart Recipes</Text>
-          </TouchableOpacity>
-          
-          {/* My Food dropdown section */}
-          <View style={styles.menuItemWithSubmenu}>
-            <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
-              <Text style={styles.menuText}>My Food</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
-              <Animated.View style={{ transform: [{ rotate }] }}>
-                <Icon name="chevron-forward" size={20} color="#fff" />
-              </Animated.View>
-            </TouchableOpacity>
-          </View>
-          
-          {/* Submenu items */}
-          {isMyFoodOpen && (
-            <>
-              <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>Pantry</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>Fridge</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>Freezer</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>Spices</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-                <Text style={[styles.menuText, styles.submenuItem]}>Appliances</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          
-          {/* Regular menu items */}
-          <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-            <Text style={[styles.menuText]}>History</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-            <Text style={[styles.menuText]}>Bookmarked</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
-            <Text style={styles.menuText}>Receipt Scanner</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
-            <Text style={styles.menuText}>Settings</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-            <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-          </TouchableOpacity>
-        </Animated.View>
+          <SideMenu onSelectMenuItem={handleMenuSelect} />
+        </Animated.View> */}
+        {/* Animated Side Menu */}
+        <AnimatedSideMenu
+          isMenuOpen={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
       </View>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  menuOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
   container: {
     flex: 1,
     padding: 20,
@@ -592,7 +554,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 3, // Increased to be above everything, including the menu
+    zIndex: 5,
   },
   line: {
     width: 30,
@@ -621,9 +583,9 @@ const styles = StyleSheet.create({
   },
   // Menu dropdown styles
   menuItemWithSubmenu: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginRight: 10,
   },
   menuItemMain: {
@@ -637,7 +599,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   logoutText: {
-    color: 'red',
+    color: "red",
   },
   headerContainer: {
     flexDirection: "row",
@@ -840,6 +802,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  logoutText: {
+    fontSize: 18,
+    color: "red",
+    marginVertical: 10,
+  },
+  rightPadding: {
+    paddingLeft: 20, // Adjust the value as needed
   },
   editButton: {
     position: "absolute",
