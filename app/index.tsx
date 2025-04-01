@@ -141,7 +141,7 @@ export default function Index() {
           <TouchableOpacity onPress={handleForgotPassword}>
             <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
           </TouchableOpacity>
-          <CreateAccountButton onPress={handleCreateAccount} />
+          <CreateAccountButton onPress={handleCreateAccount} style={styles.createAccountText} />
           <GoogleSignInButton onPress={() => Alert.alert("Google Sign-In")} />
         </View>
       </ImageBackground>
@@ -187,8 +187,12 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     color: "white",
-    marginTop: -15,
+    fontSize: 19, // Increased font size
     marginBottom: 20,
-    fontSize: 12,
+  },
+  createAccountText: {
+    fontSize: 19, // Increased font size
+    color: "white", // Ensure the text color is white
+    marginBottom: 15,
   },
 });
