@@ -238,119 +238,116 @@ export default function History() {
         <View style={styles.line} />
       </TouchableOpacity>
 
-        <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-        <Text style={styles.title}>Viewing History</Text>
+      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+      <Text style={styles.title}>Viewing History</Text>
 
-        {loading ? (
-          <ActivityIndicator size="large" color="#0000ff" />
-        ) : (
-          <ScrollView contentContainerStyle={styles.scrollViewContent}>
-            {historyItems.length > 0 ? (
-              historyItems.map((item, index) => (
-                <Swipeable
-                  key={index}
-                  renderRightActions={() => renderRightActions(item.id)}
-                >
-                  <TouchableOpacity
-                    style={styles.recipeContainer}
-                    onPress={() => handleRecipePress(item)}
-                  >
-                    <Text style={styles.recipeTitle}>{item.title}</Text>
-                    {item.image && (
-                      <Image
-                        source={{ uri: item.image }}
-                        style={styles.recipeImage}
-                      />
-                    )}
-                    <Text style={styles.recipeInfo}>
-                      Viewed: {formatDate(item.timestamp)}
-                    </Text>
-                  </TouchableOpacity>
-                </Swipeable>
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No viewing history</Text>
-            )}
-            <View style={styles.spacer} />
-          </ScrollView>
-        )}
-
-        {historyItems.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handleClearHistory}
-          >
-            <Text style={styles.clearButtonText}>Clear History</Text>
-          </TouchableOpacity>
-        )}
-
-        {selectedRecipe && (
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-          >
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <ScrollView
-                  contentContainerStyle={styles.modalScrollViewContent}
-                >
-                  {loadingRecipe ? (
-                    <ActivityIndicator
-                      size="large"
-                      color="#0000ff"
-                      style={styles.modalLoader}
-                    />
-                  ) : (
-                    recipeDetails && (
-                      <>
-                        <Text style={styles.modalTitle}>
-                          {recipeDetails.title}
-                        </Text>
-                        {recipeDetails.image && (
-                          <Image
-                            source={{ uri: recipeDetails.image }}
-                            style={styles.modalImage}
-                          />
-                        )}
-                        <Text style={styles.modalText}>
-                          Calories: {recipeDetails.calories} cal
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Serving Size:{" "}
-                          {recipeDetails.servingSize?.amount || ""}{" "}
-                          {recipeDetails.servingSize?.unit || ""}
-                        </Text>
-                        <Text style={styles.modalText}>Ingredients:</Text>
-                        {recipeDetails.extendedIngredients &&
-                          recipeDetails.extendedIngredients.map(
-                            (ingredient, index) => (
-                              <Text key={index} style={styles.modalText}>
-                                • {ingredient.original}
-                              </Text>
-                            )
-                          )}
-                        <Text style={styles.modalText}>Instructions:</Text>
-                        <Text style={styles.modalText}>
-                          {formatInstructions(recipeDetails.instructions)}
-                        </Text>
-                      </>
-                    )
-                  )}
-                </ScrollView>
+      {loading ? (
+        <ActivityIndicator size="large" color="#0000ff" />
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          {historyItems.length > 0 ? (
+            historyItems.map((item, index) => (
+              <Swipeable
+                key={index}
+                renderRightActions={() => renderRightActions(item.id)}
+              >
                 <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
+                  style={styles.recipeContainer}
+                  onPress={() => handleRecipePress(item)}
                 >
-                  <Text style={styles.closeButtonText}>Close</Text>
+                  <Text style={styles.recipeTitle}>{item.title}</Text>
+                  {item.image && (
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.recipeImage}
+                    />
+                  )}
+                  <Text style={styles.recipeInfo}>
+                    Viewed: {formatDate(item.timestamp)}
+                  </Text>
                 </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-        )}
+              </Swipeable>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No viewing history</Text>
+          )}
+          <View style={styles.spacer} />
+        </ScrollView>
+      )}
 
-        {/* <Animated.View
+      {historyItems.length > 0 && (
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={handleClearHistory}
+        >
+          <Text style={styles.clearButtonText}>Clear History</Text>
+        </TouchableOpacity>
+      )}
+
+      {selectedRecipe && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+                {loadingRecipe ? (
+                  <ActivityIndicator
+                    size="large"
+                    color="#0000ff"
+                    style={styles.modalLoader}
+                  />
+                ) : (
+                  recipeDetails && (
+                    <>
+                      <Text style={styles.modalTitle}>
+                        {recipeDetails.title}
+                      </Text>
+                      {recipeDetails.image && (
+                        <Image
+                          source={{ uri: recipeDetails.image }}
+                          style={styles.modalImage}
+                        />
+                      )}
+                      <Text style={styles.modalText}>
+                        Calories: {recipeDetails.calories} cal
+                      </Text>
+                      <Text style={styles.modalText}>
+                        Serving Size: {recipeDetails.servingSize?.amount || ""}{" "}
+                        {recipeDetails.servingSize?.unit || ""}
+                      </Text>
+                      <Text style={styles.modalText}>Ingredients:</Text>
+                      {recipeDetails.extendedIngredients &&
+                        recipeDetails.extendedIngredients.map(
+                          (ingredient, index) => (
+                            <Text key={index} style={styles.modalText}>
+                              • {ingredient.original}
+                            </Text>
+                          )
+                        )}
+                      <Text style={styles.modalText}>Instructions:</Text>
+                      <Text style={styles.modalText}>
+                        {formatInstructions(recipeDetails.instructions)}
+                      </Text>
+                    </>
+                  )
+                )}
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* <Animated.View
           style={[
             styles.menuContainer,
             { transform: [{ translateX: slideAnim }] },
@@ -358,12 +355,11 @@ export default function History() {
         >
           <SideMenu onSelectMenuItem={handleMenuSelect} />
         </Animated.View> */}
-        <AnimatedSideMenu
-          isMenuOpen={isMenuOpen}
-          onClose={() => setMenuOpen(false)}
-        />
-      </View>
-    </GestureHandlerRootView>
+      <AnimatedSideMenu
+        isMenuOpen={isMenuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
+    </View>
   );
 }
 
@@ -391,7 +387,7 @@ const styles = StyleSheet.create({
     marginTop: -40,
   },
   // Add overlay style for closing menu when tapping anywhere
-  : {
+  overlay: {
     position: "absolute",
     top: 0,
     left: 0,
@@ -401,15 +397,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   // Add overlay style for closing menu when tapping anywhere
-  menuOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "transparent",
-    zIndex: 1,
-  },
+  // menuOverlay: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: "transparent",
+  //   zIndex: 1,
+  // },
   title: {
     fontSize: 24,
     fontWeight: "bold",

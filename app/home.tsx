@@ -166,7 +166,7 @@ const HomeScreen = () => {
         Settings: "/Settings",
       };
       router.push({
-        pathname: paths[page],
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -209,14 +209,6 @@ const HomeScreen = () => {
         />
       )}
 
-      {/* Add overlay to close menu when clicking anywhere on the screen */}
-      {isMenuOpen && (
-        <TouchableOpacity
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={toggleMenu}
-        />
-      )}
 
       <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
         <View style={styles.line} />
@@ -475,15 +467,15 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   // Add overlay style for closing menu when tapping anywhere
-  menuOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: "transparent",
-    zIndex: 1,
-  },
+  // menuOverlay: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: "transparent",
+  //   zIndex: 1,
+  // },
   logo: {
     width: 85,
     height: 85,

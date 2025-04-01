@@ -152,7 +152,9 @@ export default function Bookmarked() {
     }
   };
 
-  const filteredRecipes = recipes.filter(recipe => bookmarkedRecipes[recipe.id]);
+  const filteredRecipes = recipes.filter(
+    (recipe) => bookmarkedRecipes[recipe.id]
+  );
 
   return (
     <View style={styles.container}>
@@ -223,17 +225,21 @@ export default function Bookmarked() {
         >
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <TouchableOpacity 
-                style={styles.modalBookmarkIcon} 
+              <TouchableOpacity
+                style={styles.modalBookmarkIcon}
                 onPress={() => toggleBookmark(selectedRecipe.id)}
               >
-                <Ionicons 
-                  name={isBookmarked(selectedRecipe.id) ? "bookmark" : "bookmark-outline"} 
-                  size={30} 
-                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"} 
+                <Ionicons
+                  name={
+                    isBookmarked(selectedRecipe.id)
+                      ? "bookmark"
+                      : "bookmark-outline"
+                  }
+                  size={30}
+                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
                 />
               </TouchableOpacity>
-              
+
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
                 {loadingRecipe ? (
                   <ActivityIndicator
@@ -337,7 +343,7 @@ const styles = StyleSheet.create({
   //   bottom: 0,
   //   backgroundColor: "transparent",
   //   zIndex: 1,
-  },
+  // },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -364,10 +370,10 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   recipeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
     marginBottom: 10,
   },
   recipeTitle: {
