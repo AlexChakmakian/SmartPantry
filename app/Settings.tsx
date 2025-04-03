@@ -18,7 +18,7 @@ import { db } from "../firebase/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 import NotificationBell from "../components/NotificationBell"; // Adjust the import path as needed
-import AnimatedSideMenu from "@/components/SideMenu";
+import AnimatedSideMenu from ";
 
 const { width } = Dimensions.get("window");
 
