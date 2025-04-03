@@ -33,6 +33,7 @@ const ProfileHeader = () => {
 
           if (userDoc.exists()) {
             const userData = userDoc.data();
+            // console.log("User profile found in database:", userData);
             setProfile({
               firstName: userData.firstName || "",
               lastName: userData.lastName || "",
@@ -73,6 +74,7 @@ const styles = StyleSheet.create({
   profileContainer: {
     alignItems: "center",
     paddingVertical: 20,
+    paddingTop: 40, // Added more padding at the top to match the menu position
     borderBottomWidth: 1,
     borderBottomColor: "#5D6D7E", // Slightly lighter than the menu background
     marginBottom: 10,

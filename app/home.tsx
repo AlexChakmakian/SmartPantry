@@ -10,15 +10,14 @@ import {
   ScrollView,
   Modal,
   Alert,
-  TextInput,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
 import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
 import NotificationBell from "../components/NotificationBell"; // Component for notifications
+import AnimatedSideMenu from "@/components/SideMenu";
+import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -50,10 +49,9 @@ const HomeScreen = () => {
   const [showButton, setShowButton] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
-  const [expiryThreshold, setExpiryThreshold] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
   const [isBookmarked, setIsBookmarked] = useState(false); // State for bookmark icon
-  const [showSettings, setShowSettings] = useState(false);
+
   const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -75,10 +73,6 @@ const HomeScreen = () => {
           if (userData.hasSeenConfigureButton) {
             setShowButton(false); // Do not show the button if the flag is true
           }
-
-          // Set expiry threshold from user data
-          const threshold = userData.expiryThreshold || 30; // Default to 30 days
-          setExpiryThreshold(threshold.toString());
         } else {
           console.log("User document does not exist.");
         }
@@ -111,11 +105,11 @@ const HomeScreen = () => {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
   const toggleMyFood = () => {
@@ -129,7 +123,7 @@ const HomeScreen = () => {
 
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '90deg']
+    outputRange: ["0deg", "90deg"],
   });
 
   const handleMenuSelect = async (page) => {
@@ -150,7 +144,7 @@ const HomeScreen = () => {
         console.error("Error signing out:", error);
       }
     } else if (page === "Settings") {
-      setShowSettings(true);
+      router.push("/Settings"); // Redirect to the settings screen
     } else {
       const paths = {
         Home: "/home",
@@ -160,12 +154,14 @@ const HomeScreen = () => {
         Freezer: "/screens/Freezer",
         Spices: "/screens/Spices",
         Appliances: "/screens/Appliances",
-        History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
-        ReciptScanner: "/screens/Recipt-Scanner", // receipt scanner
+        History: "/screens/History",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -173,28 +169,6 @@ const HomeScreen = () => {
   const handleRecipePress = (recipe) => {
     setSelectedRecipe(recipe);
     setModalVisible(true);
-  };
-
-  const handleSaveThreshold = async () => {
-    const thresholdNumber = Number(expiryThreshold);
-    if (!expiryThreshold || isNaN(thresholdNumber) || thresholdNumber <= 0) {
-      Alert.alert("Error", "Please enter a valid number of days.");
-      return;
-    }
-
-    setIsLoading(true);
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        const userRef = doc(db, "users", user.uid);
-        await updateDoc(userRef, { expiryThreshold: thresholdNumber });
-        Alert.alert("Success", "Expiry threshold updated.");
-      } catch (error) {
-        console.error("Error saving threshold:", error);
-        Alert.alert("Error", "Failed to save expiry threshold.");
-      }
-    }
-    setIsLoading(false);
   };
 
   return (
@@ -218,80 +192,36 @@ const HomeScreen = () => {
 
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
-      {showSettings ? (
-        <View
-          style={[
-            styles.contentContainer,
-            { justifyContent: "center", alignItems: "center" },
-          ]}
-        >
-          <View style={styles.card}>
-            <Text style={styles.header}>Settings</Text>
-            <Text style={styles.subHeader}>
-              Set the number of days before you want to be notified about
-              expiring items
-            </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Number of days"
-              value={expiryThreshold}
-              onChangeText={setExpiryThreshold}
-              keyboardType="numeric"
-            />
-            <TouchableOpacity
-              style={styles.saveButton}
-              onPress={handleSaveThreshold}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text style={styles.saveButtonText}>Save</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.saveButton,
-                { marginTop: 10, backgroundColor: "#6c757d" },
-              ]}
-              onPress={() => setShowSettings(false)}
-            >
-              <Text style={styles.saveButtonText}>Back to Home</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <View style={styles.contentContainer}>
-          <View style={styles.topButtonsContainer}>
-            <TouchableOpacity
-              style={styles.squareButton}
-              onPress={() => router.push("/screens/AIRecipes")}
-            >
-              <Text style={styles.squareButtonText}>Smart Recipes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.squareButton}
-              onPress={() => router.push("/screens/Recipt-Scanner")}
-            >
-              <Text style={styles.squareButtonText}>Scan Receipt</Text>
-            </TouchableOpacity>
-          </View>
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollViewContent}
+      <View style={styles.contentContainer}>
+        <View style={styles.topButtonsContainer}>
+          <TouchableOpacity
+            style={styles.squareButton}
+            onPress={() => router.push("/screens/AIRecipes")}
           >
-            <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
-            <View style={styles.recipeContainer}>
-
-<RecipeCard
-  title="Spaghetti Alfredo"
-  imagePath={require("../assets/spaghetti.jpg")}
-  description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
-  onPress={() =>
-    handleRecipePress({
-      title: "Spaghetti Alfredo",
-      imagePath: require("../assets/spaghetti.jpg"),
-      description: `Ingredients:
+            <Text style={styles.squareButtonText}>Smart Recipes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.squareButton}
+            onPress={() => router.push("/screens/ReceiptScanner")}
+          >
+            <Text style={styles.squareButtonText}>Scan Receipt</Text>
+          </TouchableOpacity>
+        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+        >
+          <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
+          <View style={styles.recipeContainer}>
+            <RecipeCard
+              title="Spaghetti Alfredo"
+              imagePath={require("../assets/spaghetti.jpg")}
+              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Spaghetti Alfredo",
+                  imagePath: require("../assets/spaghetti.jpg"),
+                  description: `Ingredients:
 - 12 ounces fettuccine
 - 1 cup heavy cream
 - 1/2 cup unsalted butter
@@ -306,18 +236,18 @@ Instructions:
 4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
 5. Season with salt and pepper to taste.
 6. Garnish with chopped parsley and serve immediately.`,
-    })
-  }
-/>
-<RecipeCard
-  title="Steak and Potatoes"
-  imagePath={require("../assets/steakpotatoes.jpg")}
-  description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
-  onPress={() =>
-    handleRecipePress({
-      title: "Steak and Potatoes",
-      imagePath: require("../assets/steakpotatoes.jpg"),
-      description: `Ingredients:
+                })
+              }
+            />
+            <RecipeCard
+              title="Steak and Potatoes"
+              imagePath={require("../assets/steakpotatoes.jpg")}
+              description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Steak and Potatoes",
+                  imagePath: require("../assets/steakpotatoes.jpg"),
+                  description: `Ingredients:
 - 2 ribeye steaks
 - 4 large potatoes
 - 2 tablespoons olive oil
@@ -333,18 +263,18 @@ Instructions:
 5. While the steaks are baking, wash and dry the potatoes. Rub them with olive oil, salt, and pepper.
 6. Place the potatoes on a baking sheet and bake in the preheated oven for 45-60 minutes, or until tender.
 7. Serve the steaks with the baked potatoes and garnish with fresh rosemary.`,
-    })
-  }
-/>
-<RecipeCard
-  title="Tacos"
-  imagePath={require("../assets/tacos.jpg")}
-  description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
-  onPress={() =>
-    handleRecipePress({
-      title: "Tacos",
-      imagePath: require("../assets/tacos.jpg"),
-      description: `Ingredients:
+                })
+              }
+            />
+            <RecipeCard
+              title="Tacos"
+              imagePath={require("../assets/tacos.jpg")}
+              description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Tacos",
+                  imagePath: require("../assets/tacos.jpg"),
+                  description: `Ingredients:
 - 1 pound ground beef
 - 1 packet taco seasoning
 - 8 small tortillas
@@ -359,18 +289,18 @@ Instructions:
 3. Warm the tortillas in a dry skillet or microwave.
 4. Fill each tortilla with the seasoned beef, shredded lettuce, shredded cheese, salsa, and sour cream.
 5. Serve immediately.`,
-    })
-  }
-/>
-<RecipeCard
-  title="Fish and Chips"
-  imagePath={require("../assets/fishandchips.jpg")}
-  description="A classic British dish with crispy fried fish and golden fries."
-  onPress={() =>
-    handleRecipePress({
-      title: "Fish and Chips",
-      imagePath: require("../assets/fishandchips.jpg"),
-      description: `Ingredients:
+                })
+              }
+            />
+            <RecipeCard
+              title="Fish and Chips"
+              imagePath={require("../assets/fishandchips.jpg")}
+              description="A classic British dish with crispy fried fish and golden fries."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Fish and Chips",
+                  imagePath: require("../assets/fishandchips.jpg"),
+                  description: `Ingredients:
 - 4 cod fillets
 - 1 cup all-purpose flour
 - 1 teaspoon baking powder
@@ -388,16 +318,15 @@ Instructions:
 5. Dip the cod fillets into the batter, allowing any excess to drip off.
 6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
 7. Serve the fish with the fries and lemon wedges.`,
-    })
-  }
-/>
-            </View>
-          </ScrollView>
-        </View>
-      )}
+                })
+              }
+            />
+          </View>
+        </ScrollView>
+      </View>
 
       {/* Show "Configure Pantry" button only for first-time users */}
-      {showButton && !showSettings && (
+      {showButton && (
         <TouchableOpacity
           style={styles.circleButton}
           onPress={handleConfigurePantry}
@@ -407,160 +336,133 @@ Instructions:
         </TouchableOpacity>
       )}
 
-{selectedRecipe && (
-  <Modal
-    animationType="slide"
-    transparent={true}
-    visible={modalVisible}
-    onRequestClose={() => setModalVisible(false)}
-  >
-    <View style={styles.modalContainer}>
-      <View style={styles.modalContent}>
-        <TouchableOpacity style={styles.bookmarkIcon} onPress={() => setIsBookmarked(!isBookmarked)}>
-          <Ionicons name={isBookmarked ? "bookmark" : "bookmark-outline"} size={30} color={isBookmarked ? "gold" : "#000"} />
-        </TouchableOpacity>
-        <ScrollView 
-          contentContainerStyle={styles.modalScrollViewContent}
-          showsVerticalScrollIndicator={true}
+      {selectedRecipe && (
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}
         >
-          <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-          {selectedRecipe.imagePath && (
-            <Image
-              source={selectedRecipe.imagePath}
-              style={styles.modalImage}
-            />
-          )}
-          
-          {/* Format recipe description */}
-          <View style={styles.recipeContentContainer}>
-            {selectedRecipe.description.split('\n\n').map((section, index) => {
-              if (section.startsWith('Ingredients:')) {
-                return (
-                  <View key={index} style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Ingredients 🍝</Text>
-                    {section.split('\n').slice(1).map((ingredient, idx) => (
-                      <Text key={idx} style={styles.ingredientItem}>
-                        <Text style={{fontWeight: 'bold'}}>-</Text>{ingredient.substring(1)}
-                      </Text>
-                    ))}
-                  </View>
-                );
-              } else if (section.startsWith('Instructions:')) {
-                return (
-                  <View key={index} style={styles.sectionContainer}>
-                    <Text style={styles.sectionTitle}>Instructions 👨‍🍳</Text>
-                    {section.split('\n').slice(1).map((instruction, idx) => {
-                      const stepMatch = instruction.match(/^(\d+)\./);
-                      if (stepMatch) {
-                        const [fullMatch, stepNumber] = stepMatch;
-                        const stepText = instruction.replace(fullMatch, '').trim();
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity
+                style={styles.bookmarkIcon}
+                onPress={() => setIsBookmarked(!isBookmarked)}
+              >
+                <Ionicons
+                  name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                  size={30}
+                  color={isBookmarked ? "gold" : "#000"}
+                />
+              </TouchableOpacity>
+              <ScrollView
+                contentContainerStyle={styles.modalScrollViewContent}
+                showsVerticalScrollIndicator={true}
+              >
+                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+                {selectedRecipe.imagePath && (
+                  <Image
+                    source={selectedRecipe.imagePath}
+                    style={styles.modalImage}
+                  />
+                )}
+
+                {/* Format recipe description */}
+                <View style={styles.recipeContentContainer}>
+                  {selectedRecipe.description
+                    .split("\n\n")
+                    .map((section, index) => {
+                      if (section.startsWith("Ingredients:")) {
                         return (
-                          <View key={idx} style={styles.instructionRow}>
-                            <Text style={styles.stepNumber}>{stepNumber}.</Text>
-                            <Text style={styles.instructionText}>{stepText}</Text>
+                          <View key={index} style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>
+                              Ingredients 🍝
+                            </Text>
+                            {section
+                              .split("\n")
+                              .slice(1)
+                              .map((ingredient, idx) => (
+                                <Text key={idx} style={styles.ingredientItem}>
+                                  <Text style={{ fontWeight: "bold" }}>-</Text>
+                                  {ingredient.substring(1)}
+                                </Text>
+                              ))}
+                          </View>
+                        );
+                      } else if (section.startsWith("Instructions:")) {
+                        return (
+                          <View key={index} style={styles.sectionContainer}>
+                            <Text style={styles.sectionTitle}>
+                              Instructions 👨‍🍳
+                            </Text>
+                            {section
+                              .split("\n")
+                              .slice(1)
+                              .map((instruction, idx) => {
+                                const stepMatch = instruction.match(/^(\d+)\./);
+                                if (stepMatch) {
+                                  const [fullMatch, stepNumber] = stepMatch;
+                                  const stepText = instruction
+                                    .replace(fullMatch, "")
+                                    .trim();
+                                  return (
+                                    <View
+                                      key={idx}
+                                      style={styles.instructionRow}
+                                    >
+                                      <Text style={styles.stepNumber}>
+                                        {stepNumber}.
+                                      </Text>
+                                      <Text style={styles.instructionText}>
+                                        {stepText}
+                                      </Text>
+                                    </View>
+                                  );
+                                }
+                                return (
+                                  <Text
+                                    key={idx}
+                                    style={styles.instructionText}
+                                  >
+                                    {instruction}
+                                  </Text>
+                                );
+                              })}
                           </View>
                         );
                       }
-                      return <Text key={idx} style={styles.instructionText}>{instruction}</Text>;
+                      return (
+                        <Text key={index} style={styles.modalText}>
+                          {section}
+                        </Text>
+                      );
                     })}
-                  </View>
-                );
-              }
-              return <Text key={index} style={styles.modalText}>{section}</Text>;
-            })}
-          </View>
-          
-          {/* Add extra padding space at the bottom to ensure scrollability */}
-          <View style={{height: 80}} />
-        </ScrollView>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setModalVisible(false)}
-        >
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-)}
+                </View>
 
-      <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Home")}
-        >
-          <Text style={styles.menuText}>Home</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>Smart Recipes</Text>
-        </TouchableOpacity>
-        
-        {/* My Food dropdown section */}
-        <View style={styles.menuItemWithSubmenu}>
-          <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
-            <Text style={styles.menuText}>My Food</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
-            <Animated.View style={{ transform: [{ rotate }] }}>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Submenu items */}
-        {isMyFoodOpen && (
-          <>
-            <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Pantry</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Fridge</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Freezer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Spices</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Appliances</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        
-        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={styles.menuText}>History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={styles.menuText}>Bookmarked</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
-          <Text style={styles.menuText}>Receipt Scanner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
-          <Text style={styles.menuText}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-        </TouchableOpacity>
-      </Animated.View>
+                {/* Add extra padding space at the bottom to ensure scrollability */}
+                <View style={{ height: 80 }} />
+              </ScrollView>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* Animated Side Menu */}
+      <AnimatedSideMenu
+        isMenuOpen={isMenuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ADD8E6",
-    paddingTop: 10,
-  },
-  // Add overlay style for closing menu when tapping anywhere
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -570,6 +472,21 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     zIndex: 1,
   },
+  container: {
+    flex: 1,
+    backgroundColor: "#ADD8E6",
+    paddingTop: 10,
+  },
+  // Add overlay style for closing menu when tapping anywhere
+  // menuOverlay: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: "transparent",
+  //   zIndex: 1,
+  // },
   logo: {
     width: 85,
     height: 85,
@@ -580,7 +497,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 3, // Increased to be above everything, including the menu overlay
+    zIndex: 10,
   },
   bookmarkIcon: {
     position: "absolute",
@@ -716,10 +633,14 @@ const styles = StyleSheet.create({
     width: width * 0.4,
     backgroundColor: "#4C5D6B",
     padding: 20,
-    paddingTop: 40,
-    zIndex: 2, // Set to 2, above menuOverlay but below hamburger
+    paddingTop: 40, // Changed from 40 to 0
+    zIndex: 0,
+  },
+  menuItem: {
+    marginTop: 10, // Use this instead of firstMenuItem style
   },
   firstMenuItem: {
+    // This can be removed if you're using menuItem instead
     paddingTop: 40,
   },
   menuText: {
@@ -729,9 +650,9 @@ const styles = StyleSheet.create({
   },
   // Menu dropdown styles
   menuItemWithSubmenu: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginRight: 10,
   },
   menuItemMain: {
@@ -758,84 +679,84 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: "center",
   },
-// Update these styles in your StyleSheet
-modalScrollViewContent: {
-  alignItems: "center",
-  paddingBottom: 70, // Increased padding for better scrolling
-},
-modalContent: {
-  width: "90%",
-  height: "75%",
-  backgroundColor: "#fff",
-  padding: 10,
-  borderRadius: 10,
-  alignItems: "center",
-  position: "relative", // Added for proper layout
-},
-recipeContentContainer: {
-  width: "90%",
-  paddingHorizontal: 5,
-},
-sectionContainer: {
-  marginBottom: 10,
-  width: "100%",
-},
-sectionTitle: {
-  fontSize: 22,
-  fontWeight: "bold", 
-  marginVertical: 8,
-  color: "#333",
-},
-ingredientItem: {
-  fontSize: 16,
-  lineHeight: 22,
-  marginBottom: 3,
-},
-instructionRow: {
-  flexDirection: "row",
-  marginBottom: 5,
-  alignItems: "flex-start",
-},
-stepNumber: {
-  fontSize: 16,
-  fontWeight: "bold",
-  marginRight: 5,
-  width: 25,
-  color: "#333",
-},
-instructionText: {
-  fontSize: 16,
-  flex: 1,
-  lineHeight: 22,
-},
-modalTitle: {
-  fontSize: 24,
-  fontWeight: "bold",
-  marginBottom: 5,
-},
-modalImage: {
-  width: "100%",
-  height: 150,
-  borderRadius: 10,
-  marginBottom: 5,
-},
-modalText: {
-  fontSize: 16,
-  marginBottom: 5,
-},
-closeButton: {
-  backgroundColor: "#007BFF",
-  paddingVertical: 5,
-  paddingHorizontal: 10,
-  borderRadius: 5,
-  marginTop: 10,
-  alignSelf: "center",
-  marginBottom: 5, // Added to ensure proper spacing
-},
-closeButtonText: {
-  color: "#FFF",
-  fontSize: 16,
-},
+  // Update these styles in your StyleSheet
+  modalScrollViewContent: {
+    alignItems: "center",
+    paddingBottom: 70, // Increased padding for better scrolling
+  },
+  modalContent: {
+    width: "90%",
+    height: "75%",
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    position: "relative", // Added for proper layout
+  },
+  recipeContentContainer: {
+    width: "90%",
+    paddingHorizontal: 5,
+  },
+  sectionContainer: {
+    marginBottom: 10,
+    width: "100%",
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginVertical: 8,
+    color: "#333",
+  },
+  ingredientItem: {
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 3,
+  },
+  instructionRow: {
+    flexDirection: "row",
+    marginBottom: 5,
+    alignItems: "flex-start",
+  },
+  stepNumber: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginRight: 5,
+    width: 25,
+    color: "#333",
+  },
+  instructionText: {
+    fontSize: 16,
+    flex: 1,
+    lineHeight: 22,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 5,
+  },
+  modalImage: {
+    width: "100%",
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 5,
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  closeButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginTop: 10,
+    alignSelf: "center",
+    marginBottom: 5, // Added to ensure proper spacing
+  },
+  closeButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+  },
   logoutText: {
     fontSize: 18,
     color: "red",
@@ -843,51 +764,6 @@ closeButtonText: {
   },
   rightPadding: {
     paddingLeft: 20,
-  },
-  // Settings styles
-  card: {
-    backgroundColor: "white",
-    borderRadius: 15,
-    width: "90%",
-    padding: 25,
-    shadowColor: "#000",
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 5,
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 20,
-  },
-  subHeader: {
-    fontSize: 18,
-    color: "#555",
-    marginBottom: 15,
-  },
-  input: {
-    width: "100%",
-    height: 50,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingLeft: 15,
-    fontSize: 16,
-    marginBottom: 20,
-  },
-  saveButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 15,
-    borderRadius: 10,
-    alignItems: "center",
-    width: "100%",
-  },
-  saveButtonText: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
   },
 });
 
