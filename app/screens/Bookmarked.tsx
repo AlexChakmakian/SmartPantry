@@ -17,6 +17,7 @@ import { getAuth, signOut } from "firebase/auth";
 import { getBookmarks, removeBookmark } from "@/firebase/bookmarkService";
 import { addRecipeToHistory } from "@/firebase/recipeHistoryService";
 import AnimatedSideMenu from "@/components/SideMenu";
+import { Ionicons } from "@expo/vector-icons";
 
 const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
 const { width, height } = Dimensions.get("window");
@@ -152,9 +153,15 @@ export default function Bookmarked() {
     }
   };
 
-  const filteredRecipes = recipes.filter(
-    (recipe) => bookmarkedRecipes[recipe.id]
-  );
+  const isBookmarked = (id) => {
+    return bookmarkedItems.some((item) => item.id === id);
+  };
+
+  const toggleBookmark = async (id) => {
+    // Since we're in the bookmarked screen, this would just remove the bookmark
+    await handleRemoveBookmark(id);
+    setModalVisible(false);
+  };
 
   return (
     <View style={styles.container}>
@@ -335,15 +342,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -40,
   },
-  // menuOverlay: {
-  //   position: "absolute",
-  //   top: 0,
-  //   left: 0,
-  //   right: 0,
-  //   bottom: 0,
-  //   backgroundColor: "transparent",
-  //   zIndex: 1,
-  // },
+
   title: {
     fontSize: 24,
     fontWeight: "bold",
