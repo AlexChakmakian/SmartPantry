@@ -25,7 +25,7 @@ import AnimatedSideMenu from "../../components/SideMenu";
 const { width, height } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "AIzaSyCYRdOSDaXUIt8SQyO9KHru4ofsB4XwA8g";
+const GOOGLE_API_KEY = "REPLACE WITH KEY";
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
@@ -131,7 +131,7 @@ export default function ReceiptScanner() {
     const base64Image = await FileSystem.readAsStringAsync(imageUri, {
       encoding: FileSystem.EncodingType.Base64,
     });
-
+  
     try {
       const response = await axios.post(
         `https://vision.googleapis.com/v1/images:annotate?key=${GOOGLE_API_KEY}`,
@@ -150,10 +150,25 @@ export default function ReceiptScanner() {
           ],
         }
       );
-
+  
       const ocrText =
         response.data.responses[0].fullTextAnnotation?.text || "No text found";
-      parseItems(ocrText);
+  
+      // Match all "name number" pairs in the OCR text
+      const itemMatches = [...ocrText.matchAll(/([a-zA-Z\s]+)\s+(\d+)/g)];
+  
+      if (itemMatches.length > 0) {
+        const parsedItems = itemMatches.map((match) => ({
+          name: match[1].trim(),
+          quantity: match[2].trim(),
+          price: "", // Optional: Add price if available
+          category: guessFoodCategory(match[1].trim()),
+        }));
+  
+        setItems(parsedItems); // Populate UI with the list of items
+      } else {
+        console.warn("No valid items found in OCR text.");
+      }
     } catch (error) {
       console.error("Error performing OCR:", error);
     }
