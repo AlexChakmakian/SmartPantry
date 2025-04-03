@@ -10,12 +10,10 @@ const CreateAccountButton = ({ onPress, style }) => {
 };
 
 const styles = StyleSheet.create({
-  button: {
-    marginBottom: 20,
-  },
-  text: {
-    color: "white",
-    fontSize: 18, // Default font size
+  createAccountText: {
+    color: "#ffffff",
+    fontSize: 15,
+    paddingTop: 0,
   },
 });
 

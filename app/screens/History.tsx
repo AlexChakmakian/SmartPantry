@@ -1,68 +1,112 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Image, TouchableOpacity, Modal, Dimensions, Animated } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  Modal,
+  Dimensions,
+  Animated,
+  Alert,
+  Settings,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
-import { getItems } from "../../firebase/pantryService";
-import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for the chevron icon
+import { Ionicons } from "@expo/vector-icons";
+import {
+  getRecipeHistory,
+  clearRecipeHistory,
+  removeRecipeFromHistory,
+} from "@/firebase/recipeHistoryService";
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
+import AnimatedSideMenu from "@/components/SideMenu";
 
-const API_KEY = "b90e71d18a854a71b40b917b255177a3";
-const { width, height } = Dimensions.get('window');
+const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
+const { width, height } = Dimensions.get("window");
 
 export default function History() {
   const router = useRouter();
-  const [recipes, setRecipes] = useState([]);
+  const [historyItems, setHistoryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
+  const [recipeDetails, setRecipeDetails] = useState(null);
+  const [loadingRecipe, setLoadingRecipe] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const auth = getAuth();
 
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
-
-  const fetchRecipes = async () => {
+  const fetchHistory = async () => {
     setLoading(true);
     try {
-      const ingredients = await getItems('pantry');
-      const ingredientNames = ingredients.map(item => item.name).join(',');
-
-      const response = await fetch(`https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=20`);
-      const data = await response.json();
-
-      if (response.status === 401) {
-        console.error("Unauthorized: Check your Spoonacular API key.");
-        setRecipes([]);
-        return;
-      }
-
-      if (data.status === 'failure') {
-        console.error("Error fetching recipes:", data.message);
-        setRecipes([]);
-        return;
-      }
-
-      const detailedRecipes = await Promise.all(data.map(async (recipe) => {
-        const recipeResponse = await fetch(`https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`);
-        const detailedRecipe = await recipeResponse.json();
-        return detailedRecipe;
-      }));
-
-      setRecipes(detailedRecipes);
+      const history = await getRecipeHistory();
+      console.log("History items:", history);
+      setHistoryItems(history);
     } catch (error) {
-      console.error("Error fetching recipes:", error);
+      console.error("Error fetching history:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRecipePress = (recipe) => {
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const handleRecipePress = async (recipe) => {
     setSelectedRecipe(recipe);
     setModalVisible(true);
+    setLoadingRecipe(true);
+
+    try {
+      const response = await fetch(
+        `https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`
+      );
+      const detailedRecipe = await response.json();
+
+      const nutritionResponse = await fetch(
+        `https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json?apiKey=${API_KEY}`
+      );
+      const nutritionData = await nutritionResponse.json();
+
+      setRecipeDetails({
+        ...detailedRecipe,
+        // Use the image from history if API doesn't return one
+        image: detailedRecipe.image || recipe.image,
+        calories: Math.round(
+          nutritionData.nutrients.find(
+            (nutrient) => nutrient.name === "Calories"
+          )?.amount || 0
+        ),
+        servingSize: nutritionData.weightPerServing,
+      });
+    } catch (error) {
+      console.error("Error fetching recipe details:", error);
+      // Set fallback data if API call fails
+      setRecipeDetails({
+        ...recipe,
+        extendedIngredients: [],
+        instructions: "Failed to load detailed instructions.",
+        calories: 0,
+        servingSize: { amount: 0, unit: "" },
+      });
+      Alert.alert("Error", "Failed to load complete recipe details");
+    } finally {
+      setLoadingRecipe(false);
+    }
+  };
+
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString();
   };
 
   const formatInstructions = (instructions) => {
@@ -72,26 +116,73 @@ export default function History() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    Animated.timing(slideAnim, {
-      toValue: isMenuOpen ? -width : 0,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
   };
 
-  const toggleMyFood = () => {
-    setIsMyFoodOpen(!isMyFoodOpen);
-    Animated.timing(rotateAnim, {
-      toValue: isMyFoodOpen ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+  const handleClearHistory = async () => {
+    Alert.alert(
+      "Clear History",
+      "Are you sure you want to clear your viewing history?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Clear",
+          onPress: async () => {
+            try {
+              await clearRecipeHistory();
+              setHistoryItems([]);
+            } catch (error) {
+              console.error("Error clearing history:", error);
+              Alert.alert("Error", "Failed to clear history");
+            }
+          },
+          style: "destructive",
+        },
+      ]
+    );
   };
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '90deg']
-  });
+  const handleRemoveItem = async (id) => {
+    try {
+      await removeRecipeFromHistory(id);
+      setHistoryItems(historyItems.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error("Error removing item from history:", error);
+      Alert.alert("Error", "Failed to remove item from history");
+    }
+  };
+
+  const renderRightActions = (id) => (
+    <TouchableOpacity
+      style={styles.deleteButton}
+      onPress={() => {
+        Alert.alert(
+          "Delete Item",
+          "Are you sure you want to remove this recipe from history?",
+          [
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+            {
+              text: "Delete",
+              style: "destructive",
+              onPress: () => handleRemoveItem(id),
+            },
+          ]
+        );
+      }}
+    >
+      <Text style={styles.deleteButtonText}>Delete</Text>
+    </TouchableOpacity>
+  );
 
   const handleMenuSelect = async (page) => {
     setMenuOpen(false);
@@ -104,6 +195,7 @@ export default function History() {
     if (page === "Log out") {
       try {
         await signOut(auth);
+        console.log("User signed out");
         router.push("/");
       } catch (error) {
         console.error("Error signing out:", error);
@@ -119,11 +211,12 @@ export default function History() {
         Appliances: "/screens/Appliances",
         History: "/screens/History",
         Bookmarked: "/screens/Bookmarked",
-        ReciptScanner: "/screens/Recipt-Scanner",
-        Settings: "/screens/Settings",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
       };
       router.push({
-        pathname: paths[page] || "/",
+        pathname: paths[page] || "/home",
       });
     }
   };
@@ -145,25 +238,50 @@ export default function History() {
         <View style={styles.line} />
       </TouchableOpacity>
 
-      <Text style={styles.title}>Recipe History</Text>
+      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+      <Text style={styles.title}>Viewing History</Text>
+
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {recipes.length > 0 ? (
-            recipes.map((recipe, index) => (
-              <TouchableOpacity key={index} style={styles.recipeContainer} onPress={() => handleRecipePress(recipe)}>
-                <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                {recipe.image && (
-                  <Image source={{ uri: recipe.image }} style={styles.recipeImage} />
-                )}
-              </TouchableOpacity>
+          {historyItems.length > 0 ? (
+            historyItems.map((item, index) => (
+              <Swipeable
+                key={index}
+                renderRightActions={() => renderRightActions(item.id)}
+              >
+                <TouchableOpacity
+                  style={styles.recipeContainer}
+                  onPress={() => handleRecipePress(item)}
+                >
+                  <Text style={styles.recipeTitle}>{item.title}</Text>
+                  {item.image && (
+                    <Image
+                      source={{ uri: item.image }}
+                      style={styles.recipeImage}
+                    />
+                  )}
+                  <Text style={styles.recipeInfo}>
+                    Viewed: {formatDate(item.timestamp)}
+                  </Text>
+                </TouchableOpacity>
+              </Swipeable>
             ))
           ) : (
-            <Text>No recipes found.</Text>
+            <Text style={styles.emptyText}>No viewing history</Text>
           )}
           <View style={styles.spacer} />
         </ScrollView>
+      )}
+
+      {historyItems.length > 0 && (
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={handleClearHistory}
+        >
+          <Text style={styles.clearButtonText}>Clear History</Text>
+        </TouchableOpacity>
       )}
 
       {selectedRecipe && (
@@ -176,18 +294,52 @@ export default function History() {
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
               <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                {selectedRecipe.image && (
-                  <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
+                {loadingRecipe ? (
+                  <ActivityIndicator
+                    size="large"
+                    color="#0000ff"
+                    style={styles.modalLoader}
+                  />
+                ) : (
+                  recipeDetails && (
+                    <>
+                      <Text style={styles.modalTitle}>
+                        {recipeDetails.title}
+                      </Text>
+                      {recipeDetails.image && (
+                        <Image
+                          source={{ uri: recipeDetails.image }}
+                          style={styles.modalImage}
+                        />
+                      )}
+                      <Text style={styles.modalText}>
+                        Calories: {recipeDetails.calories} cal
+                      </Text>
+                      <Text style={styles.modalText}>
+                        Serving Size: {recipeDetails.servingSize?.amount || ""}{" "}
+                        {recipeDetails.servingSize?.unit || ""}
+                      </Text>
+                      <Text style={styles.modalText}>Ingredients:</Text>
+                      {recipeDetails.extendedIngredients &&
+                        recipeDetails.extendedIngredients.map(
+                          (ingredient, index) => (
+                            <Text key={index} style={styles.modalText}>
+                              • {ingredient.original}
+                            </Text>
+                          )
+                        )}
+                      <Text style={styles.modalText}>Instructions:</Text>
+                      <Text style={styles.modalText}>
+                        {formatInstructions(recipeDetails.instructions)}
+                      </Text>
+                    </>
+                  )
                 )}
-                <Text style={styles.modalText}>Ingredients:</Text>
-                {selectedRecipe.extendedIngredients && selectedRecipe.extendedIngredients.map((ingredient, index) => (
-                  <Text key={index} style={styles.modalText}>{ingredient.original}</Text>
-                ))}
-                <Text style={styles.modalText}>Instructions:</Text>
-                <Text style={styles.modalText}>{formatInstructions(selectedRecipe.instructions)}</Text>
               </ScrollView>
-              <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.closeButtonText}>Close</Text>
               </TouchableOpacity>
             </View>
@@ -195,85 +347,23 @@ export default function History() {
         </Modal>
       )}
 
-      <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.firstMenuItem}
-          onPress={() => handleMenuSelect("Home")}
+      {/* <Animated.View
+          style={[
+            styles.menuContainer,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
         >
-          <Text style={styles.menuText}>Home</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
-          <Text style={styles.menuText}>AI Recipes</Text>
-        </TouchableOpacity>
-        
-        {/* My Food dropdown section */}
-        <View style={styles.menuItemWithSubmenu}>
-          <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
-            <Text style={styles.menuText}>My Food</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
-            <Animated.View style={{ transform: [{ rotate }] }}>
-              <Ionicons name="chevron-forward" size={20} color="#fff" />
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-        
-        {/* Submenu items */}
-        {isMyFoodOpen && (
-          <>
-            <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Pantry</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Fridge</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Freezer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Spices</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
-              <Text style={[styles.menuText, styles.submenuItem]}>Appliances</Text>
-            </TouchableOpacity>
-          </>
-        )}
-        
-        <TouchableOpacity onPress={() => handleMenuSelect("History")}>
-          <Text style={styles.menuText}>History</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Bookmarked")}>
-          <Text style={styles.menuText}>Bookmarked</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("ReciptScanner")}>
-          <Text style={styles.menuText}>Receipt Scanner</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Settings")}>
-          <Text style={styles.menuText}>Settings</Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
-          <Text style={[styles.menuText, styles.logoutText]}>Log out</Text>
-        </TouchableOpacity>
-      </Animated.View>
+          <SideMenu onSelectMenuItem={handleMenuSelect} />
+        </Animated.View> */}
+      <AnimatedSideMenu
+        isMenuOpen={isMenuOpen}
+        onClose={() => setMenuOpen(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    paddingTop: 50,
-    backgroundColor: '#ADD8E6',
-  },
-  // Add overlay style for closing menu when tapping anywhere
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -283,67 +373,144 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     zIndex: 1,
   },
+  container: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingTop: 50,
+    backgroundColor: "#ADD8E6",
+  },
+  logo: {
+    width: 85,
+    height: 85,
+    marginBottom: 10,
+    marginTop: -40,
+  },
+  // Add overlay style for closing menu when tapping anywhere
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 1,
+  },
+  // Add overlay style for closing menu when tapping anywhere
+  // menuOverlay: {
+  //   position: "absolute",
+  //   top: 0,
+  //   left: 0,
+  //   right: 0,
+  //   bottom: 0,
+  //   backgroundColor: "transparent",
+  //   zIndex: 1,
+  // },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
   },
   scrollViewContent: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 20,
     paddingBottom: 50,
   },
   recipeContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-    width: '90%',
-    backgroundColor: '#fff',
-    padding: 10,
+    marginTop: 10,
+    marginBottom: 10,
+    alignItems: "center",
+    width: "90%",
+    backgroundColor: "#fff",
+    padding: 15,
     borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowColor: "#000",
+    shadomenuOverlaywOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
   recipeTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  recipeInfo: {
+    fontSize: 16,
+    color: "#555",
     marginBottom: 10,
   },
   recipeImage: {
-    width: '100%',
-    height: 250,
+    width: "100%",
+    height: 150,
     borderRadius: 10,
+    marginBottom: 10,
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
   },
   spacer: {
     height: 50,
   },
+  clearButton: {
+    backgroundColor: "#DC3545",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginTop: 5,
+    marginBottom: 20,
+  },
+  clearButtonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#555",
+    marginTop: 30,
+  },
   modalContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
   },
   modalContent: {
-    width: '90%',
+    width: "90%",
     height: height * 0.75,
-    backgroundColor: '#fff',
-    padding: 10,
+    backgroundColor: "#fff",
+    padding: 15,
     borderRadius: 10,
-    alignItems: 'center',
+    alignItems: "center",
   },
   modalScrollViewContent: {
-    alignItems: 'center',
+    alignItems: "center",
+    // width: "100%",
+    // paddingHorizontal: 10,
   },
   modalTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 5,
+    textAlign: "center",
   },
   modalImage: {
-    width: '100%',
+    width: "100%",
     height: 150,
     borderRadius: 10,
     marginBottom: 5,
@@ -351,24 +518,27 @@ const styles = StyleSheet.create({
   modalText: {
     fontSize: 16,
     marginBottom: 5,
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
   },
   closeButton: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    backgroundColor: "#007BFF",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
     borderRadius: 5,
     marginTop: 10,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   closeButtonText: {
-    color: '#FFF',
+    color: "#FFF",
+    fontWeight: "bold",
     fontSize: 16,
   },
   hamburger: {
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 3, // Increased to be above everything, including the menu
+    zIndex: 5,
   },
   line: {
     width: 30,
@@ -385,39 +555,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#4C5D6B",
     padding: 20,
     paddingTop: 40,
-    zIndex: 2, // Above the overlay but below the hamburger button
+    zIndex: 0,
   },
-  firstMenuItem: {
-    paddingTop: 40,
-  },
-  menuText: {
-    fontSize: 18,
-    color: "#fff",
-    marginVertical: 10,
-  },
-  // Menu dropdown styles
-  menuItemWithSubmenu: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginRight: 10,
-  },
-  menuItemMain: {
-    flex: 1,
-  },
-  triangleButton: {
-    padding: 5,
-  },
-  submenuItem: {
-    paddingLeft: 20,
-    fontSize: 16,
-  },
-  logoutText: {
-    fontSize: 18,
-    color: 'red',
-    marginVertical: 10,
-  },
-  rightPadding: {
-    paddingLeft: 20, // Adjust the value as needed
+  modalLoader: {
+    marginVertical: 30,
   },
 });

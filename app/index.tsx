@@ -187,12 +187,8 @@ const styles = StyleSheet.create({
   },
   forgotPasswordText: {
     color: "white",
-    fontSize: 19, // Increased font size
+    marginTop: 0,
     marginBottom: 20,
-  },
-  createAccountText: {
-    fontSize: 19, // Increased font size
-    color: "white", // Ensure the text color is white
-    marginBottom: 15,
+    fontSize: 15,
   },
 });

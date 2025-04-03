@@ -18,7 +18,7 @@ import { db } from "../firebase/firebaseConfig";
 import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
 import { useRouter } from "expo-router"; // Import useRouter for navigation
 import NotificationBell from "../components/NotificationBell"; // Adjust the import path as needed
-import AnimatedSideMenu from ";
+import AnimatedSideMenu from "@/components/SideMenu";
 
 const { width } = Dimensions.get("window");
 
@@ -45,6 +45,48 @@ export default function SettingsScreen() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
+    // Animated.timing(slideAnim, {
+    //   toValue: isMenuOpen ? -width : 0,
+    //   duration: 300,
+    //   useNativeDriver: true,
+    // }).start();
+  };
+
+  const handleMenuSelect = async (page) => {
+    setMenuOpen(false);
+    Animated.timing(slideAnim, {
+      toValue: -width,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+
+    if (page === "Log out") {
+      try {
+        await signOut(getAuth());
+        console.log("User signed out");
+        router.push("/"); // Redirect to the login screen
+      } catch (error) {
+        console.error("Error signing out:", error);
+      }
+    } else {
+      const paths = {
+        Home: "/home",
+        AIRecipes: "/screens/AIRecipes",
+        Pantry: "/screens/Pantry",
+        Fridge: "/screens/Fridge",
+        Freezer: "/screens/Freezer",
+        Spices: "/screens/Spices",
+        Appliances: "/screens/Appliances",
+        History: "/screens/History",
+        Bookmarked: "/screens/Bookmarked",
+        ReceiptScanner: "/screens/ReceiptScanner",
+        ProfileSettings: "/screens/ProfileSettings",
+        Settings: "/Settings",
+      };
+      router.push({
+        pathname: paths[page] || "/home",
+      });
+    }
   };
 
   const handleSaveThreshold = async () => {
@@ -70,29 +112,49 @@ export default function SettingsScreen() {
   };
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
-        {/* Add overlay to close menu when clicking anywhere on the screen */}
-        {isMenuOpen && (
-          <TouchableOpacity
-            style={styles.menuOverlay}
-            activeOpacity={1}
-            onPress={toggleMenu}
-          />
-        )}
-
-        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
-          <View style={styles.line} />
-          <View style={styles.line} />
-          <View style={styles.line} />
-        </TouchableOpacity>
+    <View style={styles.container}>
+      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+        <View style={styles.line} />
+        <View style={styles.line} />
+        <View style={styles.line} />
+      </TouchableOpacity>
 
         <NotificationBell />
 
-        <AnimatedSideMenu
-          isMenuOpen={isMenuOpen}
-          onClose={() => setMenuOpen(false)}
-        />
+      <Animated.View
+        style={[
+          styles.menuContainer,
+          { transform: [{ translateX: slideAnim }] },
+        ]}
+      >
+        <TouchableOpacity
+          style={styles.firstMenuItem}
+          onPress={() => handleMenuSelect("Recipes")}
+        >
+          <Text style={styles.menuText}>Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("AIRecipes")}>
+          <Text style={styles.menuText}>AI Recipes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Pantry")}>
+          <Text style={styles.menuText}>Pantry</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Fridge")}>
+          <Text style={styles.menuText}>Fridge</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Freezer")}>
+          <Text style={styles.menuText}>Freezer</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Spices")}>
+          <Text style={styles.menuText}>Spices</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Appliances")}>
+          <Text style={styles.menuText}>Appliances</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleMenuSelect("Log out")}>
+          <Text style={styles.menuText}>Log out</Text>
+        </TouchableOpacity>
+      </Animated.View>
 
         <View style={styles.card}>
           <Text style={styles.header}>Set Expiry Threshold</Text>
