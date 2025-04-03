@@ -1,226 +1,397 @@
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+  uploadBytesResumable,
+  getDownloadURL,
+  deleteObject,
+  listAll,
+} from "firebase/storage";
 import { getAuth } from "firebase/auth";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "./firebaseConfig";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { db, storage } from "./firebaseConfig";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { Platform } from "react-native";
-import { uploadBytesResumable } from "firebase/storage";
+import { Platform, Alert } from "react-native";
 
-const storage = getStorage();
+// Initialize Firebase Storage
+//const storage = getStorage();
+const auth = getAuth();
 
 /**
- * Picks an image from the device's media library
+ * Pick an image from the device gallery
  */
 export const pickImage = async () => {
   try {
-    // Request media library permissions
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    // Request permission
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      return {
-        success: false,
-        error: "Permission to access media library was denied",
-      };
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Denied",
+        "We need photo library permissions to upload images."
+      );
+      return null;
     }
 
-    // Launch the image picker
+    // Launch image picker
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.5,
     });
 
-    if (result.canceled) {
-      return { success: false, error: "Image selection was canceled" };
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      return result.assets[0].uri;
     }
 
-    return { success: true, uri: result.assets[0].uri };
+    return null;
   } catch (error) {
     console.error("Error picking image:", error);
-    return { success: false, error: "Failed to pick image" };
+    Alert.alert("Error", "Failed to pick image from gallery");
+    return null;
   }
 };
 
 /**
- * Takes a photo using the device's camera
+ * Take a photo using the device camera
  */
 export const takePhoto = async () => {
   try {
-    // Request camera permissions
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    // Request permission
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
-    if (!permissionResult.granted) {
-      return {
-        success: false,
-        error: "Permission to access camera was denied",
-      };
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission Denied",
+        "We need camera permissions to take photos."
+      );
+      return null;
     }
 
-    // Launch the camera
+    // Launch camera
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [1, 1],
-      quality: 0.7,
+      quality: 0.5,
     });
 
-    if (result.canceled) {
-      return { success: false, error: "Camera capture was canceled" };
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      return result.assets[0].uri;
     }
 
-    return { success: true, uri: result.assets[0].uri };
+    return null;
   } catch (error) {
     console.error("Error taking photo:", error);
-    return { success: false, error: "Failed to take photo" };
+    Alert.alert("Error", "Failed to take photo");
+    return null;
   }
 };
 
 /**
- * Uploads an image to Firebase Storage and updates the user's profile
- * This version handles both gallery and camera photos reliably
+ * Uploads an image to Firebase Storage
+ * @param {string} uri - Local URI of the image
+ * @param {string} path - Storage path where the image should be saved
+ * @param {Function} onProgress - Optional callback for upload progress
+ * @returns {Promise<string>} Download URL of the uploaded image
  */
-export const uploadProfileImage = async (imageUri: string) => {
-  const user = getAuth().currentUser;
-
-  if (!user) {
-    return { success: false, error: "User not authenticated" };
-  }
-
-  console.log(
-    "Starting upload process with URI:",
-    imageUri.substring(0, 30) + "..."
-  );
-  console.log("Running on platform:", Platform.OS);
-
+export const uploadImage = async (uri, path, onProgress = null) => {
   try {
-    // Create a file name with timestamp to avoid caching issues
-    const fileName = `profile_${user.uid}_${Date.now()}.jpg`;
+    console.log(`Starting upload to path: ${path}`);
 
-    // First create a resized/processed copy of the image in app cache
-    // This helps normalize various image sources (camera, gallery, etc.)
-    const processedUri = `${FileSystem.cacheDirectory}${fileName}`;
-
-    console.log("Will save processed image to:", processedUri);
-
-    // Copy and potentially resize the image
-    await FileSystem.copyAsync({
-      from: imageUri,
-      to: processedUri,
-    });
-
-    console.log("Image processed and saved to cache");
-
-    // Create a storage reference
-    const storageRef = ref(storage, `profile_images/${fileName}`);
-    console.log("Storage reference created");
-
-    // Different upload approach based on platform
-    if (Platform.OS === "web") {
-      return webUpload(processedUri, storageRef, user);
-    } else {
-      return nativeUpload(processedUri, storageRef, user);
-    }
-  } catch (error) {
-    console.error("Error in upload preparation:", error);
-
-    if (error instanceof Error) {
-      console.error(`Error name: ${error.name}, message: ${error.message}`);
-      if (error.stack) console.error(`Stack trace: ${error.stack}`);
-    }
-
-    return {
-      success: false,
-      error: "Failed to prepare image for upload",
-    };
-  }
-};
-
-// Helper function for web upload
-const webUpload = async (imageUri, storageRef, user) => {
-  try {
-    console.log("Using web upload approach");
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-
-    // Upload the blob
-    await uploadBytes(storageRef, blob);
-
-    return finalizeUpload(storageRef, user);
-  } catch (error) {
-    console.error("Web upload failed:", error);
-    return { success: false, error: "Web upload failed" };
-  }
-};
-
-// Helper function for native upload (iOS/Android)
-const nativeUpload = async (imageUri, storageRef, user) => {
-  try {
-    console.log("Using native upload approach");
-
-    // Read the file as binary data
-    const fileInfo = await FileSystem.getInfoAsync(imageUri);
-    console.log("File exists:", fileInfo.exists, "Size:", fileInfo.size);
+    // Get file info
+    const fileInfo = await FileSystem.getInfoAsync(uri);
+    console.log("File info:", fileInfo);
 
     if (!fileInfo.exists) {
-      console.error("File does not exist at path:", imageUri);
-      return { success: false, error: "File not found" };
+      throw new Error("File does not exist");
     }
 
-    // Convert file to blob using fetch API
-    // This is more reliable than the XMLHttpRequest approach
-    const response = await fetch(imageUri);
-    const blob = await response.blob();
-    console.log("File converted to blob, size:", blob.size);
+    // Create a storage reference
+    const storageRef = ref(storage, path);
 
-    // Upload with progress tracking
+    // Create a blob from the file
+    const blob = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.onload = function () {
+        resolve(xhr.response);
+      };
+      xhr.onerror = function (e) {
+        console.error("XHR error:", e);
+        reject(new Error("Network request failed"));
+      };
+      xhr.responseType = "blob";
+      xhr.open("GET", uri, true);
+      xhr.send(null);
+    });
+
+    console.log("Blob created successfully, size:", blob.size);
+
+    // Upload the blob
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+
+    // Monitor upload progress
     return new Promise((resolve, reject) => {
-      const uploadTask = uploadBytesResumable(storageRef, blob);
-
       uploadTask.on(
         "state_changed",
         (snapshot) => {
-          // Track progress
           const progress =
             (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
           console.log(`Upload progress: ${progress.toFixed(2)}%`);
+
+          if (onProgress) {
+            onProgress(progress);
+          }
         },
         (error) => {
+          // Handle unsuccessful uploads
           console.error("Upload error:", error);
-          reject({ success: false, error: "Upload failed during transfer" });
+          console.error("Error code:", error.code);
+          console.error("Error message:", error.message);
+
+          // Clean up the blob
+          blob.close();
+
+          reject(error);
         },
         async () => {
           // Upload completed successfully
-          console.log("Upload completed");
+          console.log("Upload completed successfully");
+
+          // Clean up the blob
+          blob.close();
+
+          // Get download URL
           try {
-            const result = await finalizeUpload(storageRef, user);
-            resolve(result);
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+            console.log("File available at:", downloadURL);
+            resolve(downloadURL);
           } catch (error) {
-            console.error("Finalization error:", error);
-            reject({ success: false, error: "Failed to complete upload" });
+            console.error("Error getting download URL:", error);
+            reject(error);
           }
         }
       );
     });
   } catch (error) {
-    console.error("Native upload failed:", error);
-    return { success: false, error: "Native upload failed" };
+    console.error("Error in uploadImage:", error);
+    throw error;
   }
 };
 
-// Helper function to finalize the upload (get URL and update profile)
-const finalizeUpload = async (storageRef, user) => {
-  // Get the download URL
-  const downloadURL = await getDownloadURL(storageRef);
-  console.log("Download URL obtained:", downloadURL);
+/**
+ * Uploads a profile image and updates the user's profile
+ * @param {string} imageUri - Local URI of the image
+ * @returns {Promise<Object>} Result object with success status and download URL
+ */
+export const uploadProfileImage = async (imageUri) => {
+  const user = auth.currentUser;
 
-  // Update user's profile document in Firestore
-  const userRef = doc(db, "users", user.uid);
-  await updateDoc(userRef, {
-    photoURL: downloadURL,
-  });
-  console.log("User profile updated with new photo URL");
+  if (!user) {
+    return { success: false, error: "User not authenticated" };
+  }
 
-  return { success: true, downloadURL };
+  try {
+    console.log("Starting profile image upload");
+
+    // Generate a unique file path
+    const filePath = `profile_images/${user.uid}_${Date.now()}.jpg`;
+
+    // Upload the image
+    const downloadURL = await uploadImage(imageUri, filePath, (progress) => {
+      console.log(`Profile image upload progress: ${progress.toFixed(2)}%`);
+    });
+
+    // Update user profile in Firestore
+    const userRef = doc(db, "users", user.uid);
+
+    // Get current user data to check if they already have a profile image
+    const userDoc = await getDoc(userRef);
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+
+      // If user had a previous profile image, delete it
+      if (userData.photoURL && userData.photoURL.includes("profile_images")) {
+        try {
+          const oldImagePath = extractPathFromURL(userData.photoURL);
+          if (oldImagePath) {
+            await deleteImage(oldImagePath);
+          }
+        } catch (error) {
+          console.log("Failed to delete old profile image, continuing anyway");
+        }
+      }
+    }
+
+    // Update user profile with new image URL
+    await updateDoc(userRef, {
+      photoURL: downloadURL,
+    });
+
+    return { success: true, downloadURL };
+  } catch (error) {
+    console.error("Error uploading profile image:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to upload profile image",
+    };
+  }
+};
+
+/**
+ * Upload a receipt image and return the download URL
+ * @param {string} imageUri - Local URI of the image
+ * @returns {Promise<Object>} Result object with success status and download URL
+ */
+export const uploadReceiptImage = async (imageUri) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  try {
+    console.log("Starting receipt image upload");
+
+    // Generate a unique file path
+    const filePath = `receipts/${user.uid}/${Date.now()}.jpg`;
+
+    // Upload the image
+    const downloadURL = await uploadImage(imageUri, filePath);
+
+    return { success: true, downloadURL };
+  } catch (error) {
+    console.error("Error uploading receipt image:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to upload receipt image",
+    };
+  }
+};
+
+/**
+ * Upload a food item image and return the download URL
+ * @param {string} imageUri - Local URI of the image
+ * @param {string} itemType - Type of food item (pantry, fridge, etc.)
+ * @returns {Promise<Object>} Result object with success status and download URL
+ */
+export const uploadFoodItemImage = async (imageUri, itemType) => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    return { success: false, error: "User not authenticated" };
+  }
+
+  try {
+    console.log(`Starting ${itemType} item image upload`);
+
+    // Generate a unique file path
+    const filePath = `food_items/${user.uid}/${itemType}/${Date.now()}.jpg`;
+
+    // Upload the image
+    const downloadURL = await uploadImage(imageUri, filePath);
+
+    return { success: true, downloadURL };
+  } catch (error) {
+    console.error(`Error uploading ${itemType} image:`, error);
+    return {
+      success: false,
+      error: error.message || `Failed to upload ${itemType} image`,
+    };
+  }
+};
+
+/**
+ * Delete an image from Firebase Storage
+ * @param {string} path - Storage path of the image to delete
+ */
+export const deleteImage = async (path) => {
+  try {
+    const imageRef = ref(storage, path);
+    await deleteObject(imageRef);
+    console.log(`Image deleted: ${path}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+/**
+ * Extract storage path from download URL
+ * @param {string} url - Download URL
+ * @returns {string|null} Storage path or null if not found
+ */
+export const extractPathFromURL = (url) => {
+  if (!url) return null;
+
+  try {
+    // Firebase Storage URLs contain "/o/" followed by the encoded path
+    const regex = /firebasestorage\.googleapis\.com\/v0\/b\/[^\/]+\/o\/([^?]+)/;
+    const match = url.match(regex);
+
+    if (match && match[1]) {
+      // Decode the URL-encoded path
+      return decodeURIComponent(match[1]);
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error extracting path from URL:", error);
+    return null;
+  }
+};
+
+/**
+ * Debug function to verify Firebase Storage setup
+ */
+export const debugStorageConnection = async () => {
+  try {
+    console.log("--- Firebase Storage Debug ---");
+
+    // Check if storage is initialized
+    if (!storage) {
+      console.error("Storage not initialized");
+      return { success: false, error: "Storage not initialized" };
+    }
+
+    console.log("Storage initialized successfully");
+
+    // Check authentication
+    const user = auth.currentUser;
+    console.log(
+      "Current user:",
+      user ? `${user.uid} (${user.email})` : "No user signed in"
+    );
+
+    if (!user) {
+      return {
+        success: true,
+        message: "Storage initialized but no user is signed in",
+      };
+    }
+
+    // Try to list some files
+    try {
+      const listRef = ref(storage, `profile_images`);
+      const result = await listAll(listRef);
+      console.log(`Found ${result.items.length} profile images`);
+    } catch (error) {
+      console.error("Error listing files:", error);
+      return {
+        success: false,
+        error: `Error listing files: ${error.message}`,
+        initialized: true,
+      };
+    }
+
+    return {
+      success: true,
+      message: "Storage connection verified successfully",
+      user: { uid: user.uid, email: user.email },
+    };
+  } catch (error) {
+    console.error("Storage debug error:", error);
+    return { success: false, error: error.message };
+  }
 };

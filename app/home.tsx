@@ -46,7 +46,6 @@ const RecipeCard = ({ title, imagePath, description, onPress }) => (
 const HomeScreen = () => {
   const router = useRouter();
   const [isMenuOpen, setMenuOpen] = useState(false);
-  const [showButton, setShowButton] = useState(true);
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -57,51 +56,6 @@ const HomeScreen = () => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
   const auth = getAuth();
-
-  // Function to check if the user has already seen the "Configure Pantry" button
-  useEffect(() => {
-    const checkIfFirstTimeUser = async () => {
-      const user = auth.currentUser;
-
-      if (user) {
-        const userDocRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          // If the flag `hasSeenConfigureButton` is true, hide the button
-          if (userData.hasSeenConfigureButton) {
-            setShowButton(false); // Do not show the button if the flag is true
-          }
-        } else {
-          console.log("User document does not exist.");
-        }
-      }
-    };
-    checkIfFirstTimeUser();
-  }, [auth.currentUser]);
-
-  // Function to set flag in Firestore when user clicks "Configure Pantry"
-  const handleConfigurePantry = async () => {
-    const user = auth.currentUser;
-
-    if (user) {
-      const userDocRef = doc(db, "users", user.uid);
-      try {
-        // Update Firestore to set `hasSeenConfigureButton` to true
-        await setDoc(
-          userDocRef,
-          { hasSeenConfigureButton: true },
-          { merge: true }
-        );
-
-        // Hide the button after successful Firestore update
-        setShowButton(false); // Hide the button once clicked
-      } catch (error) {
-        console.error("Error updating Firestore:", error);
-      }
-    }
-  };
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
@@ -324,17 +278,6 @@ Instructions:
           </View>
         </ScrollView>
       </View>
-
-      {/* Show "Configure Pantry" button only for first-time users */}
-      {showButton && (
-        <TouchableOpacity
-          style={styles.circleButton}
-          onPress={handleConfigurePantry}
-        >
-          <Text style={styles.buttonText}>Configure</Text>
-          <Text style={styles.buttonText}>Pantry 🍽️</Text>
-        </TouchableOpacity>
-      )}
 
       {selectedRecipe && (
         <Modal
@@ -606,24 +549,6 @@ const styles = StyleSheet.create({
   recipeText: {
     fontSize: 14,
     marginLeft: 10,
-  },
-  circleButton: {
-    width: 110,
-    height: 110,
-    borderRadius: 75,
-    backgroundColor: "#AFDFE6",
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    position: "absolute",
-    bottom: 20,
-    borderColor: "#fff",
-    borderWidth: 3,
-    borderStyle: "dashed",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 18,
   },
   menuContainer: {
     position: "absolute",
