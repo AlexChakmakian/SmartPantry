@@ -25,6 +25,7 @@ import {
 import AnimatedSideMenu from "@/components/SideMenu";
 
 const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
+
 const { width, height } = Dimensions.get("window");
 
 export default function AIRecipes() {
@@ -271,7 +272,7 @@ export default function AIRecipes() {
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        <ScrollView contentContainerStyle={[styles.modalScrollViewContent, { paddingBottom: 100 }]}>
           {recipes.length > 0 ? (
             recipes.map((recipe, index) => (
               <TouchableOpacity
@@ -314,62 +315,75 @@ export default function AIRecipes() {
         <Text style={styles.resetButtonText}>Get New Recipes</Text>
       </TouchableOpacity>
 
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
+{selectedRecipe && (
+  <Modal
+    animationType="slide"
+    transparent={true}
+    visible={modalVisible}
+    onRequestClose={() => setModalVisible(false)}
+  >
+    <View style={styles.modalContainer}>
+      <View style={styles.modalContent}>
+        <TouchableOpacity
+          style={styles.modalBookmarkIcon}
+          onPress={() => toggleBookmark(selectedRecipe.id)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity
-                style={styles.modalBookmarkIcon}
-                onPress={() => toggleBookmark(selectedRecipe.id)}
-              >
-                <Ionicons
-                  name={
-                    isBookmarked(selectedRecipe.id)
-                      ? "bookmark"
-                      : "bookmark-outline"
-                  }
-                  size={30}
-                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
-                />
-              </TouchableOpacity>
+          <Ionicons
+            name={
+              isBookmarked(selectedRecipe.id)
+                ? "bookmark"
+                : "bookmark-outline"
+            }
+            size={30}
+            color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
+          />
+        </TouchableOpacity>
 
-              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                {selectedRecipe.image && (
-                  <Image
-                    source={{ uri: selectedRecipe.image }}
-                    style={styles.modalImage}
-                  />
-                )}
-                <Text style={styles.modalText}>Ingredients🥕:</Text>
-                {selectedRecipe.extendedIngredients &&
-                  selectedRecipe.extendedIngredients.map(
-                    (ingredient, index) => (
-                      <Text key={index} style={styles.modalText}>
-                        {ingredient.original}
-                      </Text>
-                    )
-                  )}
-                <Text style={styles.modalText}>Instructions📝:</Text>
-                <Text style={styles.modalText}>
-                  {formatInstructions(selectedRecipe.instructions)}
-                </Text>
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
+        <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+          <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+          {selectedRecipe.image && (
+            <Image
+              source={{ uri: selectedRecipe.image }}
+              style={styles.modalImage}
+            />
+          )}
+
+          {/* Ingredients Section */}
+          <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
+          {selectedRecipe.extendedIngredients &&
+            selectedRecipe.extendedIngredients.map((ingredient, index) => (
+              <Text key={index} style={styles.ingredientItem}>
+                <Text style={{ fontWeight: "bold" }}>•</Text> {ingredient.original}
+              </Text>
+            ))}
+
+          {/* Instructions Section */}
+          <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
+          {selectedRecipe.analyzedInstructions &&
+          selectedRecipe.analyzedInstructions.length > 0 ? (
+            selectedRecipe.analyzedInstructions[0].steps.map((step, idx) => (
+              <View key={idx} style={styles.instructionRow}>
+                <Text style={styles.stepNumber}>{idx + 1}.</Text>
+                <Text style={styles.instructionText}>{step.step}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={styles.instructionText}>
+              {formatInstructions(selectedRecipe.instructions)}
+            </Text>
+          )}
+        </ScrollView>
+
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => setModalVisible(false)}
+        >
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+)}
 
       {/* <Animated.View
         style={[
@@ -503,6 +517,7 @@ const styles = StyleSheet.create({
   },
   modalScrollViewContent: {
     alignItems: "center",
+    paddingBottom: 100, // Ensure enough space at the bottom for scrolling
   },
   modalTitle: {
     fontSize: 24,
@@ -563,6 +578,42 @@ const styles = StyleSheet.create({
     color: "#fff",
     marginVertical: 10,
   },
+  // Add these styles to your StyleSheet
+
+sectionTitle: {
+  fontSize: 20, // Slightly larger font size
+  fontWeight: "bold", // Bold text
+  marginVertical: 10, // Add spacing above and below
+  color: "#333", // Darker color for better readability
+  textAlign: "center", // Center the title
+},
+
+ingredientItem: {
+  fontSize: 16, // Standard font size for ingredients
+  lineHeight: 22, // Add spacing between lines
+  marginBottom: 5, // Add spacing between ingredients
+  textAlign: "left", // Align ingredients to the left
+},
+
+instructionRow: {
+  flexDirection: "row", // Align step number and text in a row
+  marginBottom: 8, // Add spacing between steps
+  alignItems: "flex-start", // Align items at the top
+},
+
+stepNumber: {
+  fontSize: 16, // Font size for step numbers
+  fontWeight: "bold", // Bold step numbers
+  marginRight: 8, // Add spacing between number and text
+  color: "#333", // Darker color for better readability
+},
+
+instructionText: {
+  fontSize: 16, // Standard font size for instructions
+  lineHeight: 22, // Add spacing between lines
+  flex: 1, // Allow text to wrap properly
+  color: "#333", // Darker color for better readability
+},
   // Menu dropdown styles
   menuItemWithSubmenu: {
     flexDirection: "row",

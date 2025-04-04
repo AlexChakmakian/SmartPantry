@@ -12,6 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import ProfileHeader from "./ProfileHeader";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
@@ -77,15 +78,15 @@ const SideMenu = ({ onClose }) => {
     <View style={styles.menuContainer}>
       {/* Add ProfileHeader at the top */}
       <View style={styles.profileHeaderContainer}>
-        <ProfileHeader />
-        <TouchableOpacity
-          style={styles.editProfileButton}
-          onPress={() => handleMenuSelect("ProfileSettings")}
-        >
-          <Ionicons name="pencil" size={16} color="#fff" />
-          <Text style={styles.editProfileText}>Edit Profile</Text>
-        </TouchableOpacity>
-      </View>
+  <ProfileHeader />
+  {/* Add pencil icon to the bottom-right of the profile image */}
+  <TouchableOpacity
+    style={styles.editProfileIcon}
+    onPress={() => handleMenuSelect("ProfileSettings")}
+  >
+    <Ionicons name="pencil" size={16} color="#fff" />
+  </TouchableOpacity>
+</View>
 
       <TouchableOpacity
         style={[styles.menuItem, isActive("/home") && styles.activeMenuItem]}
@@ -98,122 +99,99 @@ const SideMenu = ({ onClose }) => {
           Home
         </Text>
       </TouchableOpacity>
+      
+<TouchableOpacity
+  style={[
+    styles.menuItem,
+    isActive("/screens/AIRecipes") && styles.activeMenuItem,
+  ]}
+  onPress={() => handleMenuSelect("AIRecipes")}
+>
+  {/* Changed to lightning bolt icon */}
+  <Ionicons name="flash" size={22} color="#fff" style={styles.menuIcon} />
+  <Text style={styles.menuText}>Smart Recipes</Text>
+</TouchableOpacity>
 
-      <TouchableOpacity
-        style={[
-          styles.menuItem,
-          isActive("/screens/AIRecipes") && styles.activeMenuItem,
-        ]}
-        onPress={() => handleMenuSelect("AIRecipes")}
-      >
-        <Ionicons name="flask" size={22} color="#fff" style={styles.menuIcon} />
-        <Text style={styles.menuText}>Smart Recipes</Text>
-      </TouchableOpacity>
+{/* My Food dropdown section */}
+<View style={styles.menuItemWithSubmenu}>
+  <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
+    <View style={styles.menuItem}>
+      {/* Changed to basket icon */}
+      <Ionicons name="restaurant" size={22} color="#fff" style={styles.menuIcon} />
+      <Text style={styles.menuText}>My Food</Text>
+    </View>
+  </TouchableOpacity>
+  <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
+    <Animated.View style={{ transform: [{ rotate }] }}>
+      <Ionicons name="chevron-forward" size={20} color="#fff" />
+    </Animated.View>
+  </TouchableOpacity>
+</View>
 
-      {/* My Food dropdown section */}
-      <View style={styles.menuItemWithSubmenu}>
-        <TouchableOpacity style={styles.menuItemMain} onPress={toggleMyFood}>
-          <View style={styles.menuItem}>
-            <Ionicons
-              name="restaurant"
-              size={22}
-              color="#fff"
-              style={styles.menuIcon}
-            />
-            <Text style={styles.menuText}>My Food</Text>
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={toggleMyFood} style={styles.triangleButton}>
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <Ionicons name="chevron-forward" size={20} color="#fff" />
-          </Animated.View>
-        </TouchableOpacity>
-      </View>
+{/* Submenu items */}
+{isMyFoodOpen && (
+  <View style={styles.submenuContainer}>
+    <TouchableOpacity
+      style={[
+        styles.submenuItem,
+        isActive("/screens/Pantry") && styles.activeMenuItem,
+      ]}
+      onPress={() => handleMenuSelect("Pantry")}
+    >
+      {/* Changed to basket icon */}
+      <Ionicons name="basket" size={18} color="#fff" style={styles.submenuIcon} />
+      <Text style={styles.submenuText}>Pantry</Text>
+    </TouchableOpacity>
 
-      {/* Submenu items */}
-      {isMyFoodOpen && (
-        <View style={styles.submenuContainer}>
-          <TouchableOpacity
-            style={[
-              styles.submenuItem,
-              isActive("/screens/Pantry") && styles.activeMenuItem,
-            ]}
-            onPress={() => handleMenuSelect("Pantry")}
-          >
-            <Ionicons
-              name="cube"
-              size={18}
-              color="#fff"
-              style={styles.submenuIcon}
-            />
-            <Text style={styles.submenuText}>Pantry</Text>
-          </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        styles.submenuItem,
+        isActive("/screens/Fridge") && styles.activeMenuItem,
+      ]}
+      onPress={() => handleMenuSelect("Fridge")}
+    >
+      {/* Changed to snowflake icon */}
+      <Ionicons name="snow" size={18} color="#fff" style={styles.submenuIcon} />
+      <Text style={styles.submenuText}>Fridge</Text>
+    </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.submenuItem,
-              isActive("/screens/Fridge") && styles.activeMenuItem,
-            ]}
-            onPress={() => handleMenuSelect("Fridge")}
-          >
-            <Ionicons
-              name="snow"
-              size={18}
-              color="#fff"
-              style={styles.submenuIcon}
-            />
-            <Text style={styles.submenuText}>Fridge</Text>
-          </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        styles.submenuItem,
+        isActive("/screens/Freezer") && styles.activeMenuItem,
+      ]}
+      onPress={() => handleMenuSelect("Freezer")}
+    >
+      {/* Changed to ice cube icon */}
+      <Ionicons name="cube" size={18} color="#fff" style={styles.submenuIcon} />
+      <Text style={styles.submenuText}>Freezer</Text>
+    </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.submenuItem,
-              isActive("/screens/Freezer") && styles.activeMenuItem,
-            ]}
-            onPress={() => handleMenuSelect("Freezer")}
-          >
-            <Ionicons
-              name="thermometer"
-              size={18}
-              color="#fff"
-              style={styles.submenuIcon}
-            />
-            <Text style={styles.submenuText}>Freezer</Text>
-          </TouchableOpacity>
+    <TouchableOpacity
+      style={[
+        styles.submenuItem,
+        isActive("/screens/Spices") && styles.activeMenuItem,
+      ]}
+      onPress={() => handleMenuSelect("Spices")}
+    >
+      {/* Changed to salt shaker icon */}
+      <MaterialCommunityIcons name="shaker" size={18} color="#fff" style={styles.submenuIcon} />
+      <Text style={styles.submenuText}>Spices</Text>
+    </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.submenuItem,
-              isActive("/screens/Spices") && styles.activeMenuItem,
-            ]}
-            onPress={() => handleMenuSelect("Spices")}
-          >
-            <Ionicons
-              name="flame"
-              size={18}
-              color="#fff"
-              style={styles.submenuIcon}
-            />
-            <Text style={styles.submenuText}>Spices</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.submenuItem,
-              isActive("/screens/Appliances") && styles.activeMenuItem,
-            ]}
-            onPress={() => handleMenuSelect("Appliances")}
-          >
-            <Ionicons
-              name="calculator"
-              size={18}
-              color="#fff"
-              style={styles.submenuIcon}
-            />
-            <Text style={styles.submenuText}>Appliances</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+    <TouchableOpacity
+  style={[
+    styles.submenuItem,
+    isActive("/screens/Appliances") && styles.activeMenuItem,
+  ]}
+  onPress={() => handleMenuSelect("Appliances")}
+>
+  {/* Changed to fridge icon */}
+  <MaterialCommunityIcons name="fridge" size={18} color="#fff" style={styles.submenuIcon} />
+  <Text style={styles.submenuText}>Appliances</Text>
+</TouchableOpacity>
+  </View>
+)}
 
       <TouchableOpacity
         style={[
@@ -337,11 +315,19 @@ const styles = StyleSheet.create({
   },
   profileHeaderContainer: {
     padding: 20,
-    paddingTop: 50,
+    paddingTop: 0,
     paddingBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.1)",
     backgroundColor: "rgba(0,0,0,0.1)",
+  },
+  editProfileIcon: {
+    position: "absolute", // Position it relative to the profile header container
+    bottom: 7, // Adjust to align with the bottom of the profile image
+    right: 10, // Adjust to align with the right of the profile image
+    backgroundColor: "#4C5D6B", // Optional: Add a background color to match the menu
+    borderRadius: 50, // Make it circular
+    padding: 10, // Add padding for better touch area
   },
   editProfileButton: {
     flexDirection: "row",
