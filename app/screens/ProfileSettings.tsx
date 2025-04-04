@@ -190,8 +190,20 @@ export default function ProfileSettings() {
   };
 
   const handleCameraSelect = async () => {
-    const result = await takePhoto();
-    handleImagePickerResponse(result);
+    const imageuri = await takePhoto();
+    if (imageuri) {
+      setLoading(true);
+      const result = await uploadProfileImage(imageuri);
+      setLoading(false);
+
+      if (result.success) {
+        Alert.alert("Success", "Profile picture updated!");
+      } else {
+        Alert.alert("Error", result.error);
+      }
+    }
+
+    // handleImagePickerResponse(result);
   };
 
   if (loading) {
