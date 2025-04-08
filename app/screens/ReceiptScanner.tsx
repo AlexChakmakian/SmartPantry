@@ -11,6 +11,7 @@ import {
   Modal,
   Image,
   Alert,
+  ActivityIndicator,
   GestureResponderEvent,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
@@ -25,7 +26,7 @@ import AnimatedSideMenu from "../../components/SideMenu";
 const { width, height } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "REPLACE WITH KEY";
+const GOOGLE_API_KEY = "AIzaSyABvNsc-LpNRMgV4iw6NMZbJF3EGEEDR3Y";
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
@@ -38,6 +39,7 @@ export default function ReceiptScanner() {
     category?: string;
   }>({ name: "", quantity: "", category: "Other" });
   const [modalVisible, setModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Add loading state
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const router = useRouter();
   const [showAddToPantryOptions, setShowAddToPantryOptions] = useState(false);
@@ -93,25 +95,26 @@ export default function ReceiptScanner() {
 
   const pickImageAndProcess = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
+  
     if (permissionResult.granted === false) {
       alert("You've refused to allow this app to access your camera!");
       return;
     }
-
+  
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: false,
       quality: 1,
     });
-
+  
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-
+  
       const fileName = imageUri.split("/").pop();
       const newPath = `${FileSystem.documentDirectory}assets/images/${fileName}`;
-
+  
       try {
+        setIsLoading(true); // Show loading wheel
         await FileSystem.makeDirectoryAsync(
           `${FileSystem.documentDirectory}assets/images`,
           { intermediates: true }
@@ -123,6 +126,8 @@ export default function ReceiptScanner() {
         await performOCR(newPath);
       } catch (error) {
         console.error("Error saving image:", error);
+      } finally {
+        setIsLoading(false); // Hide loading wheel
       }
     }
   };
@@ -410,6 +415,12 @@ export default function ReceiptScanner() {
 
   return (
     <View style={styles.container}>
+      {/* Loading wheel */}
+      {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#007BFF" />
+          </View>
+        )}
       {/* Add overlay to close menu when clicking anywhere on the screen */}
       {isMenuOpen && (
         <TouchableOpacity
@@ -434,72 +445,62 @@ export default function ReceiptScanner() {
         <TouchableOpacity style={styles.button} onPress={pickImageAndProcess}>
           <Text style={styles.buttonText}>Scan Receipt!</Text>
         </TouchableOpacity>
+        
         {items.length > 0 && (
-          <View style={styles.actionBar}>
-            <Text style={styles.resultsText}>{items.length} items found</Text>
-            {selectedItems.length > 0 ? (
+          <ScrollView style={styles.itemsContainer}>
+            {items.map((item, index) => (
               <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setShowAddToPantryOptions(true)}
+                key={index}
+                style={[
+                  styles.itemContainer,
+                  selectedItems.includes(index) && styles.selectedItem,
+                  { borderLeftColor: getCategoryColor(item.category) },
+                ]}
+                //onPress={() => toggleItemSelection(index)}
               >
-                <Text style={styles.addButtonText}>
-                  Add {selectedItems.length} to Pantry
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.selectHint}>Tap items to select</Text>
-            )}
-          </View>
-        )}
-        <ScrollView style={styles.itemsContainer}>
-          {items.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.itemContainer,
-                selectedItems.includes(index) && styles.selectedItem,
-                { borderLeftColor: getCategoryColor(item.category) },
-              ]}
-              onPress={() => toggleItemSelection(index)}
-            >
-              <View style={styles.itemHeader}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                {item.category && (
-                  <View
-                    style={[
-                      styles.categoryTag,
-                      { backgroundColor: getCategoryColor(item.category, 0.2) },
-                    ]}
-                  >
-                    <Text style={styles.categoryText}>{item.category}</Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.itemDetails}>
-                <View style={styles.itemRow}>
-                  <Text style={styles.itemLabel}>Qty: </Text>
-                  <Text style={styles.itemQuantity}>{item.quantity}</Text>
+                <View style={styles.itemHeader}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  {item.category && (
+                    <View
+                      style={[
+                        styles.categoryTag,
+                        { backgroundColor: getCategoryColor(item.category, 0.2) },
+                      ]}
+                    >
+                      <Text style={styles.categoryText}>{item.category}</Text>
+                    </View>
+                  )}
                 </View>
 
-                {item.price && (
+                <View style={styles.itemDetails}>
                   <View style={styles.itemRow}>
-                    <Text style={styles.itemLabel}>Price: </Text>
-                    <Text style={styles.itemPrice}>{item.price}</Text>
+                    <Text style={styles.itemLabel}>Qty: </Text>
+                    <Text style={styles.itemQuantity}>{item.quantity}</Text>
                   </View>
-                )}
-              </View>
 
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={() => editItem(index)}
-              >
-                <Icon name="pencil" size={18} color="#007BFF" />
+                  {item.price && (
+                    <View style={styles.itemRow}>
+                      <Text style={styles.itemLabel}>Price: </Text>
+                      <Text style={styles.itemPrice}>{item.price}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => editItem(index)}
+                >
+                  <Icon name="pencil" size={18} color="#007BFF" />
+                </TouchableOpacity>
               </TouchableOpacity>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-        {/* Edit modal  */}
+            ))}
+              <TouchableOpacity style={styles.addAllButton} // Apply the new style
+              onPress={() => {}} // Add functionality here
+              >
+              <Text style={styles.addAllButtonText}>Add All</Text>
+              </TouchableOpacity>
+          </ScrollView>
+        )}
 
         <Modal
           animationType="slide"
@@ -534,18 +535,7 @@ export default function ReceiptScanner() {
                 keyboardType="default"
               />
 
-              {editedItem.price !== undefined && (
-                <TextInput
-                  style={[styles.input, styles.blackText]}
-                  placeholder="Price"
-                  placeholderTextColor="#999"
-                  value={editedItem.price}
-                  onChangeText={(text) =>
-                    setEditedItem({ ...editedItem, price: text })
-                  }
-                  keyboardType="decimal-pad"
-                />
-              )}
+              
 
               {editedItem.category !== undefined && (
                 <View style={styles.categoryPickerContainer}>
@@ -609,6 +599,9 @@ export default function ReceiptScanner() {
                 >
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
+
+              {/* TODO: delete button */}
+              
               </View>
             </View>
           </View>
@@ -664,20 +657,12 @@ export default function ReceiptScanner() {
                 onPress={() => setShowAddToPantryOptions(false)}
               >
                 <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+              </TouchableOpacity>     
             </View>
           </View>
         </Modal>
       </View>
 
-      {/* <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View> */}
       <AnimatedSideMenu
         isMenuOpen={isMenuOpen}
         onClose={() => setMenuOpen(false)}
@@ -708,6 +693,7 @@ const additionalStyles = {
     width: width * 0.8,
     marginTop: 10,
     marginBottom: 5,
+    
   },
   resultsText: {
     fontSize: 16,
@@ -957,14 +943,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#ccc",
   },
-  input: {
-    width: "100%",
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    marginBottom: 10,
-  },
   saveButton: {
     backgroundColor: "#007BFF",
     padding: 10,
@@ -1126,7 +1104,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#ffffff",
     borderRadius: 5,
-    width: "100%",
+    width: "50%",
     alignItems: "center",
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -1138,4 +1116,36 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#007BFF",
   },
+  addAllButton: {
+    marginTop: 18,
+    padding: 15,
+    backgroundColor: "#007BFF", // Same blue color as other buttons
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+    width: 160,
+    alignSelf: "center",
+    
+  },
+  addAllButtonText: {
+    color: "#fff", // White text
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  loadingContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: Add a semi-transparent background
+    zIndex: 10, // Ensure it appears above other elements
+  }
+  
 });
