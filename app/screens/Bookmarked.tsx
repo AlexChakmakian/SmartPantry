@@ -18,8 +18,12 @@ import { getBookmarks, removeBookmark } from "@/firebase/bookmarkService";
 import { addRecipeToHistory } from "@/firebase/recipeHistoryService";
 import AnimatedSideMenu from "@/components/SideMenu";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  Swipeable,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
 
-const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
+const API_KEY = "ea48a472f7df4ebd9c8c5301c6f0b042";
 const { width, height } = Dimensions.get("window");
 
 export default function Bookmarked() {
@@ -65,25 +69,68 @@ export default function Bookmarked() {
         image: recipe.image,
       }).catch((err) => console.error("Failed to log recipe to history", err));
 
+      // First, fetch basic recipe information
       const response = await fetch(
         `https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`
       );
       const detailedRecipe = await response.json();
 
-      const nutritionResponse = await fetch(
-        `https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json?apiKey=${API_KEY}`
-      );
-      const nutritionData = await nutritionResponse.json();
+      // Log the structure to see what we're getting
+      console.log("Recipe details structure:", Object.keys(detailedRecipe));
 
-      setRecipeDetails({
+      // Initialize recipeDetails with the info we already have
+      let recipeInfo = {
         ...detailedRecipe,
-        calories: Math.round(
-          nutritionData.nutrients.find(
-            (nutrient) => nutrient.name === "Calories"
-          )?.amount || 0
-        ),
-        servingSize: nutritionData.weightPerServing,
-      });
+        calories: 0,
+        servingSize: { amount: 0, unit: "g" },
+      };
+
+      try {
+        // Now try to fetch nutrition data separately
+        const nutritionResponse = await fetch(
+          `https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json?apiKey=${API_KEY}`
+        );
+
+        // Check if the response is OK
+        if (nutritionResponse.ok) {
+          const nutritionData = await nutritionResponse.json();
+          console.log("Nutrition data structure:", Object.keys(nutritionData));
+
+          // Safely extract calories
+          if (
+            nutritionData.nutrients &&
+            Array.isArray(nutritionData.nutrients)
+          ) {
+            const calorieInfo = nutritionData.nutrients.find(
+              (nutrient) => nutrient.name === "Calories"
+            );
+
+            if (calorieInfo && typeof calorieInfo.amount === "number") {
+              recipeInfo.calories = Math.round(calorieInfo.amount);
+            }
+          } else if (nutritionData.calories) {
+            // Some API versions might return calories directly
+            recipeInfo.calories = Math.round(nutritionData.calories);
+          }
+
+          // Safely extract serving size
+          if (nutritionData.weightPerServing) {
+            recipeInfo.servingSize = nutritionData.weightPerServing;
+          }
+        } else {
+          console.log(
+            "Nutrition API returned error status:",
+            nutritionResponse.status
+          );
+        }
+      } catch (nutritionError) {
+        // If nutrition data fails, we can still show the recipe without it
+        console.error("Error fetching nutrition data:", nutritionError);
+        // Continue with the basic recipe info we already have
+      }
+
+      // Update state with our combined data
+      setRecipeDetails(recipeInfo);
     } catch (error) {
       console.error("Error fetching recipe details:", error);
       Alert.alert("Error", "Failed to load recipe details");
@@ -104,11 +151,6 @@ export default function Bookmarked() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    // Animated.timing(slideAnim, {
-    //   toValue: isMenuOpen ? -width : 0,
-    //   duration: 300,
-    //   useNativeDriver: true,
-    // }).start();
   };
 
   const handleRemoveBookmark = async (id) => {
@@ -153,6 +195,18 @@ export default function Bookmarked() {
     }
   };
 
+  const renderRightActions = (recipeId) => {
+    return (
+      <TouchableOpacity
+        style={styles.deleteAction}
+        onPress={() => handleRemoveBookmark(recipeId)}
+      >
+        <Ionicons name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteActionText}>Delete</Text>
+      </TouchableOpacity>
+    );
+  };
+
   const isBookmarked = (id) => {
     return bookmarkedItems.some((item) => item.id === id);
   };
@@ -164,144 +218,172 @@ export default function Bookmarked() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Add overlay to close menu when clicking anywhere on the screen */}
-      {isMenuOpen && (
-        <TouchableOpacity
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={toggleMenu}
-        />
-      )}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={styles.container}>
+        {/* Add overlay to close menu when clicking anywhere on the screen */}
+        {isMenuOpen && (
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={toggleMenu}
+          />
+        )}
 
-      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
-        <View style={styles.line} />
-        <View style={styles.line} />
-        <View style={styles.line} />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+          <View style={styles.line} />
+          <View style={styles.line} />
+          <View style={styles.line} />
+        </TouchableOpacity>
 
-      <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <Text style={styles.title}>Bookmarked Recipes</Text>
+        <Image source={require("../../assets/Logo.png")} style={styles.logo} />
+        <Text style={styles.title}>Bookmarked Recipes</Text>
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#0000ff" />
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollViewContent}>
-          {bookmarkedItems.length > 0 ? (
-            bookmarkedItems.map((item, index) => (
-              <View key={index} style={styles.recipeContainer}>
-                <Text style={styles.recipeTitle}>{item.title}</Text>
-                {item.image && (
-                  <Image
-                    source={{ uri: item.image }}
-                    style={styles.recipeImage}
-                  />
-                )}
-                <Text style={styles.recipeInfo}>
-                  Bookmarked: {formatDate(item.timestamp)}
-                </Text>
-                <View style={styles.buttonRow}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#0000ff" />
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            {bookmarkedItems.length > 0 ? (
+              bookmarkedItems.map((item, index) => (
+                <Swipeable
+                  key={index}
+                  renderRightActions={() => renderRightActions(item.id)}
+                >
                   <TouchableOpacity
-                    style={styles.viewButton}
+                    style={styles.recipeContainer}
                     onPress={() => handleRecipePress(item)}
+                    activeOpacity={0.7}
                   >
-                    <Text style={styles.buttonText}>View</Text>
+                    <Text style={styles.recipeTitle}>{item.title}</Text>
+                    {item.image && (
+                      <Image
+                        source={{ uri: item.image }}
+                        style={styles.recipeImage}
+                      />
+                    )}
+                    <Text style={styles.recipeInfo}>
+                      Bookmarked: {formatDate(item.timestamp)}
+                    </Text>
+                    <View style={styles.swipeIndicator}>
+                      <Ionicons name="chevron-back" size={16} color="#ccc" />
+                    </View>
                   </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.removeButton}
-                    onPress={() => handleRemoveBookmark(item.id)}
-                  >
-                    <Text style={styles.buttonText}>Remove</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No bookmarked recipes</Text>
-          )}
-          <View style={styles.spacer} />
-        </ScrollView>
-      )}
+                </Swipeable>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No bookmarked recipes</Text>
+            )}
 
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity
-                style={styles.modalBookmarkIcon}
-                onPress={() => toggleBookmark(selectedRecipe.id)}
-              >
-                <Ionicons
-                  name={
-                    isBookmarked(selectedRecipe.id)
-                      ? "bookmark"
-                      : "bookmark-outline"
-                  }
-                  size={30}
-                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
-                />
-              </TouchableOpacity>
+            {bookmarkedItems.length > 0 && (
+              <Text style={styles.instructionText}>
+                Tip: Tap a recipe to view details or swipe left to delete
+              </Text>
+            )}
 
-              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                {loadingRecipe ? (
-                  <ActivityIndicator
-                    size="large"
-                    color="#0000ff"
-                    style={styles.modalLoader}
+            <View style={styles.spacer} />
+          </ScrollView>
+        )}
+
+        {selectedRecipe && (
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity
+                  style={styles.modalBookmarkIcon}
+                  onPress={() => toggleBookmark(selectedRecipe.id)}
+                >
+                  <Ionicons
+                    name={
+                      isBookmarked(selectedRecipe.id)
+                        ? "bookmark"
+                        : "bookmark-outline"
+                    }
+                    size={30}
+                    color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
                   />
-                ) : (
-                  recipeDetails && (
-                    <>
-                      <Text style={styles.modalTitle}>
-                        {recipeDetails.title}
-                      </Text>
-                      {recipeDetails.image && (
-                        <Image
-                          source={{ uri: recipeDetails.image }}
-                          style={styles.modalImage}
-                        />
-                      )}
-                      <Text style={styles.modalText}>
-                        Calories: {recipeDetails.calories} cal
-                      </Text>
-                      <Text style={styles.modalText}>
-                        Serving Size: {recipeDetails.servingSize?.amount || ""}{" "}
-                        {recipeDetails.servingSize?.unit || ""}
-                      </Text>
-                      <Text style={styles.modalText}>Ingredients:</Text>
-                      {recipeDetails.extendedIngredients &&
-                        recipeDetails.extendedIngredients.map(
-                          (ingredient, index) => (
-                            <Text key={index} style={styles.modalText}>
-                              • {ingredient.original}
-                            </Text>
-                          )
-                        )}
-                      <Text style={styles.modalText}>Instructions:</Text>
-                      <Text style={styles.modalText}>
-                        {formatInstructions(recipeDetails.instructions)}
-                      </Text>
-                    </>
-                  )
-                )}
-              </ScrollView>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
+                </TouchableOpacity>
 
-      {/* <Animated.View
+                <ScrollView
+                  contentContainerStyle={styles.modalScrollViewContent}
+                >
+                  {loadingRecipe ? (
+                    <ActivityIndicator
+                      size="large"
+                      color="#0000ff"
+                      style={styles.modalLoader}
+                    />
+                  ) : (
+                    recipeDetails && (
+                      <>
+                        <Text style={styles.modalTitle}>
+                          {recipeDetails.title}
+                        </Text>
+                        {recipeDetails.image && (
+                          <Image
+                            source={{ uri: recipeDetails.image }}
+                            style={styles.modalImage}
+                          />
+                        )}
+
+                        {/* Safely display calories */}
+                        <Text style={styles.modalText}>
+                          Calories:{" "}
+                          {recipeDetails.calories > 0
+                            ? `${recipeDetails.calories} cal`
+                            : "Not available"}
+                        </Text>
+
+                        {/* Safely display serving size */}
+                        <Text style={styles.modalText}>
+                          Serving Size:{" "}
+                          {recipeDetails.servingSize?.amount
+                            ? `${recipeDetails.servingSize.amount} ${
+                                recipeDetails.servingSize.unit || ""
+                              }`
+                            : "Not available"}
+                        </Text>
+
+                        <Text style={styles.modalText}>Ingredients:</Text>
+                        {recipeDetails.extendedIngredients &&
+                        recipeDetails.extendedIngredients.length > 0 ? (
+                          recipeDetails.extendedIngredients.map(
+                            (ingredient, index) => (
+                              <Text key={index} style={styles.modalText}>
+                                • {ingredient.original}
+                              </Text>
+                            )
+                          )
+                        ) : (
+                          <Text style={styles.modalText}>
+                            No ingredient information available
+                          </Text>
+                        )}
+
+                        <Text style={styles.modalText}>Instructions:</Text>
+                        <Text style={styles.modalText}>
+                          {formatInstructions(recipeDetails.instructions) ||
+                            "No instructions available"}
+                        </Text>
+                      </>
+                    )
+                  )}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {/* <Animated.View
         style={[
           styles.menuContainer,
           { transform: [{ translateX: slideAnim }] },
@@ -309,16 +391,46 @@ export default function Bookmarked() {
       >
         <SideMenu onSelectMenuItem={handleMenuSelect} />
       </Animated.View> */}
-      {/* Animated Side Menu */}
-      <AnimatedSideMenu
-        isMenuOpen={isMenuOpen}
-        onClose={() => setMenuOpen(false)}
-      />
-    </View>
+        {/* Animated Side Menu */}
+        <AnimatedSideMenu
+          isMenuOpen={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
+  deleteAction: {
+    backgroundColor: "#DC3545",
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    height: "100%",
+    borderTopRightRadius: 10,
+    borderBottomRightRadius: 10,
+  },
+  deleteActionText: {
+    color: "#fff",
+    fontWeight: "bold",
+    marginTop: 4,
+  },
+  swipeIndicator: {
+    position: "absolute",
+    right: 10,
+    top: "50%",
+    marginTop: -8,
+    opacity: 0.5,
+  },
+  instructionText: {
+    fontSize: 14,
+    color: "#555",
+    fontStyle: "italic",
+    marginTop: 20,
+    marginBottom: 10,
+    opacity: 0.8,
+  },
   menuOverlay: {
     position: "absolute",
     top: 0,

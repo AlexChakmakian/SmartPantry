@@ -32,7 +32,7 @@ const NotificationBell = () => {
         "Notifications",
         `You have ${notifications.length} expired items:\n${notifications
           .map((item) => `${item.name} (${item.location})`)
-          .join(", ")}`
+          .join("\n ")}`
       );
     }
   };
