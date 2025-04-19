@@ -305,8 +305,8 @@ export default function ReceiptScanner() {
     return "Pantry";
   };
 
-  // Add function to add selected items to pantry
-  const addSelectedItemsToPantry = async (storageLocation) => {
+  // Modify the addSelectedItemsToPantry function to handle multiple locations
+  const addItemsToStorages = async () => {
     const user = auth.currentUser;
     if (!user) {
       Alert.alert("Error", "User not authenticated");
@@ -314,28 +314,41 @@ export default function ReceiptScanner() {
     }
 
     try {
-      for (const index of selectedItems) {
-        const item = items[index];
+      // Group items by their assigned categories
+      const itemsByCategory = items.reduce((acc, item) => {
+        const location = item.category?.toLowerCase() || "pantry";
+        if (!acc[location]) {
+          acc[location] = [];
+        }
+        acc[location].push(item);
+        return acc;
+      }, {});
 
-        // Create an item object for the database
-        const newItem = {
-          name: item.name,
-          quantity: item.quantity,
-          dateAdded: new Date().toISOString(),
-        };
+      // Add items to their respective storage locations
+      for (const [location, categoryItems] of Object.entries(itemsByCategory)) {
+        for (const item of categoryItems) {
+          const newItem = {
+            name: item.name,
+            quantity: item.quantity,
+            dateAdded: new Date().toISOString(),
+          };
 
-        // Add to the selected storage location
-        await addItem(storageLocation, user.uid, newItem);
+          await addItem(location, user.uid, newItem);
+        }
       }
 
-      Alert.alert(
-        "Success",
-        `Added ${selectedItems.length} items to ${storageLocation}`
-      );
+      // Show success message with breakdown
+      const itemCounts = Object.entries(itemsByCategory)
+        .map(([location, items]) => `${items.length} to ${location}`)
+        .join(", ");
+
+      Alert.alert("Success", `Added items to storage:\n${itemCounts}`);
+
+      // Clear items after successful addition
+      setItems([]);
       setSelectedItems([]);
-      setShowAddToPantryOptions(false);
     } catch (error) {
-      console.error(`Error adding items to ${storageLocation}:`, error);
+      console.error("Error adding items to storage:", error);
       Alert.alert("Error", "Failed to add items to storage");
     }
   };
@@ -501,15 +514,9 @@ export default function ReceiptScanner() {
             ))}
             <TouchableOpacity
               style={styles.addAllButton}
-              onPress={() => {
-                // Select all items by setting selectedItems to all indices
-                const allIndices = items.map((_, index) => index);
-                setSelectedItems(allIndices);
-                // Show the storage options modal
-                setShowAddToPantryOptions(true);
-              }}
+              onPress={addItemsToStorages}
             >
-              <Text style={styles.addAllButtonText}>Add All</Text>
+              <Text style={styles.addAllButtonText}>Add All Items</Text>
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -659,7 +666,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("pantry")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="cube" size={24} color="#007BFF" />
                 <Text style={styles.storageButtonText}>Pantry</Text>
@@ -667,7 +674,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("fridge")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="restaurant" size={24} color="#00A651" />
                 <Text style={styles.storageButtonText}>Fridge</Text>
@@ -675,7 +682,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("freezer")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="snow" size={24} color="#00B2E3" />
                 <Text style={styles.storageButtonText}>Freezer</Text>
@@ -683,7 +690,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("spices")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="flame" size={24} color="#FE5000" />
                 <Text style={styles.storageButtonText}>Spices</Text>

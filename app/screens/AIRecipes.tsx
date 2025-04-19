@@ -22,7 +22,6 @@ import {
   isRecipeBookmarked,
 } from "@/firebase/bookmarkService";
 import AnimatedSideMenu from "@/components/SideMenu";
-import { Picker } from "@react-native-picker/picker";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 
@@ -75,6 +74,11 @@ export default function AIRecipes() {
   const [showCuisineDropdown, setShowCuisineDropdown] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [activeFilters, setActiveFilters] = useState({
+    gold: false,
+    silver: false,
+    bronze: false,
+  });
 
   const emojis = [
     "📝",
@@ -106,6 +110,22 @@ export default function AIRecipes() {
     if (percentage >= 50) return "silver";
     if (percentage >= 30) return "bronze";
     return "none";
+  };
+
+  // Add filter function
+  const getFilteredRecipes = (recipeList) => {
+    if (!Object.values(activeFilters).includes(true)) {
+      return recipeList; // Return all recipes if no filters are active
+    }
+
+    return recipeList.filter((recipe) => {
+      if (!recipe.matchInfo) return false;
+      return (
+        (activeFilters.gold && recipe.matchInfo.matchLevel === "gold") ||
+        (activeFilters.silver && recipe.matchInfo.matchLevel === "silver") ||
+        (activeFilters.bronze && recipe.matchInfo.matchLevel === "bronze")
+      );
+    });
   };
 
   // Function to get border style based on match level
@@ -308,8 +328,28 @@ export default function AIRecipes() {
 
   const MatchLegend = () => (
     <View style={styles.legendContainer}>
-      <Text style={styles.legendTitle}>Ingredient Match:</Text>
+      <Text style={styles.legendTitle}>Filter by Match:</Text>
       <View style={styles.legendItem}>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() =>
+            setActiveFilters((prev) => ({
+              ...prev,
+              gold: !prev.gold,
+            }))
+          }
+        >
+          <View
+            style={[
+              styles.checkbox,
+              activeFilters.gold && styles.checkboxChecked,
+            ]}
+          >
+            {activeFilters.gold && (
+              <Ionicons name="checkmark" size={16} color="#fff" />
+            )}
+          </View>
+        </TouchableOpacity>
         <View style={styles.legendColorBox}>
           <View style={[styles.legendBox, styles.goldBorder]} />
         </View>
@@ -317,13 +357,55 @@ export default function AIRecipes() {
           80%+ match - You have most ingredients!
         </Text>
       </View>
+
       <View style={styles.legendItem}>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() =>
+            setActiveFilters((prev) => ({
+              ...prev,
+              silver: !prev.silver,
+            }))
+          }
+        >
+          <View
+            style={[
+              styles.checkbox,
+              activeFilters.silver && styles.checkboxChecked,
+            ]}
+          >
+            {activeFilters.silver && (
+              <Ionicons name="checkmark" size={16} color="#fff" />
+            )}
+          </View>
+        </TouchableOpacity>
         <View style={styles.legendColorBox}>
           <View style={[styles.legendBox, styles.silverBorder]} />
         </View>
         <Text style={styles.legendText}>50-79% match - Good option</Text>
       </View>
+
       <View style={styles.legendItem}>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() =>
+            setActiveFilters((prev) => ({
+              ...prev,
+              bronze: !prev.bronze,
+            }))
+          }
+        >
+          <View
+            style={[
+              styles.checkbox,
+              activeFilters.bronze && styles.checkboxChecked,
+            ]}
+          >
+            {activeFilters.bronze && (
+              <Ionicons name="checkmark" size={16} color="#fff" />
+            )}
+          </View>
+        </TouchableOpacity>
         <View style={styles.legendColorBox}>
           <View style={[styles.legendBox, styles.bronzeBorder]} />
         </View>
@@ -402,7 +484,7 @@ export default function AIRecipes() {
         >
           <MatchLegend />
           {recipes.length > 0 ? (
-            recipes.map((recipe, index) => (
+            getFilteredRecipes(recipes).map((recipe, index) => (
               <TouchableOpacity
                 key={index}
                 style={getRecipeContainerStyle(recipe)}
@@ -799,13 +881,42 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 12,
   },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: "#007BFF",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#007BFF",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 5,
+    paddingVertical: 5,
+  },
   legendContainer: {
     width: "90%",
-    backgroundColor: "rgba(255,255,255,0.9)",
+    backgroundColor: "rgba(255,255,255,0.95)",
     borderRadius: 10,
-    padding: 10,
+    padding: 15,
     marginTop: 10,
     marginBottom: 10,
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   legendTitle: {
     fontWeight: "bold",
