@@ -12,6 +12,7 @@ import {
   Image,
   Alert,
   GestureResponderEvent,
+  ActivityIndicator,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
@@ -21,11 +22,12 @@ import { getAuth, signOut } from "firebase/auth";
 import Icon from "react-native-vector-icons/Ionicons";
 import { addItem } from "@/firebase/pantryService"; // Import your database utility function
 import AnimatedSideMenu from "../../components/SideMenu";
+import CustomDropdown from "../../components/CustomDropdown"; // Import your custom dropdown component
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "AIzaSyCYRdOSDaXUIt8SQyO9KHru4ofsB4XwA8g";
+const GOOGLE_API_KEY = "AIzaSyBaWlVLXmJ3duSDxza3Vrc4xLdHfHvIGKE";
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
@@ -36,59 +38,31 @@ export default function ReceiptScanner() {
     quantity: string;
     price?: string;
     category?: string;
-  }>({ name: "", quantity: "", category: "Other" });
+    unit?: string;
+  }>({ name: "", quantity: "", category: "Pantry", unit: "pcs" });
+  const [isLoading, setIsLoading] = useState(false); // Add loading state
   const [modalVisible, setModalVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const router = useRouter();
   const [showAddToPantryOptions, setShowAddToPantryOptions] = useState(false);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
+  const unitOptions = [
+    "lbs",
+    "oz",
+    "g",
+    "kg",
+    "cups",
+    "tbsp",
+    "tsp",
+    "ml",
+    "L",
+    "pcs",
+  ];
+
   // Toggle menu function - controls both state and animation
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    // Animated.timing(slideAnim, {
-    //   toValue: isMenuOpen ? -width : 0,
-    //   duration: 300,
-    //   useNativeDriver: true,
-    // }).start();
-  };
-
-  // Handle menu selection
-  const handleMenuSelect = async (page) => {
-    setMenuOpen(false);
-    Animated.timing(slideAnim, {
-      toValue: -width,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    if (page === "Log out") {
-      try {
-        await signOut(auth);
-        console.log("User signed out");
-        router.push("/");
-      } catch (error) {
-        console.error("Error signing out:", error);
-      }
-    } else {
-      const paths = {
-        Home: "/home",
-        AIRecipes: "/screens/AIRecipes",
-        Pantry: "/screens/Pantry",
-        Fridge: "/screens/Fridge",
-        Freezer: "/screens/Freezer",
-        Spices: "/screens/Spices",
-        Appliances: "/screens/Appliances",
-        History: "/screens/History",
-        Bookmarked: "/screens/Bookmarked",
-        ReceiptScanner: "/screens/ReceiptScanner",
-        ProfileSettings: "/screens/ProfileSettings",
-        Settings: "/Settings",
-      };
-      router.push({
-        pathname: paths[page] || "/home",
-      });
-    }
   };
 
   const pickImageAndProcess = async () => {
@@ -112,6 +86,7 @@ export default function ReceiptScanner() {
       const newPath = `${FileSystem.documentDirectory}assets/images/${fileName}`;
 
       try {
+        setIsLoading(true); // Show loading wheel
         await FileSystem.makeDirectoryAsync(
           `${FileSystem.documentDirectory}assets/images`,
           { intermediates: true }
@@ -123,6 +98,8 @@ export default function ReceiptScanner() {
         await performOCR(newPath);
       } catch (error) {
         console.error("Error saving image:", error);
+      } finally {
+        setIsLoading(false); // Hide loading wheel
       }
     }
   };
@@ -153,7 +130,22 @@ export default function ReceiptScanner() {
 
       const ocrText =
         response.data.responses[0].fullTextAnnotation?.text || "No text found";
-      parseItems(ocrText);
+
+      // Match all "name number" pairs in the OCR text
+      const itemMatches = [...ocrText.matchAll(/([a-zA-Z\s]+)\s+(\d+)/g)];
+
+      if (itemMatches.length > 0) {
+        const parsedItems = itemMatches.map((match) => ({
+          name: match[1].trim(),
+          quantity: match[2].trim(),
+          price: "", // Optional: Add price if available
+          category: guessFoodCategory(match[1].trim()),
+        }));
+
+        setItems(parsedItems); // Populate UI with the list of items
+      } else {
+        console.warn("No valid items found in OCR text.");
+      }
     } catch (error) {
       console.error("Error performing OCR:", error);
     }
@@ -302,23 +294,6 @@ export default function ReceiptScanner() {
         "curry",
         "cumin",
       ],
-      // Produce: [
-      //   "apple",
-      //   "banana",
-      //   "orange",
-      //   "fruit",
-      //   "vegetable",
-      //   "tomato",
-      //   "potato",
-      //   "onion",
-      //   "lettuce",
-      //   "carrot",
-      //   "broccoli",
-      //   "cucumber",
-      //   "pepper",
-      //   "garlic",
-      //   "ginger",
-      // ],
     };
 
     for (const [category, keywords] of Object.entries(categories)) {
@@ -327,7 +302,7 @@ export default function ReceiptScanner() {
       }
     }
 
-    return "Other";
+    return "Pantry";
   };
 
   // Add function to add selected items to pantry
@@ -377,24 +352,78 @@ export default function ReceiptScanner() {
       event.stopPropagation(); // Prevent the item selection toggle
     }
 
+    const item = items[index];
     setEditingIndex(index);
-    setEditedItem({ ...items[index] }); // Copy all properties
+
+    // Parse quantity and unit if possible
+    let quantity = item.quantity;
+    let unit = "pcs"; // Default unit
+
+    // Try to extract unit from quantity (e.g. "2 lbs" -> quantity: "2", unit: "lbs")
+    const quantityMatch = item.quantity.match(
+      /^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?/
+    );
+    if (quantityMatch) {
+      quantity = quantityMatch[1];
+      unit = quantityMatch[2] || "pcs";
+    }
+
+    setEditedItem({
+      ...item,
+      quantity: quantity,
+      unit: unit,
+    });
     setModalVisible(true);
   };
 
   const saveEdit = () => {
     if (editingIndex !== null) {
       const updatedItems = [...items];
-      updatedItems[editingIndex] = editedItem;
+      // Combine quantity and unit
+      const fullQuantity = `${editedItem.quantity} ${editedItem.unit || "pcs"}`;
+
+      updatedItems[editingIndex] = {
+        ...editedItem,
+        quantity: fullQuantity,
+      };
       setItems(updatedItems);
       setEditingIndex(null);
-      setEditedItem({ name: "", quantity: "", price: "", category: "Other" });
+      setEditedItem({ name: "", quantity: "", price: "", category: "Pantry" });
       setModalVisible(false);
+    }
+  };
+
+  // Add a delete item function for the modal
+  const deleteItemFromModal = () => {
+    if (editingIndex !== null) {
+      Alert.alert("Delete Item", "Are you sure you want to delete this item?", [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            const updatedItems = [...items];
+            updatedItems.splice(editingIndex, 1);
+            setItems(updatedItems);
+            setModalVisible(false);
+          },
+        },
+      ]);
     }
   };
 
   return (
     <View style={styles.container}>
+      {/* Loading wheel */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007BFF" />
+        </View>
+      )}
+
       {/* Add overlay to close menu when clicking anywhere on the screen */}
       {isMenuOpen && (
         <TouchableOpacity
@@ -419,72 +448,71 @@ export default function ReceiptScanner() {
         <TouchableOpacity style={styles.button} onPress={pickImageAndProcess}>
           <Text style={styles.buttonText}>Scan Receipt!</Text>
         </TouchableOpacity>
-        {items.length > 0 && (
-          <View style={styles.actionBar}>
-            <Text style={styles.resultsText}>{items.length} items found</Text>
-            {selectedItems.length > 0 ? (
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setShowAddToPantryOptions(true)}
-              >
-                <Text style={styles.addButtonText}>
-                  Add {selectedItems.length} to Pantry
-                </Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.selectHint}>Tap items to select</Text>
-            )}
-          </View>
-        )}
-        <ScrollView style={styles.itemsContainer}>
-          {items.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.itemContainer,
-                selectedItems.includes(index) && styles.selectedItem,
-                { borderLeftColor: getCategoryColor(item.category) },
-              ]}
-              onPress={() => toggleItemSelection(index)}
-            >
-              <View style={styles.itemHeader}>
-                <Text style={styles.itemName}>{item.name}</Text>
-                {item.category && (
-                  <View
-                    style={[
-                      styles.categoryTag,
-                      { backgroundColor: getCategoryColor(item.category, 0.2) },
-                    ]}
-                  >
-                    <Text style={styles.categoryText}>{item.category}</Text>
-                  </View>
-                )}
-              </View>
 
-              <View style={styles.itemDetails}>
-                <View style={styles.itemRow}>
-                  <Text style={styles.itemLabel}>Qty: </Text>
-                  <Text style={styles.itemQuantity}>{item.quantity}</Text>
+        {items.length > 0 && (
+          <ScrollView style={styles.itemsContainer}>
+            {items.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.itemContainer,
+                  selectedItems.includes(index) && styles.selectedItem,
+                  { borderLeftColor: getCategoryColor(item.category) },
+                ]}
+                //onPress={() => toggleItemSelection(index)}
+              >
+                <View style={styles.itemHeader}>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  {item.category && (
+                    <View
+                      style={[
+                        styles.categoryTag,
+                        {
+                          backgroundColor: getCategoryColor(item.category, 0.2),
+                        },
+                      ]}
+                    >
+                      <Text style={styles.categoryText}>{item.category}</Text>
+                    </View>
+                  )}
                 </View>
 
-                {item.price && (
+                <View style={styles.itemDetails}>
                   <View style={styles.itemRow}>
-                    <Text style={styles.itemLabel}>Price: </Text>
-                    <Text style={styles.itemPrice}>{item.price}</Text>
+                    <Text style={styles.itemLabel}>Qty: </Text>
+                    <Text style={styles.itemQuantity}>{item.quantity}</Text>
                   </View>
-                )}
-              </View>
 
-              <TouchableOpacity
-                style={styles.editButton}
-                onPress={() => editItem(index)}
-              >
-                <Icon name="pencil" size={18} color="#007BFF" />
+                  {item.price && (
+                    <View style={styles.itemRow}>
+                      <Text style={styles.itemLabel}>Price: </Text>
+                      <Text style={styles.itemPrice}>{item.price}</Text>
+                    </View>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  style={styles.editButton}
+                  onPress={() => editItem(index)}
+                >
+                  <Icon name="pencil" size={18} color="#007BFF" />
+                </TouchableOpacity>
               </TouchableOpacity>
+            ))}
+            <TouchableOpacity
+              style={styles.addAllButton}
+              onPress={() => {
+                // Select all items by setting selectedItems to all indices
+                const allIndices = items.map((_, index) => index);
+                setSelectedItems(allIndices);
+                // Show the storage options modal
+                setShowAddToPantryOptions(true);
+              }}
+            >
+              <Text style={styles.addAllButtonText}>Add All</Text>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-        {/* Edit modal  */}
+          </ScrollView>
+        )}
 
         <Modal
           animationType="slide"
@@ -492,8 +520,16 @@ export default function ReceiptScanner() {
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalView}>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalView}
+              activeOpacity={1}
+              onPress={(e) => e.stopPropagation()}
+            >
               <Text style={styles.modalTitle}>
                 {editingIndex !== null ? "Edit Item" : "Add Item"}
               </Text>
@@ -508,29 +544,28 @@ export default function ReceiptScanner() {
                 }
               />
 
-              <TextInput
-                style={[styles.input, styles.blackText]}
-                placeholder="Quantity"
-                placeholderTextColor="#999"
-                value={editedItem.quantity}
-                onChangeText={(text) =>
-                  setEditedItem({ ...editedItem, quantity: text })
-                }
-                keyboardType="default"
-              />
-
-              {editedItem.price !== undefined && (
+              {/* Quantity and Unit Container */}
+              <View style={styles.quantityUnitContainer}>
                 <TextInput
-                  style={[styles.input, styles.blackText]}
-                  placeholder="Price"
+                  style={[styles.quantityInput, styles.blackText]}
+                  placeholder="Quantity"
                   placeholderTextColor="#999"
-                  value={editedItem.price}
+                  value={editedItem.quantity}
                   onChangeText={(text) =>
-                    setEditedItem({ ...editedItem, price: text })
+                    setEditedItem({ ...editedItem, quantity: text })
                   }
-                  keyboardType="decimal-pad"
+                  keyboardType="numeric"
                 />
-              )}
+
+                {/* Unit Dropdown */}
+                <CustomDropdown
+                  selectedValue={editedItem.unit || "pcs"}
+                  onValueChange={(value) =>
+                    setEditedItem({ ...editedItem, unit: value })
+                  }
+                  options={unitOptions}
+                />
+              </View>
 
               {editedItem.category !== undefined && (
                 <View style={styles.categoryPickerContainer}>
@@ -546,7 +581,7 @@ export default function ReceiptScanner() {
                       "Freezer",
                       "Spices",
                       // "Produce",
-                      "Other",
+                      // "Other",
                     ].map((cat) => (
                       <TouchableOpacity
                         key={cat}
@@ -580,23 +615,33 @@ export default function ReceiptScanner() {
                 </View>
               )}
 
-              <View style={styles.modalButtonContainer}>
-                <TouchableOpacity
-                  style={styles.modalAddButton}
-                  onPress={saveEdit}
-                >
-                  <Text style={styles.modalAddButtonText}>Save Changes</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalAddButton}
+                onPress={saveEdit}
+              >
+                <Text style={styles.modalAddButtonText}>Save Changes</Text>
+              </TouchableOpacity>
 
+              <View style={styles.modalButtonsRow}>
                 <TouchableOpacity
                   style={styles.modalCancelButton}
                   onPress={() => setModalVisible(false)}
                 >
                   <Text style={styles.modalCancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
+
+                {/* Add delete button (only when editing) */}
+                {editingIndex !== null && (
+                  <TouchableOpacity
+                    style={styles.modalDeleteButton}
+                    onPress={deleteItemFromModal}
+                  >
+                    <Text style={styles.modalDeleteButtonText}>Delete</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            </View>
-          </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
         </Modal>
         {/* Storage options modal */}
         <Modal
@@ -655,14 +700,6 @@ export default function ReceiptScanner() {
         </Modal>
       </View>
 
-      {/* <Animated.View
-        style={[
-          styles.menuContainer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
-        <SideMenu onSelectMenuItem={handleMenuSelect} />
-      </Animated.View> */}
       <AnimatedSideMenu
         isMenuOpen={isMenuOpen}
         onClose={() => setMenuOpen(false)}
@@ -679,13 +716,24 @@ const getCategoryColor = (category, opacity = 1) => {
     Freezer: `rgba(0, 178, 227, ${opacity})`,
     Spices: `rgba(254, 80, 0, ${opacity})`,
     // Produce: `rgba(86, 186, 69, ${opacity})`,
-    Other: `rgba(128, 128, 128, ${opacity})`,
+    //Other: `rgba(128, 128, 128, ${opacity})`,
   };
-  return colors[category] || colors["Other"];
+  return colors[category] || colors["Pantry"];
 };
 
-// Add these styles
-const additionalStyles = {
+// Merge with existing styles
+const styles = StyleSheet.create({
+  loadingContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)", // Optional: Add a semi-transparent background
+    zIndex: 10, // Ensure it appears above other elements
+  },
   actionBar: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -780,11 +828,44 @@ const additionalStyles = {
     fontSize: 16,
     fontWeight: "500",
   },
-};
-
-// Merge with existing styles
-const styles = StyleSheet.create({
-  ...additionalStyles,
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 10,
+  },
+  modalDeleteButton: {
+    backgroundColor: "#dc3545",
+    padding: 10,
+    borderRadius: 5,
+    width: "48%",
+    alignItems: "center",
+  },
+  modalDeleteButtonText: {
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
+  quantityUnitContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "100%",
+    marginBottom: 15,
+  },
+  quantityInput: {
+    flex: 1,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginRight: 10,
+  },
   modalButtonContainer: {
     flexDirection: "column",
     width: "100%",
@@ -941,14 +1022,6 @@ const styles = StyleSheet.create({
     padding: 20,
     borderTopWidth: 1,
     borderTopColor: "#ccc",
-  },
-  input: {
-    width: "100%",
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    marginBottom: 10,
   },
   saveButton: {
     backgroundColor: "#007BFF",
@@ -1111,7 +1184,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: "#ffffff",
     borderRadius: 5,
-    width: "100%",
+    width: "50%",
     alignItems: "center",
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -1122,5 +1195,24 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     color: "#007BFF",
+  },
+  addAllButton: {
+    marginTop: 18,
+    padding: 15,
+    backgroundColor: "#007BFF", // Same blue color as other buttons
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+    width: 160,
+    alignSelf: "center",
+  },
+  addAllButtonText: {
+    color: "#fff", // White text
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
