@@ -7,12 +7,14 @@ import { registerWithEmailAndPassword } from "../firebase/authService"; // Fireb
 export default function CreateAccount() {
   const [email, setEmail] = useState(""); // Email input
   const [password, setPassword] = useState(""); // Password input
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [confirmPassword, setConfirmPassword] = useState(""); // Confirm password
   const router = useRouter(); // Use router for navigation
 
   const handleCreateAccount = async () => {
     try {
-      if (!email || !password || !confirmPassword) {
+      if (!email || !password || !firstName || !lastName || !confirmPassword) {
         Alert.alert("All fields are required");
         return;
       }
@@ -21,7 +23,18 @@ export default function CreateAccount() {
         return;
       }
 
-      await registerWithEmailAndPassword(email, password); // Create a new user with Firebase
+      // Example pantry items (you can modify this as needed)
+      const initialPantry = [];
+
+      // Create a new user with Firebase and pass pantry items
+      await registerWithEmailAndPassword(
+        email,
+        password,
+        firstName,
+        lastName,
+        []
+      );
+
       Alert.alert("Account created successfully!");
       router.push("/home"); // Navigate to the home screen after successful registration
     } catch (error) {
@@ -32,11 +45,27 @@ export default function CreateAccount() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/Logo.png')} // Adjust the path to your logo image
+        source={require("../assets/Logo.png")} // Adjust the path to your logo image
         style={styles.logo}
         resizeMode="contain" // This ensures the logo maintains its aspect ratio
       />
       <View style={styles.formContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="First Name"
+          placeholderTextColor="#777"
+          value={firstName}
+          onChangeText={setFirstName}
+          autoCapitalize="words"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Last Name"
+          placeholderTextColor="#777"
+          value={lastName}
+          onChangeText={setLastName}
+          autoCapitalize="words"
+        />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -63,7 +92,7 @@ export default function CreateAccount() {
           autoCapitalize="none"
           secureTextEntry
         />
-        <AuthButton onPress={handleCreateAccount} title="               Create Account" />
+        <AuthButton onPress={handleCreateAccount} title="Create Account" />
       </View>
     </View>
   );
