@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#ADD8E6", // Soft blue background
+    backgroundColor: "#C1E0EC", // Soft blue background
     padding: 20,
   },
   hamburger: {
@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
     elevation: 5,
     alignItems: "center", // Center content horizontally
     justifyContent: "center", // Center content vertically
+    marginTop: -85, // Move the card higher up
   },
   header: {
     fontSize: 28,

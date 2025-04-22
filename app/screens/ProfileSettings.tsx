@@ -366,7 +366,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#ADD8E6",
+    backgroundColor: "#C1E0EC",
   },
   loaderContainer: {
     flex: 1,
