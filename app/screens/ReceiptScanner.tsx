@@ -27,7 +27,7 @@ import CustomDropdown from "../../components/CustomDropdown"; // Import your cus
 const { width } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "AIzaSyBaWlVLXmJ3duSDxza3Vrc4xLdHfHvIGKE";
+const GOOGLE_API_KEY = "";
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
