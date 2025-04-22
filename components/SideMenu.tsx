@@ -138,8 +138,8 @@ const SideMenu = ({ onClose }) => {
       ]}
       onPress={() => handleMenuSelect("Pantry")}
     >
-      {/* Changed to basket icon */}
-      <Ionicons name="basket" size={18} color="#fff" style={styles.submenuIcon} />
+      {/* Changed to nutrition/apple icon */}
+      <Ionicons name="nutrition" size={18} color="#fff" style={styles.submenuIcon} />
       <Text style={styles.submenuText}>Pantry</Text>
     </TouchableOpacity>
 
