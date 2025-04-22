@@ -314,16 +314,16 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   profileHeaderContainer: {
-    padding: 20,
+    padding: 0,
     paddingTop: 0,
-    paddingBottom: 15,
+    paddingBottom: 0,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255,255,255,0.1)",
     backgroundColor: "rgba(0,0,0,0.1)",
   },
   editProfileIcon: {
     position: "absolute", // Position it relative to the profile header container
-    bottom: 7, // Adjust to align with the bottom of the profile image
+    bottom:23, // Adjust to align with the bottom of the profile image
     right: 10, // Adjust to align with the right of the profile image
     backgroundColor: "#4C5D6B", // Optional: Add a background color to match the menu
     borderRadius: 50, // Make it circular
