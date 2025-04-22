@@ -24,7 +24,7 @@ import {
 import AnimatedSideMenu from "@/components/SideMenu";
 import { LinearGradient } from "expo-linear-gradient";
 
-const API_KEY = "ea48a472f7df4ebd9c8c5301c6f0b042";
+const API_KEY = "d614cca7ed2341d2995df8150f4d9ef3";
 
 const { width, height } = Dimensions.get("window");
 
@@ -358,7 +358,11 @@ export default function AIRecipes() {
       image: recipe.image,
     }).catch((err) => console.error("Failed to log recipe to history", err));
 
-    setSelectedRecipe(recipe);
+    // Set selected recipe and flag if it's the first in the list
+    setSelectedRecipe({
+      ...recipe,
+      isFirstRecipe: recipes.length > 0 && recipe.id === recipes[0].id
+    });
     setModalVisible(true);
   };
 
@@ -604,7 +608,13 @@ export default function AIRecipes() {
                   />
                 </TouchableOpacity>
                 
-                <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
+                <ScrollView 
+                  contentContainerStyle={styles.modalScrollViewContent}
+                  showsVerticalScrollIndicator={true}
+                  scrollEventThrottle={16}
+                  removeClippedSubviews={false}
+                  keyboardShouldPersistTaps="handled"
+                >
                   <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                   {selectedRecipe.image && (
                     <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
@@ -612,29 +622,38 @@ export default function AIRecipes() {
                   
                   {/* Ingredients Section */}
                   <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
-                  {selectedRecipe.extendedIngredients && 
-                    selectedRecipe.extendedIngredients.map((ingredient, index) => (
-                      <Text key={index} style={styles.ingredientItem}>
-                        <Text style={{ fontWeight: "bold" }}>•</Text> {ingredient.original}
-                      </Text>
-                    ))
-                  }
+                  <View style={styles.ingredientsContainer}>
+                    {selectedRecipe.extendedIngredients && 
+                      selectedRecipe.extendedIngredients.map((ingredient, index) => (
+                        <Text key={index} style={styles.ingredientItem}>
+                          <Text style={{ fontWeight: "bold" }}>•</Text> {ingredient.original}
+                        </Text>
+                      ))
+                    }
+                  </View>
                   
                   {/* Instructions Section */}
                   <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
-                  {selectedRecipe.analyzedInstructions && 
-                   selectedRecipe.analyzedInstructions.length > 0 ? (
-                    selectedRecipe.analyzedInstructions[0].steps.map((step, idx) => (
-                      <View key={idx} style={styles.instructionRow}>
-                        <Text style={styles.stepNumber}>{idx + 1}.</Text>
-                        <Text style={styles.instructionText}>{step.step}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.instructionText}>
-                      {formatInstructions(selectedRecipe.instructions)}
-                    </Text>
-                  )}
+                  <View style={styles.instructionsContainer}>
+                    {selectedRecipe.analyzedInstructions && 
+                    selectedRecipe.analyzedInstructions.length > 0 ? (
+                      selectedRecipe.analyzedInstructions[0].steps.map((step, idx) => (
+                        <View key={idx} style={styles.instructionRow}>
+                          <Text style={styles.stepNumber}>{idx + 1}.</Text>
+                          <Text style={styles.instructionText}>{step.step}</Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={styles.instructionText}>
+                        {formatInstructions(selectedRecipe.instructions)}
+                      </Text>
+                    )}
+                  </View>
+                  
+                  {/* Dynamic padding based on whether this is the first recipe (which needs more padding) */}
+                  <View style={{ 
+                    height: selectedRecipe.isFirstRecipe ? 200 : 60 
+                  }} />
                 </ScrollView>
               </>
             )}
@@ -1005,5 +1024,16 @@ borderRadius: 10,
     right: 0,
     bottom: 0,
     height: "50%",
+  },
+  ingredientsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+  instructionsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+  extraPadding: {
+    height: 150, // Increased from 100 to 150 for more scroll space
   },
 });
