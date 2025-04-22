@@ -11,10 +11,10 @@ import {
   Dimensions,
   Animated,
 } from "react-native";
-
-import { getItems } from "../../firebase/pantryService"; // Import the getItems function from pantryService
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the bookmark icon
-
+import { useRouter } from "expo-router";
+import { getAuth } from "firebase/auth";
+import { getItems } from "../../firebase/pantryService";
+import { Ionicons } from "@expo/vector-icons";
 import { addRecipeToHistory } from "@/firebase/recipeHistoryService";
 import {
   addBookmark,
@@ -22,10 +22,9 @@ import {
   isRecipeBookmarked,
 } from "@/firebase/bookmarkService";
 import AnimatedSideMenu from "@/components/SideMenu";
-import { useRouter } from "expo-router";
-import { getAuth } from "firebase/auth";
+import { LinearGradient } from "expo-linear-gradient";
 
-const API_KEY = "ea48a472f7df4ebd9c8c5301c6f0b042";
+const API_KEY = "d614cca7ed2341d2995df8150f4d9ef3";
 
 const { width, height } = Dimensions.get("window");
 
@@ -104,12 +103,30 @@ export default function AIRecipes() {
 
   const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-  // Helper function to determine match level
+  // Helper function to determine match level with a 15% curve
   const getMatchLevel = (percentage) => {
-    if (percentage >= 80) return "gold";
-    if (percentage >= 50) return "silver";
-    if (percentage >= 30) return "bronze";
-    return "none";
+    // Apply a 15% curve to make matches appear more favorable
+    const adjustedPercentage = Math.min(100, percentage + 15);
+
+    if (adjustedPercentage >= 80) return "perfect";
+    if (adjustedPercentage >= 50) return "close";
+    return "missing";
+  };
+
+  // Add filter function
+  const getFilteredRecipes = (recipeList) => {
+    if (!Object.values(activeFilters).includes(true)) {
+      return recipeList; // Return all recipes if no filters are active
+    }
+
+    return recipeList.filter((recipe) => {
+      if (!recipe.matchInfo) return false;
+      return (
+        (activeFilters.gold && recipe.matchInfo.matchLevel === "gold") ||
+        (activeFilters.silver && recipe.matchInfo.matchLevel === "silver") ||
+        (activeFilters.bronze && recipe.matchInfo.matchLevel === "bronze")
+      );
+    });
   };
 
   // Add filter function
@@ -133,12 +150,12 @@ export default function AIRecipes() {
     if (!recipe || !recipe.matchInfo) return styles.recipeContainer;
 
     switch (recipe.matchInfo.matchLevel) {
-      case "gold":
-        return [styles.recipeContainer, styles.goldBorder];
-      case "silver":
-        return [styles.recipeContainer, styles.silverBorder];
-      case "bronze":
-        return [styles.recipeContainer, styles.bronzeBorder];
+      case "perfect":
+        return [styles.recipeContainer, styles.perfectBorder];
+      case "close":
+        return [styles.recipeContainer, styles.closeBorder];
+      case "missing":
+        return [styles.recipeContainer, styles.missingBorder];
       default:
         return styles.recipeContainer;
     }
@@ -172,7 +189,7 @@ export default function AIRecipes() {
       console.log("Ingredients for API:", ingredientNames);
 
       // Build the API URL with parameters
-      let apiUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&includeIngredients=${ingredientNames}&fillIngredients=true&addRecipeInformation=true&number=6&sort=max-used-ingredients`;
+      let apiUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&includeIngredients=${ingredientNames}&fillIngredients=true&addRecipeInformation=true&number=6&sort=max-used-ingredients&instructionsRequired=true`;
 
       // Add cuisine filter if a specific cuisine is selected
       if (selectedCuisine !== "All") {
@@ -183,7 +200,34 @@ export default function AIRecipes() {
 
       // Fetch recipes from Spoonacular API
       const response = await fetch(apiUrl);
-      const data = await response.json();
+
+      // Check if the response is OK
+      if (!response.ok) {
+        console.error(`API responded with status: ${response.status}`);
+        const textResponse = await response.text();
+        console.error("API error response:", textResponse);
+        setRecipes([]);
+        setLoading(false);
+        return;
+      }
+
+      const responseText = await response.text();
+      console.log(
+        "API response text first 100 chars:",
+        responseText.substring(0, 100)
+      );
+
+      // Try to parse the JSON response
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON response:", e);
+        console.error("Response text:", responseText);
+        setRecipes([]);
+        setLoading(false);
+        return;
+      }
 
       if (response.status === 401) {
         console.error("Unauthorized: Check your Spoonacular API key.");
@@ -208,7 +252,124 @@ export default function AIRecipes() {
           const matchPercentage =
             totalCount > 0 ? (usedCount / totalCount) * 100 : 0;
 
+          // Store both the original and adjusted percentages
+          const adjustedPercentage = Math.min(100, matchPercentage + 15);
+
           // Add match info to recipe
+          recipe.matchInfo = {
+            used: usedCount,
+            missed: missedCount,
+            total: totalCount,
+            percentage: matchPercentage,
+            displayPercentage: adjustedPercentage, // The percentage to display
+            matchLevel: getMatchLevel(matchPercentage),
+          };
+
+          return recipe;
+        });
+
+        // Sort recipes by match level (perfect > close > missing) and then by percentage within each level
+        const sortedRecipes = processedRecipes.sort((a, b) => {
+          // First sort by match level
+          const levelOrder = { perfect: 0, close: 1, missing: 2 };
+          const levelDiff =
+            levelOrder[a.matchInfo.matchLevel] -
+            levelOrder[b.matchInfo.matchLevel];
+
+          if (levelDiff !== 0) {
+            return levelDiff; // Different match levels, sort by level
+          }
+
+          // Same match level, sort by percentage (higher percentage first)
+          return b.matchInfo.percentage - a.matchInfo.percentage;
+        });
+
+        setRecipes(sortedRecipes);
+      } else {
+        setRecipes([]);
+        console.log("No recipes found for the selected criteria");
+      }
+    } catch (error) {
+      console.error("Error fetching recipes:", error);
+      // Try using alternative API endpoint if there's a parsing error
+      if (
+        error instanceof SyntaxError &&
+        error.message.includes("JSON Parse error")
+      ) {
+        try {
+          console.log("Trying alternative API endpoint due to parsing error");
+          await fetchRecipesAlternative();
+        } catch (alternativeError) {
+          console.error("Alternative API fetch also failed:", alternativeError);
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add this alternative fetch function for backup
+  const fetchRecipesAlternative = async () => {
+    try {
+      const pantryItems = (await getItems("pantry")) || [];
+      const fridgeItems = (await getItems("fridge")) || [];
+      const freezerItems = (await getItems("freezer")) || [];
+      const spicesItems = (await getItems("spices")) || [];
+
+      // Combine all ingredients
+      const allIngredients = [
+        ...pantryItems,
+        ...fridgeItems,
+        ...freezerItems,
+        ...spicesItems,
+      ];
+
+      // Extract ingredient names and join with commas
+      const ingredientNames = allIngredients.map((item) => item.name).join(",");
+
+      // Use a different endpoint or approach
+      const apiUrl = `https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=6`;
+
+      console.log("Trying alternative endpoint:", apiUrl);
+
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (Array.isArray(data) && data.length > 0) {
+        // Fetch detailed recipe info for each recipe
+        const detailedRecipes = await Promise.all(
+          data.map(async (recipe) => {
+            try {
+              const detailResponse = await fetch(
+                `https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`
+              );
+              if (!detailResponse.ok) {
+                return recipe; // Return basic recipe if detail fetch fails
+              }
+              return await detailResponse.json();
+            } catch (e) {
+              console.error(
+                `Error fetching details for recipe ${recipe.id}:`,
+                e
+              );
+              return recipe; // Return basic recipe on error
+            }
+          })
+        );
+
+        // Process recipes like in main function
+        const processedRecipes = detailedRecipes.map((recipe) => {
+          const usedCount = recipe.usedIngredientCount || 0;
+          const missedCount = recipe.missedIngredientCount || 0;
+          const totalCount = usedCount + missedCount;
+
+          const matchPercentage =
+            totalCount > 0 ? (usedCount / totalCount) * 100 : 0;
+
           recipe.matchInfo = {
             used: usedCount,
             missed: missedCount,
@@ -223,12 +384,10 @@ export default function AIRecipes() {
         setRecipes(processedRecipes);
       } else {
         setRecipes([]);
-        console.log("No recipes found for the selected criteria");
       }
     } catch (error) {
-      console.error("Error fetching recipes:", error);
-    } finally {
-      setLoading(false);
+      console.error("Alternative fetch failed:", error);
+      setRecipes([]);
     }
   };
 
@@ -254,6 +413,8 @@ export default function AIRecipes() {
   };
 
   const handleRecipePress = (recipe) => {
+    console.log("Recipe pressed:", recipe.title);
+
     // Log this recipe to the history
     addRecipeToHistory({
       id: recipe.id,
@@ -261,7 +422,11 @@ export default function AIRecipes() {
       image: recipe.image,
     }).catch((err) => console.error("Failed to log recipe to history", err));
 
-    setSelectedRecipe(recipe);
+    // Set selected recipe and flag if it's the first in the list
+    setSelectedRecipe({
+      ...recipe,
+      isFirstRecipe: recipes.length > 0 && recipe.id === recipes[0].id,
+    });
     setModalVisible(true);
   };
 
@@ -452,6 +617,9 @@ export default function AIRecipes() {
         </Text>
       </TouchableOpacity>
 
+      {/* Match Legend moved here, right after cuisine button */}
+      <MatchLegend />
+
       {/* Cuisine Dropdown Menu */}
       {showCuisineDropdown && (
         <View style={styles.cuisineDropdown}>
@@ -488,7 +656,6 @@ export default function AIRecipes() {
             { paddingBottom: 100 },
           ]}
         >
-          <MatchLegend />
           {recipes.length > 0 ? (
             getFilteredRecipes(recipes).map((recipe, index) => (
               <TouchableOpacity
@@ -513,21 +680,39 @@ export default function AIRecipes() {
                   </TouchableOpacity>
                 </View>
 
-                {/* Add match badge if it's a good match */}
-                {recipe.matchInfo && recipe.matchInfo.percentage >= 30 && (
-                  <View style={styles.matchBadge}>
-                    <Text style={styles.matchText}>
-                      {Math.round(recipe.matchInfo.percentage)}% match
-                    </Text>
-                  </View>
-                )}
+                <View style={styles.imageWrapper}>
+                  {recipe.image && (
+                    <Image
+                      source={{ uri: recipe.image }}
+                      style={styles.recipeImage}
+                    />
+                  )}
 
-                {recipe.image && (
-                  <Image
-                    source={{ uri: recipe.image }}
-                    style={styles.recipeImage}
+                  {/* Gradient overlay */}
+                  <LinearGradient
+                    colors={["transparent", "rgba(0,0,0,0.5)"]}
+                    style={styles.gradientOverlay}
                   />
-                )}
+
+                  {/* Add match badge if it's a good match */}
+                  {recipe.matchInfo && (
+                    <View
+                      style={[
+                        styles.matchBadge,
+                        recipe.matchInfo.matchLevel === "perfect" &&
+                          styles.perfectBadge,
+                        recipe.matchInfo.matchLevel === "close" &&
+                          styles.closeBadge,
+                        recipe.matchInfo.matchLevel === "missing" &&
+                          styles.missingBadge,
+                      ]}
+                    >
+                      <Text style={styles.matchText}>
+                        {Math.round(recipe.matchInfo.displayPercentage)}% match
+                      </Text>
+                    </View>
+                  )}
+                </View>
               </TouchableOpacity>
             ))
           ) : (
@@ -550,80 +735,101 @@ export default function AIRecipes() {
         <Text style={styles.resetButtonText}>Get New Recipes</Text>
       </TouchableOpacity>
 
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity
-                style={styles.modalBookmarkIcon}
-                onPress={() => toggleBookmark(selectedRecipe.id)}
-              >
-                <Ionicons
-                  name={
-                    isBookmarked(selectedRecipe.id)
-                      ? "bookmark"
-                      : "bookmark-outline"
-                  }
-                  size={30}
-                  color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
-                />
-              </TouchableOpacity>
-
-              <ScrollView contentContainerStyle={styles.modalScrollViewContent}>
-                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                {selectedRecipe.image && (
-                  <Image
-                    source={{ uri: selectedRecipe.image }}
-                    style={styles.modalImage}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {selectedRecipe && (
+              <>
+                <TouchableOpacity
+                  style={styles.modalBookmarkIcon}
+                  onPress={() => toggleBookmark(selectedRecipe.id)}
+                >
+                  <Ionicons
+                    name={
+                      isBookmarked(selectedRecipe.id)
+                        ? "bookmark"
+                        : "bookmark-outline"
+                    }
+                    size={30}
+                    color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
                   />
-                )}
+                </TouchableOpacity>
 
-                {/* Ingredients Section */}
-                <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
-                {selectedRecipe.extendedIngredients &&
-                  selectedRecipe.extendedIngredients.map(
-                    (ingredient, index) => (
-                      <Text key={index} style={styles.ingredientItem}>
-                        <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
-                        {ingredient.original}
-                      </Text>
-                    )
+                <ScrollView
+                  contentContainerStyle={styles.modalScrollViewContent}
+                  showsVerticalScrollIndicator={true}
+                  scrollEventThrottle={16}
+                  removeClippedSubviews={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+                  {selectedRecipe.image && (
+                    <Image
+                      source={{ uri: selectedRecipe.image }}
+                      style={styles.modalImage}
+                    />
                   )}
 
-                {/* Instructions Section */}
-                <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
-                {selectedRecipe.analyzedInstructions &&
-                selectedRecipe.analyzedInstructions.length > 0 ? (
-                  selectedRecipe.analyzedInstructions[0].steps.map(
-                    (step, idx) => (
-                      <View key={idx} style={styles.instructionRow}>
-                        <Text style={styles.stepNumber}>{idx + 1}.</Text>
-                        <Text style={styles.instructionText}>{step.step}</Text>
-                      </View>
-                    )
-                  )
-                ) : (
-                  <Text style={styles.instructionText}>
-                    {formatInstructions(selectedRecipe.instructions)}
-                  </Text>
-                )}
-              </ScrollView>
+                  {/* Ingredients Section */}
+                  <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
+                  <View style={styles.ingredientsContainer}>
+                    {selectedRecipe.extendedIngredients &&
+                      selectedRecipe.extendedIngredients.map(
+                        (ingredient, index) => (
+                          <Text key={index} style={styles.ingredientItem}>
+                            <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
+                            {ingredient.original}
+                          </Text>
+                        )
+                      )}
+                  </View>
 
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
+                  {/* Instructions Section */}
+                  <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
+                  <View style={styles.instructionsContainer}>
+                    {selectedRecipe.analyzedInstructions &&
+                    selectedRecipe.analyzedInstructions.length > 0 ? (
+                      selectedRecipe.analyzedInstructions[0].steps.map(
+                        (step, idx) => (
+                          <View key={idx} style={styles.instructionRow}>
+                            <Text style={styles.stepNumber}>{idx + 1}.</Text>
+                            <Text style={styles.instructionText}>
+                              {step.step}
+                            </Text>
+                          </View>
+                        )
+                      )
+                    ) : (
+                      <Text style={styles.instructionText}>
+                        {formatInstructions(selectedRecipe.instructions)}
+                      </Text>
+                    )}
+                  </View>
+
+                  {/* Dynamic padding based on whether this is the first recipe (which needs more padding) */}
+                  <View
+                    style={{
+                      height: selectedRecipe.isFirstRecipe ? 200 : 60,
+                    }}
+                  />
+                </ScrollView>
+              </>
+            )}
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      )}
+        </View>
+      </Modal>
 
       <AnimatedSideMenu
         isMenuOpen={isMenuOpen}
@@ -634,7 +840,6 @@ export default function AIRecipes() {
 }
 
 const styles = StyleSheet.create({
-  // Add these new styles
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -649,7 +854,7 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: 50,
-    backgroundColor: "#ADD8E6",
+    backgroundColor: "#C1E0EC",
   },
   logo: {
     width: 85,
@@ -662,7 +867,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
-  // Cuisine dropdown styles
   cuisineButton: {
     backgroundColor: "#007BFF",
     paddingVertical: 8,
@@ -680,7 +884,7 @@ const styles = StyleSheet.create({
   },
   cuisineDropdown: {
     position: "absolute",
-    top: 170, // Adjust based on your layout
+    top: 170,
     backgroundColor: "#fff",
     width: "80%",
     maxHeight: 200,
@@ -716,17 +920,25 @@ const styles = StyleSheet.create({
     paddingBottom: 50,
   },
   recipeContainer: {
-    marginTop: 20,
+    marginTop: 12, // Reduced from 20
+    marginBottom: 0, // Added to reduce vertical spacing
     alignItems: "center",
-    width: "90%",
+    width: "92%",
     backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 10,
+    padding: 0,
+    borderRadius: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    overflow: "hidden",
+  },
+  imageContainer: {
+    position: "relative",
+    width: "100%",
+    height: 150, // Reduced from 220
+    overflow: "hidden",
   },
   recipeHeader: {
     flexDirection: "row",
@@ -746,11 +958,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 250,
     borderRadius: 10,
-  },
-  recipeInfo: {
-    fontSize: 16,
-    color: "#333",
-    marginTop: 5,
   },
   spacer: {
     height: 50,
@@ -801,6 +1008,7 @@ const styles = StyleSheet.create({
   },
   modalScrollViewContent: {
     alignItems: "center",
+    paddingBottom: 100,
   },
   modalTitle: {
     fontSize: 24,
@@ -812,10 +1020,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 150,
     borderRadius: 10,
-    marginBottom: 5,
-  },
-  modalText: {
-    fontSize: 16,
     marginBottom: 5,
   },
   closeButton: {
@@ -848,44 +1052,112 @@ const styles = StyleSheet.create({
     right: 10,
     zIndex: 1,
   },
-  goldBorder: {
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 10,
+    color: "#333",
+    textAlign: "center",
+  },
+  ingredientItem: {
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 5,
+    textAlign: "left",
+  },
+  instructionRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "flex-start",
+  },
+  stepNumber: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginRight: 8,
+    color: "#333",
+  },
+  instructionText: {
+    fontSize: 16,
+    lineHeight: 22,
+    flex: 1,
+    color: "#333",
+  },
+  perfectBorder: {
     borderWidth: 5,
-    borderColor: "#FFD700", // Gold color
-    shadowColor: "#FFD700",
+    borderColor: "#99E1AC", // Green
+    shadowColor: "99E1AC",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 5,
   },
-  silverBorder: {
+  closeBorder: {
     borderWidth: 5,
-    borderColor: "#C0C0C0", // Silver color
-    shadowColor: "#C0C0C0",
+    borderColor: "#FFF894", // Amber
+    shadowColor: "#FFF894",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
-  bronzeBorder: {
+  missingBorder: {
     borderWidth: 5,
-    borderColor: "#CD7F32", // Bronze color
-    shadowColor: "#CD7F32",
+    borderColor: "#F06A6A", // Red
+    shadowColor: "#F06A6A",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.3,
     shadowRadius: 3,
   },
-  matchBadge: {
-    position: "absolute",
-    top: 10,
-    left: 10,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    zIndex: 1,
+  goldBorder: undefined,
+  silverBorder: undefined,
+  bronzeBorder: undefined,
+  perfectBadge: {
+    backgroundColor: "rgba(76, 175, 80, 0.8)", // Green with transparency
   },
-  matchText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 12,
+  closeBadge: {
+    backgroundColor: "rgba(255, 193, 7, 0.8)", // Amber with transparency
+  },
+  missingBadge: {
+    backgroundColor: "rgba(244, 67, 54, 0.8)", // Red with transparency
+  },
+  checkboxContainer: {
+    marginRight: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  goldCheckbox: {
+    borderColor: "#FFD700",
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
+  },
+  goldCheckboxChecked: {
+    backgroundColor: "#FFD700",
+    borderColor: "#FFD700",
+  },
+  silverCheckbox: {
+    borderColor: "#C0C0C0",
+    backgroundColor: "rgba(192, 192, 192, 0.1)",
+  },
+  silverCheckboxChecked: {
+    backgroundColor: "#C0C0C0",
+    borderColor: "#C0C0C0",
+  },
+  bronzeCheckbox: {
+    borderColor: "#CD7F32",
+    backgroundColor: "rgba(205, 127, 50, 0.1)",
+  },
+  bronzeCheckboxChecked: {
+    backgroundColor: "#CD7F32",
+    borderColor: "#CD7F32",
+  },
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 5,
+    paddingVertical: 5,
   },
   checkboxContainer: {
     marginRight: 10,
@@ -948,107 +1220,78 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
     marginBottom: 5,
-    textAlign: "center",
+  },
+  legendRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    width: "100%",
   },
   legendItem: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 3,
-  },
-  legendColorBox: {
-    width: 40,
-    height: 25,
     justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
+    marginHorizontal: 5,
   },
   legendBox: {
-    width: 30,
+    width: 20,
     height: 20,
-    backgroundColor: "#fff",
+    borderWidth: 3,
+    marginRight: 5,
+    backgroundColor: "transparent", // Make inside hollow
   },
   legendText: {
-    fontSize: 14,
+    fontSize: 11,
+    color: "#333",
+    fontWeight: "500",
   },
-
-  menuContainer: {
+  perfectBox: {
+    borderColor: "#1AC737", // Green
+  },
+  closeBox: {
+    borderColor: "#FFC107", // Amber
+  },
+  missingBox: {
+    borderColor: "#F44336", // Red
+  },
+  matchBadge: {
     position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: width * 0.4,
-    backgroundColor: "#4C5D6B",
-    padding: 20,
-    paddingTop: 40,
-    zIndex: 2, // Above the overlay but below the hamburger button
+    top: 10,
+    left: 10,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    zIndex: 1,
   },
-  firstMenuItem: {
-    paddingTop: 40,
-  },
-  menuText: {
-    fontSize: 18,
+  matchText: {
     color: "#fff",
-    marginVertical: 10,
+    fontWeight: "bold",
+    fontSize: 12,
   },
-  // Add these styles to your StyleSheet
-
-  sectionTitle: {
-    fontSize: 20, // Slightly larger font size
-    fontWeight: "bold", // Bold text
-    marginVertical: 10, // Add spacing above and below
-    color: "#333", // Darker color for better readability
-    textAlign: "center", // Center the title
+  imageWrapper: {
+    position: "relative",
+    width: "100%",
+    height: 250,
+    borderRadius: 10,
+    overflow: "hidden",
   },
-
-  ingredientItem: {
-    fontSize: 16, // Standard font size for ingredients
-    lineHeight: 22, // Add spacing between lines
-    marginBottom: 5, // Add spacing between ingredients
-    textAlign: "left", // Align ingredients to the left
+  gradientOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "50%",
   },
-
-  instructionRow: {
-    flexDirection: "row", // Align step number and text in a row
-    marginBottom: 8, // Add spacing between steps
-    alignItems: "flex-start", // Align items at the top
+  ingredientsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
   },
-
-  stepNumber: {
-    fontSize: 16, // Font size for step numbers
-    fontWeight: "bold", // Bold step numbers
-    marginRight: 8, // Add spacing between number and text
-    color: "#333", // Darker color for better readability
+  instructionsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
   },
-
-  instructionText: {
-    fontSize: 16, // Standard font size for instructions
-    lineHeight: 22, // Add spacing between lines
-    flex: 1, // Allow text to wrap properly
-    color: "#333", // Darker color for better readability
-  },
-  // Menu dropdown styles
-  menuItemWithSubmenu: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginRight: 10,
-  },
-  menuItemMain: {
-    flex: 1,
-  },
-  triangleButton: {
-    padding: 5,
-  },
-  submenuItem: {
-    paddingLeft: 20,
-    fontSize: 16,
-  },
-  logoutText: {
-    fontSize: 18,
-    color: "red",
-    marginVertical: 10,
-  },
-  rightPadding: {
-    paddingLeft: 20,
+  extraPadding: {
+    height: 150, // Increased from 100 to 150 for more scroll space
   },
 });

@@ -10,6 +10,7 @@ import {
   ScrollView,
   Modal,
   Alert,
+  ImageBackground,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
@@ -18,11 +19,16 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import NotificationBell from "../components/NotificationBell"; // Component for notifications
 import AnimatedSideMenu from "@/components/SideMenu";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 
 const RecipeCard = ({ title, imagePath, description, onPress }) => (
-  <TouchableOpacity onPress={onPress}>
+  <TouchableOpacity 
+    onPress={onPress} 
+    style={styles.recipeCardContainer}
+    activeOpacity={0.9}
+  >
     <View style={styles.recipeCard}>
       <View style={styles.imageContainer}>
         {imagePath ? (
@@ -34,12 +40,23 @@ const RecipeCard = ({ title, imagePath, description, onPress }) => (
         ) : (
           <View style={styles.placeholder} />
         )}
-      </View>
-      <View style={styles.recipeContent}>
-        <Text style={styles.recipeTitle}>{title}</Text>
-        <Text style={styles.recipeText}>{description}</Text>
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          style={styles.imageOverlay}
+        />
+        <Text style={styles.imageTitle}>{title}</Text>
+        <Text style={styles.imageDescription} numberOfLines={1}>
+          {description}
+        </Text>
       </View>
     </View>
+  </TouchableOpacity>
+);
+
+const QuickAccessButton = ({ icon, title, onPress, color }) => (
+  <TouchableOpacity style={[styles.quickAccessButton, { backgroundColor: color }]} onPress={onPress} activeOpacity={0.8}>
+    <Ionicons name={icon} size={16} color="#fff" style={styles.buttonIcon} />
+    <Text style={styles.quickAccessText}>{title}</Text>
   </TouchableOpacity>
 );
 
@@ -147,52 +164,39 @@ const HomeScreen = () => {
       <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.contentContainer}>
-        <View style={styles.topButtonsContainer}>
-          <TouchableOpacity
-            style={styles.squareButton}
-            onPress={() => router.push("/screens/AIRecipes")}
-          >
-            <Text style={styles.squareButtonText}>Smart Recipes</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.squareButton}
-            onPress={() => router.push("/screens/ReceiptScanner")}
-          >
-            <Text style={styles.squareButtonText}>Scan Receipt</Text>
-          </TouchableOpacity>
+        <View style={styles.headerContainer}>
+          <View style={styles.headerRow}>
+            <View style={styles.buttonsRow}>
+              <QuickAccessButton 
+                icon="flash" 
+                title="Smart Recipes" 
+                onPress={() => router.push("/screens/AIRecipes")} 
+                color="#4CAF50"
+              />
+              <TouchableOpacity 
+                style={[styles.quickAccessButton, {backgroundColor: "#FF5722"}]}
+                onPress={() => router.push("/screens/Pantry")}
+              >
+                <Ionicons name="nutrition" size={16} color="#fff" style={styles.buttonIcon} />
+                <Text style={styles.quickAccessText}>Add to Pantry</Text>
+              </TouchableOpacity>
+              <QuickAccessButton 
+                icon="scan" 
+                title="Scan Receipt" 
+                onPress={() => router.push("/screens/ReceiptScanner")} 
+                color="#2196F3"
+              />
+            </View>
+            <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
+          </View>
         </View>
+
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
           <View style={styles.recipeContainer}>
-            <RecipeCard
-              title="Spaghetti Alfredo"
-              imagePath={require("../assets/spaghetti.jpg")}
-              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Spaghetti Alfredo",
-                  imagePath: require("../assets/spaghetti.jpg"),
-                  description: `Ingredients:
-- 12 ounces fettuccine
-- 1 cup heavy cream
-- 1/2 cup unsalted butter
-- 1 cup grated Parmesan cheese
-- Salt and pepper to taste
-- Chopped parsley for garnish
-
-Instructions:
-1. Cook the fettuccine according to package instructions. Drain and set aside.
-2. In a large skillet, heat the heavy cream and butter over medium heat until the butter is melted and the mixture is hot.
-3. Add the Parmesan cheese and stir until the cheese is melted and the sauce is smooth.
-4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
-5. Season with salt and pepper to taste.
-6. Garnish with chopped parsley and serve immediately.`,
-                })
-              }
-            />
             <RecipeCard
               title="Steak and Potatoes"
               imagePath={require("../assets/steakpotatoes.jpg")}
@@ -272,6 +276,32 @@ Instructions:
 5. Dip the cod fillets into the batter, allowing any excess to drip off.
 6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
 7. Serve the fish with the fries and lemon wedges.`,
+                })
+              }
+            />
+            <RecipeCard
+              title="Spaghetti Alfredo"
+              imagePath={require("../assets/spaghetti.jpg")}
+              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+              onPress={() =>
+                handleRecipePress({
+                  title: "Spaghetti Alfredo",
+                  imagePath: require("../assets/spaghetti.jpg"),
+                  description: `Ingredients:
+- 12 ounces fettuccine
+- 1 cup heavy cream
+- 1/2 cup unsalted butter
+- 1 cup grated Parmesan cheese
+- Salt and pepper to taste
+- Chopped parsley for garnish
+
+Instructions:
+1. Cook the fettuccine according to package instructions. Drain and set aside.
+2. In a large skillet, heat the heavy cream and butter over medium heat until the butter is melted and the mixture is hot.
+3. Add the Parmesan cheese and stir until the cheese is melted and the sauce is smooth.
+4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
+5. Season with salt and pepper to taste.
+6. Garnish with chopped parsley and serve immediately.`,
                 })
               }
             />
@@ -417,7 +447,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#ADD8E6",
+    backgroundColor: "#C1E0EC",
     paddingTop: 10,
   },
   // Add overlay style for closing menu when tapping anywhere
@@ -475,80 +505,165 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
   },
-  topButtonsContainer: {
+  headerContainer: {
+    width: "100%",
+    paddingHorizontal: 15,
+    marginBottom: 15,
+  },
+  headerRow: {
+    flexDirection: "column",
+    marginBottom: 5,
+  },
+  buttonsRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "90%",
-    marginBottom: 20,
+    width: "100%",
+    marginBottom: 12,
   },
-  squareButton: {
-    width: width * 0.4,
-    height: width * 0.125,
-    backgroundColor: "rgba(0, 170, 255, 0.7)",
-    justifyContent: "center",
+  quickAccessButton: {
+    flexDirection: "row",
     alignItems: "center",
-    borderRadius: 25,
-    marginHorizontal: 10,
-    borderWidth: 1,
-    borderColor: "#fff",
+    justifyContent: "center",
+    backgroundColor: "#4CAF50",
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+    flex: 1,
+    marginHorizontal: 4,
+    maxWidth: "32%",
   },
-  squareButtonText: {
+  buttonIcon: {
+    marginRight: 4,
+  },
+  quickAccessText: {
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 12,
+    fontWeight: "600",
     textAlign: "center",
   },
   recipesHeader: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 20,
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#1A2639",
+    width: "100%",
+    paddingRight: 5,
+    lineHeight: 32,
+    fontFamily: "System",
+    letterSpacing: 0.3,
+    textTransform: "uppercase",
+    marginTop: 5,
+  },
+  secondaryButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "90%",
+    marginBottom: 15,
   },
   recipeContainer: {
     width: "100%",
     padding: 5,
   },
+  recipeCardContainer: {
+    marginVertical: 6, // Reduced from 10
+    width: "92%",
+    alignSelf: "center",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    backgroundColor: "#fff",
+  },
   recipeCard: {
     backgroundColor: "#ffffff",
-    padding: 10,
-    marginVertical: 10,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    width: "90%",
-    alignSelf: "center",
-    flexDirection: "row",
+    borderRadius: 16,
+    overflow: "hidden", // Important for ensuring the image doesn't overflow
+    padding: 0, // Remove padding so the image can span full width
   },
   imageContainer: {
-    width: 100,
-    height: 100,
-    marginRight: 15,
+    width: "100%",
+    height: 150, // Reduced from 180
+    position: "relative",
   },
   recipeImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 10,
+    width: "100%",
+    height: "100%",
   },
-  placeholder: {
-    width: 100,
-    height: 100,
-    backgroundColor: "#E0E0E0",
-    borderRadius: 10,
+  imageOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "100%",
   },
-  recipeContent: {
-    flex: 1,
-  },
-  recipeTitle: {
+  imageTitle: {
+    position: "absolute",
+    bottom: 30,
+    left: 15,
+    color: "#fff",
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 10,
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
   },
-  recipeText: {
+  imageDescription: {
+    position: "absolute",
+    bottom: 10,
+    left: 15,
+    paddingRight: 15,
+    color: "#fff",
     fontSize: 14,
-    marginLeft: 10,
+    fontWeight: "500",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+    opacity: 0.9,
+  },
+  recipeContent: {
+    padding: 12,
+    paddingBottom: 14,
+  },
+  recipeDescription: {
+    fontSize: 14,
+    color: "#555",
+    lineHeight: 18,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  timeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  timeText: {
+    fontSize: 12,
+    color: "#666",
+    marginLeft: 5,
+    fontWeight: "500",
+  },
+  difficultyContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  placeholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E0E0E0",
   },
   menuContainer: {
     position: "absolute",
@@ -689,6 +804,34 @@ const styles = StyleSheet.create({
   },
   rightPadding: {
     paddingLeft: 20,
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF5722",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 20,
+    marginBottom: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1.5,
+    elevation: 2,
+    width: 80, // Set fixed width
+  },
+  addButtonText: {
+    color: "#fff",
+    fontSize: 11, // Smaller text
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 12, // Tighter line height
+  },
+  addButtonTextContainer: {
+    alignItems: "center",
+    marginLeft: 4, // Less space between icon and text
+    width: 48, // Fixed width for text container
   },
 });
 

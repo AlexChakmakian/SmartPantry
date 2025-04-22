@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: "#ADD8E6",
+    backgroundColor: "#C1E0EC",
   },
   // Add overlay style for closing menu when tapping anywhere
   menuOverlay: {
