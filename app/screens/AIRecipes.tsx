@@ -330,6 +330,7 @@ export default function AIRecipes() {
     <View style={styles.legendContainer}>
       <Text style={styles.legendTitle}>Filter by Match:</Text>
       <View style={styles.legendItem}>
+        {/* Gold Checkbox */}
         <TouchableOpacity
           style={styles.checkboxContainer}
           onPress={() =>
@@ -342,7 +343,8 @@ export default function AIRecipes() {
           <View
             style={[
               styles.checkbox,
-              activeFilters.gold && styles.checkboxChecked,
+              styles.goldCheckbox,
+              activeFilters.gold && styles.goldCheckboxChecked,
             ]}
           >
             {activeFilters.gold && (
@@ -350,15 +352,16 @@ export default function AIRecipes() {
             )}
           </View>
         </TouchableOpacity>
-        <View style={styles.legendColorBox}>
+        {/* <View style={styles.legendColorBox}>
           <View style={[styles.legendBox, styles.goldBorder]} />
-        </View>
+        </View> */}
         <Text style={styles.legendText}>
           80%+ match - You have most ingredients!
         </Text>
       </View>
 
       <View style={styles.legendItem}>
+        {/* Silver Checkbox */}
         <TouchableOpacity
           style={styles.checkboxContainer}
           onPress={() =>
@@ -371,7 +374,8 @@ export default function AIRecipes() {
           <View
             style={[
               styles.checkbox,
-              activeFilters.silver && styles.checkboxChecked,
+              styles.silverCheckbox,
+              activeFilters.silver && styles.silverCheckboxChecked,
             ]}
           >
             {activeFilters.silver && (
@@ -379,13 +383,14 @@ export default function AIRecipes() {
             )}
           </View>
         </TouchableOpacity>
-        <View style={styles.legendColorBox}>
+        {/* <View style={styles.legendColorBox}>
           <View style={[styles.legendBox, styles.silverBorder]} />
-        </View>
+        </View> */}
         <Text style={styles.legendText}>50-79% match - Good option</Text>
       </View>
 
       <View style={styles.legendItem}>
+        {/* Bronze Checkbox */}
         <TouchableOpacity
           style={styles.checkboxContainer}
           onPress={() =>
@@ -398,7 +403,8 @@ export default function AIRecipes() {
           <View
             style={[
               styles.checkbox,
-              activeFilters.bronze && styles.checkboxChecked,
+              styles.bronzeCheckbox,
+              activeFilters.bronze && styles.bronzeCheckboxChecked,
             ]}
           >
             {activeFilters.bronze && (
@@ -406,9 +412,9 @@ export default function AIRecipes() {
             )}
           </View>
         </TouchableOpacity>
-        <View style={styles.legendColorBox}>
+        {/* <View style={styles.legendColorBox}>
           <View style={[styles.legendBox, styles.bronzeBorder]} />
-        </View>
+        </View> */}
         <Text style={styles.legendText}>
           30-49% match - Missing some ingredients
         </Text>
@@ -888,13 +894,33 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderWidth: 2,
-    borderColor: "#007BFF",
     borderRadius: 4,
     justifyContent: "center",
     alignItems: "center",
   },
-  checkboxChecked: {
-    backgroundColor: "#007BFF",
+  goldCheckbox: {
+    borderColor: "#FFD700",
+    backgroundColor: "rgba(255, 215, 0, 0.1)",
+  },
+  goldCheckboxChecked: {
+    backgroundColor: "#FFD700",
+    borderColor: "#FFD700",
+  },
+  silverCheckbox: {
+    borderColor: "#C0C0C0",
+    backgroundColor: "rgba(192, 192, 192, 0.1)",
+  },
+  silverCheckboxChecked: {
+    backgroundColor: "#C0C0C0",
+    borderColor: "#C0C0C0",
+  },
+  bronzeCheckbox: {
+    borderColor: "#CD7F32",
+    backgroundColor: "rgba(205, 127, 50, 0.1)",
+  },
+  bronzeCheckboxChecked: {
+    backgroundColor: "#CD7F32",
+    borderColor: "#CD7F32",
   },
   legendItem: {
     flexDirection: "row",

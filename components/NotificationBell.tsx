@@ -14,6 +14,10 @@ import checkForExpiredItems from "./checkForExpiredItem";
 import { useRouter } from "expo-router";
 import { deleteItem } from "../firebase/pantryService";
 import { getAuth } from "firebase/auth";
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
 
 const { width } = Dimensions.get("window");
 
@@ -185,6 +189,35 @@ const NotificationBell = () => {
     );
   };
 
+  const renderRightActions = (item: Notification) => (
+    <View style={styles.deleteButtonContainer}>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        // onPress={() => {
+        //   Alert.alert(
+        //     "Delete Item",
+        //     `Are you sure you want to delete ${item.name}?`,
+        //     [
+        //       {
+        //         text: "Cancel",
+        //         style: "cancel",
+        //       },
+        //       {
+        //         text: "Delete",
+        //         style: "destructive",
+        //         onPress: () => handleDeleteItem(item),
+        //       },
+        //     ]
+        //   );
+        // }}
+        onPress={() => handleDeleteItem(item)}
+      >
+        <Ionicons name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <>
       <TouchableOpacity
@@ -254,61 +287,40 @@ const NotificationBell = () => {
 
           <ScrollView style={styles.notificationList}>
             {notifications.length > 0 ? (
-              notifications.map((item, index) => (
-                <Animated.View
-                  key={item.id}
-                  style={[
-                    styles.notificationItem,
-                    { backgroundColor: getPriorityColor(item.priority) },
-                  ]}
-                >
-                  <View style={styles.itemIconContainer}>
-                    <Ionicons
-                      name={getLocationIcon(item.location)}
-                      size={24}
-                      color="#007BFF"
-                    />
-                  </View>
-                  <View style={styles.itemContent}>
-                    <View style={styles.itemHeader}>
-                      <Text style={styles.itemName}>{item.name}</Text>
-                      <TouchableOpacity
-                        onPress={() => dismissNotification(item.id)}
-                        style={styles.dismissButton}
+              <GestureHandlerRootView>
+                {notifications.map((item) => (
+                  <Swipeable
+                    key={item.id}
+                    renderRightActions={() => renderRightActions(item)}
+                  >
+                    <TouchableOpacity onPress={() => handleViewDetails(item)}>
+                      <Animated.View
+                        style={[
+                          styles.notificationItem,
+                          { backgroundColor: getPriorityColor(item.priority) },
+                        ]}
                       >
-                        <Ionicons name="close-circle" size={20} color="#666" />
-                      </TouchableOpacity>
-                    </View>
-                    <Text style={styles.itemLocation}>{item.location}</Text>
-                    <Text style={styles.expiredText}>
-                      {getTimeSinceExpiration(item.expirationDate)}
-                    </Text>
-                    <View style={styles.actionButtons}>
-                      <TouchableOpacity
-                        style={styles.actionButton}
-                        onPress={() => handleViewDetails(item)}
-                      >
-                        <Text style={styles.actionButtonText}>
-                          View Details
-                        </Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.actionButton, styles.deleteButton]}
-                        onPress={() => handleDeleteItem(item)}
-                      >
-                        <Text
-                          style={[
-                            styles.actionButtonText,
-                            styles.deleteButtonText,
-                          ]}
-                        >
-                          Delete Item
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </Animated.View>
-              ))
+                        <View style={styles.itemIconContainer}>
+                          <Ionicons
+                            name={getLocationIcon(item.location)}
+                            size={24}
+                            color="#007BFF"
+                          />
+                        </View>
+                        <View style={styles.itemContent}>
+                          <Text style={styles.itemName}>{item.name}</Text>
+                          <Text style={styles.itemLocation}>
+                            {item.location}
+                          </Text>
+                          <Text style={styles.expiredText}>
+                            {getTimeSinceExpiration(item.expirationDate)}
+                          </Text>
+                        </View>
+                      </Animated.View>
+                    </TouchableOpacity>
+                  </Swipeable>
+                ))}
+              </GestureHandlerRootView>
             ) : (
               <View style={styles.emptyState}>
                 <Ionicons name="checkmark-circle" size={48} color="#4CAF50" />
@@ -323,6 +335,31 @@ const NotificationBell = () => {
 };
 
 const styles = StyleSheet.create({
+  // deleteButtonContainer: {
+  //   width: 100,
+  //   height: "100%",
+  // },
+  // deleteButton: {
+  //   backgroundColor: "#FF3B30",
+  //   justifyContent: "center",
+  //   alignItems: "center",
+  //   flex: 1,
+  //   borderRadius: 12,
+  //   marginVertical: 8,
+  // },
+  // deleteButtonText: {
+  //   color: "#fff",
+  //   fontWeight: "bold",
+  //   fontSize: 14,
+  //   marginTop: 4,
+  // },
+  notificationItem: {
+    flexDirection: "row",
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    backgroundColor: "#fff",
+  },
   notificationIcon: {
     position: "absolute",
     top: 40,
@@ -394,13 +431,6 @@ const styles = StyleSheet.create({
   },
   notificationList: {
     flex: 1,
-  },
-  notificationItem: {
-    flexDirection: "row",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-    backgroundColor: "#cfe6f5",
   },
   itemIconContainer: {
     width: 40,
@@ -484,9 +514,24 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: "#dc3545",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   deleteButtonText: {
     color: "#fff",
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: 8,
+  },
+  deleteButtonContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    backgroundColor: "#dc3545",
   },
 });
 

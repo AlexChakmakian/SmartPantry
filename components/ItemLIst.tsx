@@ -256,28 +256,31 @@ export default function ItemList({ itemType }) {
   };
 
   const renderRightActions = (id) => (
-    <TouchableOpacity
-      style={styles.deleteButton}
-      onPress={() => {
-        Alert.alert(
-          "Delete Item",
-          "Are you sure you want to delete this item?",
-          [
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: () => deleteItem(id),
-            },
-          ]
-        );
-      }}
-    >
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
+    <View style={styles.deleteButtonContainer}>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => {
+          Alert.alert(
+            "Delete Item",
+            "Are you sure you want to delete this item?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => deleteItem(id),
+              },
+            ]
+          );
+        }}
+      >
+        <Icon name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
   );
 
   const toggleMenu = () => {
@@ -598,9 +601,9 @@ const styles = StyleSheet.create({
     paddingLeft: 20,
     fontSize: 16,
   },
-  logoutText: {
-    color: "red",
-  },
+  // logoutText: {
+  //   color: "red",
+  // },
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -790,18 +793,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  deleteButtonContainer: {
+    width: 100,
+    height: "100%", // This ensures full height
+  },
   deleteButton: {
     backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
-    width: 100,
-    height: "100%",
+    flex: 1,
     borderRadius: 12,
+    marginVertical: 8,
   },
   deleteButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 14,
+    marginTop: 4,
   },
   logoutText: {
     fontSize: 18,
