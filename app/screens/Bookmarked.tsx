@@ -22,8 +22,9 @@ import {
   Swipeable,
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
+import { LinearGradient } from "expo-linear-gradient";
 
-const API_KEY = "ea48a472f7df4ebd9c8c5301c6f0b042";
+const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get("window");
 
 export default function Bookmarked() {
@@ -197,13 +198,15 @@ export default function Bookmarked() {
 
   const renderRightActions = (recipeId) => {
     return (
-      <TouchableOpacity
-        style={styles.deleteAction}
-        onPress={() => handleRemoveBookmark(recipeId)}
-      >
-        <Ionicons name="trash-outline" size={24} color="#fff" />
-        <Text style={styles.deleteActionText}>Delete</Text>
-      </TouchableOpacity>
+      <View style={styles.deleteButtonContainer}>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => handleRemoveBookmark(recipeId)}
+        >
+          <Ionicons name="trash-outline" size={24} color="#fff" />
+          <Text style={styles.deleteActionText}>Delete</Text>
+        </TouchableOpacity>
+      </View>
     );
   };
 
@@ -247,24 +250,33 @@ export default function Bookmarked() {
                 <Swipeable
                   key={index}
                   renderRightActions={() => renderRightActions(item.id)}
+                  containerStyle={styles.swipeableContainer}
                 >
                   <TouchableOpacity
-                    style={styles.recipeContainer}
+                    style={styles.recipeCardContainer}
                     onPress={() => handleRecipePress(item)}
-                    activeOpacity={0.7}
+                    activeOpacity={0.9}
                   >
-                    <Text style={styles.recipeTitle}>{item.title}</Text>
-                    {item.image && (
-                      <Image
-                        source={{ uri: item.image }}
-                        style={styles.recipeImage}
-                      />
-                    )}
-                    <Text style={styles.recipeInfo}>
-                      Bookmarked: {formatDate(item.timestamp)}
-                    </Text>
-                    <View style={styles.swipeIndicator}>
-                      <Ionicons name="chevron-back" size={16} color="#ccc" />
+                    <View style={styles.recipeCard}>
+                      <View style={styles.imageContainer}>
+                        {item.image ? (
+                          <Image
+                            source={{ uri: item.image }}
+                            style={styles.recipeImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View style={styles.placeholder} />
+                        )}
+                        <LinearGradient
+                          colors={["transparent", "rgba(0,0,0,0.8)"]}
+                          style={styles.imageOverlay}
+                        />
+                        <Text style={styles.imageTitle}>{item.title}</Text>
+                        <Text style={styles.imageDescription}>
+                          Bookmarked: {formatDate(item.timestamp)}
+                        </Text>
+                      </View>
                     </View>
                   </TouchableOpacity>
                 </Swipeable>
@@ -272,14 +284,6 @@ export default function Bookmarked() {
             ) : (
               <Text style={styles.emptyText}>No bookmarked recipes</Text>
             )}
-
-            {bookmarkedItems.length > 0 && (
-              <Text style={styles.instructionText}>
-                Tip: Tap a recipe to view details or swipe left to delete
-              </Text>
-            )}
-
-            <View style={styles.spacer} />
           </ScrollView>
         )}
 
@@ -309,6 +313,10 @@ export default function Bookmarked() {
 
                 <ScrollView
                   contentContainerStyle={styles.modalScrollViewContent}
+                  showsVerticalScrollIndicator={true}
+                  scrollEventThrottle={16}
+                  removeClippedSubviews={false}
+                  keyboardShouldPersistTaps="handled"
                 >
                   {loadingRecipe ? (
                     <ActivityIndicator
@@ -329,45 +337,66 @@ export default function Bookmarked() {
                           />
                         )}
 
-                        {/* Safely display calories */}
-                        <Text style={styles.modalText}>
-                          Calories:{" "}
-                          {recipeDetails.calories > 0
-                            ? `${recipeDetails.calories} cal`
-                            : "Not available"}
-                        </Text>
-
-                        {/* Safely display serving size */}
-                        <Text style={styles.modalText}>
-                          Serving Size:{" "}
-                          {recipeDetails.servingSize?.amount
-                            ? `${recipeDetails.servingSize.amount} ${
-                                recipeDetails.servingSize.unit || ""
-                              }`
-                            : "Not available"}
-                        </Text>
-
-                        <Text style={styles.modalText}>Ingredients:</Text>
-                        {recipeDetails.extendedIngredients &&
-                        recipeDetails.extendedIngredients.length > 0 ? (
-                          recipeDetails.extendedIngredients.map(
-                            (ingredient, index) => (
-                              <Text key={index} style={styles.modalText}>
-                                • {ingredient.original}
-                              </Text>
-                            )
-                          )
-                        ) : (
+                        <Text style={styles.sectionTitle}>Overview 📊:</Text>
+                        <View style={styles.infoContainer}>
                           <Text style={styles.modalText}>
-                            No ingredient information available
+                            Calories:{" "}
+                            {recipeDetails.calories > 0
+                              ? `${recipeDetails.calories} cal`
+                              : "Not available"}
                           </Text>
-                        )}
+                          <Text style={styles.modalText}>
+                            Serving Size:{" "}
+                            {recipeDetails.servingSize?.amount
+                              ? `${recipeDetails.servingSize.amount} ${
+                                  recipeDetails.servingSize.unit || ""
+                                }`
+                              : "Not available"}
+                          </Text>
+                        </View>
 
-                        <Text style={styles.modalText}>Instructions:</Text>
-                        <Text style={styles.modalText}>
-                          {formatInstructions(recipeDetails.instructions) ||
-                            "No instructions available"}
+                        <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
+                        <View style={styles.ingredientsContainer}>
+                          {recipeDetails.extendedIngredients?.length > 0 ? (
+                            recipeDetails.extendedIngredients.map(
+                              (ingredient, index) => (
+                                <Text key={index} style={styles.ingredientItem}>
+                                  <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
+                                  {ingredient.original}
+                                </Text>
+                              )
+                            )
+                          ) : (
+                            <Text style={styles.ingredientItem}>
+                              No ingredients available
+                            </Text>
+                          )}
+                        </View>
+
+                        <Text style={styles.sectionTitle}>
+                          Instructions 👨‍🍳:
                         </Text>
+                        <View style={styles.instructionsContainer}>
+                          {recipeDetails.analyzedInstructions?.length > 0 ? (
+                            recipeDetails.analyzedInstructions[0].steps.map(
+                              (step, idx) => (
+                                <View key={idx} style={styles.instructionRow}>
+                                  <Text style={styles.stepNumber}>
+                                    {idx + 1}.
+                                  </Text>
+                                  <Text style={styles.instructionText}>
+                                    {step.step}
+                                  </Text>
+                                </View>
+                              )
+                            )
+                          ) : (
+                            <Text style={styles.instructionText}>
+                              {formatInstructions(recipeDetails.instructions)}
+                            </Text>
+                          )}
+                        </View>
+                        <View style={{ height: 60 }} />
                       </>
                     )
                   )}
@@ -402,6 +431,110 @@ export default function Bookmarked() {
 }
 
 const styles = StyleSheet.create({
+  scrollViewContent: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingBottom: 50,
+  },
+
+  swipeableContainer: {
+    width: width * 0.92,
+    marginVertical: 6,
+  },
+
+  recipeCardContainer: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    backgroundColor: "#fff",
+  },
+
+  recipeCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 0,
+  },
+
+  imageContainer: {
+    width: "100%",
+    height: 150,
+    position: "relative",
+  },
+
+  recipeImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  placeholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E0E0E0",
+  },
+
+  imageOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "100%",
+  },
+
+  imageTitle: {
+    position: "absolute",
+    bottom: 30,
+    left: 15,
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+  },
+
+  imageDescription: {
+    position: "absolute",
+    bottom: 10,
+    left: 15,
+    paddingRight: 15,
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+    opacity: 0.9,
+  },
+
+  deleteButtonContainer: {
+    width: 80,
+    height: "100%",
+  },
+
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
   deleteAction: {
     backgroundColor: "#DC3545",
     justifyContent: "center",
@@ -423,14 +556,7 @@ const styles = StyleSheet.create({
     marginTop: -8,
     opacity: 0.5,
   },
-  instructionText: {
-    fontSize: 14,
-    color: "#555",
-    fontStyle: "italic",
-    marginTop: 20,
-    marginBottom: 10,
-    opacity: 0.8,
-  },
+
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -461,80 +587,7 @@ const styles = StyleSheet.create({
     color: "#333",
     marginBottom: 10,
   },
-  scrollViewContent: {
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingBottom: 50,
-  },
-  recipeContainer: {
-    marginTop: 10,
-    marginBottom: 10,
-    alignItems: "center",
-    width: "90%",
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  recipeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 10,
-  },
-  recipeTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  recipeImage: {
-    width: "100%",
-    height: 150,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  recipeInfo: {
-    fontSize: 16,
-    color: "#555",
-    marginBottom: 10,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "100%",
-    marginTop: 10,
-  },
-  viewButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: "center",
-  },
-  removeButton: {
-    backgroundColor: "#DC3545",
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 100,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
-  spacer: {
-    height: 50,
-  },
+
   emptyText: {
     fontSize: 18,
     color: "#555",
@@ -556,18 +609,20 @@ const styles = StyleSheet.create({
   },
   modalScrollViewContent: {
     alignItems: "center",
+    paddingBottom: 100,
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 5,
+    paddingRight: 40,
     textAlign: "center",
   },
   modalImage: {
     width: "100%",
-    height: 200,
+    height: 150,
     borderRadius: 10,
-    marginBottom: 10,
+    marginBottom: 5,
   },
   modalText: {
     fontSize: 16,
@@ -613,5 +668,56 @@ const styles = StyleSheet.create({
   },
   modalLoader: {
     marginVertical: 30,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 10,
+    color: "#333",
+    textAlign: "center",
+    width: "100%",
+  },
+  infoContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+  ingredientsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+  ingredientItem: {
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 5,
+    textAlign: "left",
+  },
+  instructionsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+  instructionRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "flex-start",
+  },
+  stepNumber: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginRight: 8,
+    color: "#333",
+  },
+  instructionText: {
+    fontSize: 16,
+    lineHeight: 22,
+    flex: 1,
+    color: "#333",
+  },
+  modalBookmarkIcon: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    zIndex: 1,
+    padding: 5,
   },
 });

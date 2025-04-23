@@ -128,11 +128,11 @@ const NotificationBell = () => {
   const getLocationIcon = (location: string) => {
     switch (location.toLowerCase()) {
       case "pantry":
-        return "cube-outline";
+        return "nutrition-outline";
       case "fridge":
         return "snow-outline";
       case "freezer":
-        return "thermometer-outline";
+        return "cube-outline";
       case "spices":
         return "leaf-outline";
       default:
@@ -513,7 +513,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   deleteButton: {
-    backgroundColor: "#dc3545",
+    //backgroundColor: "#FF3B30",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 4,
@@ -531,7 +531,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     width: 80,
-    backgroundColor: "#dc3545",
+    backgroundColor: "#FF3B30",
   },
 });
 

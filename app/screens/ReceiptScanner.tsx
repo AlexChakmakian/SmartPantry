@@ -30,7 +30,7 @@ import {
 const { width } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "";
+const GOOGLE_API_KEY = "AIzaSyD3Kki87cavMoO09Bunj0AIaNIOys8IR28";
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
@@ -947,7 +947,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 20,
     width: width * 0.8,
-    backgroundColor: "#ADD8E6",
+    // backgroundColor: "#ADD8E6",
     borderRadius: 10,
     padding: 10,
   },
