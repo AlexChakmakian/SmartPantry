@@ -32,7 +32,7 @@ export default function Index() {
       } else {
         Alert.alert("Please enter both username and password");
       }
-    } catch (error) {
+    } catch (error: any) {
       Alert.alert("Login failed, incorrect username or password");
     }
   };

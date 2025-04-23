@@ -10,6 +10,8 @@ import {
   Modal,
   Dimensions,
   Animated,
+  TextInput,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
@@ -24,11 +26,9 @@ import {
 import AnimatedSideMenu from "@/components/SideMenu";
 import { LinearGradient } from "expo-linear-gradient";
 
-const API_KEY = "d614cca7ed2341d2995df8150f4d9ef3";
-
+const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get("window");
 
-// List of available cuisines from Spoonacular
 const CUISINES = [
   "All",
   "African",
@@ -71,10 +71,27 @@ export default function AIRecipes() {
   const [bookmarkedRecipes, setBookmarkedRecipes] = useState({});
   const [selectedCuisine, setSelectedCuisine] = useState("All");
   const [showCuisineDropdown, setShowCuisineDropdown] = useState(false);
+
+  // Craving functionality state
+  const [cravings, setCravings] = useState([]);
+  const [cravingModalVisible, setCravingModalVisible] = useState(false);
+  const [cravingInput, setCravingInput] = useState("");
+
   const slideAnim = useRef(new Animated.Value(-width)).current;
 
   const emojis = [
-    "📝", "🍔", "🥗", "🌮", "🍝", "🍕", "🍳", "🥞", "🍜", "🍰", "🍪", "🍩"
+    "📝",
+    "🍔",
+    "🥗",
+    "🌮",
+    "🍝",
+    "🍕",
+    "🍳",
+    "🥞",
+    "🍜",
+    "🍰",
+    "🍪",
+    "🍩",
   ];
 
   const auth = getAuth();
@@ -84,44 +101,29 @@ export default function AIRecipes() {
     setEmoji(randomEmoji);
   }, []);
 
-  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  useEffect(() => {
+    console.log("Recipes state:", recipes);
+  }, [recipes]);
 
-  // Helper function to determine match level with a 15% curve
+  const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const getMatchLevel = (percentage) => {
-    // Apply a 15% curve to make matches appear more favorable
     const adjustedPercentage = Math.min(100, percentage + 15);
-    
     if (adjustedPercentage >= 80) return "perfect";
     if (adjustedPercentage >= 50) return "close";
     return "missing";
   };
 
-  // Function to get border style based on match level
-  const getRecipeContainerStyle = (recipe) => {
-    if (!recipe || !recipe.matchInfo) return styles.recipeContainer;
-
-    switch (recipe.matchInfo.matchLevel) {
-      case "perfect": return [styles.recipeContainer, styles.perfectBorder];
-      case "close": return [styles.recipeContainer, styles.closeBorder];
-      case "missing": return [styles.recipeContainer, styles.missingBorder];
-      default: return styles.recipeContainer;
-    }
-  };
-
   const fetchRecipes = async () => {
     setLoading(true);
     try {
-      // Randomize the emoji
       const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
       setEmoji(randomEmoji);
 
-      // Fetch ingredients from Firebase - COMBINE ALL STORAGE LOCATIONS
       const pantryItems = (await getItems("pantry")) || [];
       const fridgeItems = (await getItems("fridge")) || [];
       const freezerItems = (await getItems("freezer")) || [];
       const spicesItems = (await getItems("spices")) || [];
-
-      // Combine all ingredients
       const allIngredients = [
         ...pantryItems,
         ...fridgeItems,
@@ -129,26 +131,19 @@ export default function AIRecipes() {
         ...spicesItems,
       ];
 
-      console.log("All ingredients:", allIngredients);
+      // Merge existing ingredients with cravings
+      const existingIngredientNames = allIngredients.map((item) => item.name);
+      const combinedIngredients = [...existingIngredientNames, ...cravings];
+      const ingredientNames = combinedIngredients.join(",");
 
-      // Extract ingredient names and join with commas
-      const ingredientNames = allIngredients.map((item) => item.name).join(",");
       console.log("Ingredients for API:", ingredientNames);
-      
-      // Build the API URL with parameters
-      let apiUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&includeIngredients=${ingredientNames}&fillIngredients=true&addRecipeInformation=true&number=6&sort=max-used-ingredients&instructionsRequired=true`;
 
-      // Add cuisine filter if a specific cuisine is selected
+      let apiUrl = `https://api.spoonacular.com/recipes/complexSearch?apiKey=${API_KEY}&includeIngredients=${ingredientNames}&fillIngredients=true&addRecipeInformation=true&number=6&sort=max-used-ingredients&instructionsRequired=true`;
       if (selectedCuisine !== "All") {
         apiUrl += `&cuisine=${selectedCuisine}`;
       }
-
       console.log("Fetching recipes with URL:", apiUrl);
-
-      // Fetch recipes from Spoonacular API
       const response = await fetch(apiUrl);
-      
-      // Check if the response is OK
       if (!response.ok) {
         console.error(`API responded with status: ${response.status}`);
         const textResponse = await response.text();
@@ -157,11 +152,11 @@ export default function AIRecipes() {
         setLoading(false);
         return;
       }
-      
       const responseText = await response.text();
-      console.log("API response text first 100 chars:", responseText.substring(0, 100));
-      
-      // Try to parse the JSON response
+      console.log(
+        "API response text first 100 chars:",
+        responseText.substring(0, 100)
+      );
       let data;
       try {
         data = JSON.parse(responseText);
@@ -172,140 +167,108 @@ export default function AIRecipes() {
         setLoading(false);
         return;
       }
-
       if (response.status === 401) {
         console.error("Unauthorized: Check your Spoonacular API key.");
         setRecipes([]);
         return;
       }
-
       if (data.status === "failure") {
         console.error("Error fetching recipes:", data.message);
         setRecipes([]);
         return;
       }
-
-      // Calculate matching information for each recipe
       if (data.results && data.results.length > 0) {
-        const processedRecipes = data.results.map((recipe) => {
-          // Calculate matching percentage based on used and missed ingredients
+        // Filter out recipes that don't have an image
+        const recipesWithImage = data.results.filter((recipe) => recipe.image);
+        const processedRecipes = recipesWithImage.map((recipe) => {
           const usedCount = recipe.usedIngredientCount || 0;
           const missedCount = recipe.missedIngredientCount || 0;
           const totalCount = usedCount + missedCount;
-
           const matchPercentage =
             totalCount > 0 ? (usedCount / totalCount) * 100 : 0;
-          
-          // Store both the original and adjusted percentages
           const adjustedPercentage = Math.min(100, matchPercentage + 15);
-
-          // Add match info to recipe
           recipe.matchInfo = {
             used: usedCount,
             missed: missedCount,
             total: totalCount,
             percentage: matchPercentage,
-            displayPercentage: adjustedPercentage, // The percentage to display
+            displayPercentage: adjustedPercentage,
             matchLevel: getMatchLevel(matchPercentage),
           };
-
           return recipe;
         });
-
-        // Sort recipes by match level (perfect > close > missing) and then by percentage within each level
         const sortedRecipes = processedRecipes.sort((a, b) => {
-          // First sort by match level
-          const levelOrder = { "perfect": 0, "close": 1, "missing": 2 };
-          const levelDiff = levelOrder[a.matchInfo.matchLevel] - levelOrder[b.matchInfo.matchLevel];
-          
+          const levelOrder = { perfect: 0, close: 1, missing: 2 };
+          const levelDiff =
+            levelOrder[a.matchInfo.matchLevel] -
+            levelOrder[b.matchInfo.matchLevel];
           if (levelDiff !== 0) {
-            return levelDiff; // Different match levels, sort by level
+            return levelDiff;
           }
-          
-          // Same match level, sort by percentage (higher percentage first)
           return b.matchInfo.percentage - a.matchInfo.percentage;
         });
-
         setRecipes(sortedRecipes);
       } else {
-        setRecipes([]);
         console.log("No recipes found for the selected criteria");
+        setRecipes([]);
       }
     } catch (error) {
       console.error("Error fetching recipes:", error);
-      // Try using alternative API endpoint if there's a parsing error
-      if (error instanceof SyntaxError && error.message.includes("JSON Parse error")) {
-        try {
-          console.log("Trying alternative API endpoint due to parsing error");
-          await fetchRecipesAlternative();
-        } catch (alternativeError) {
-          console.error("Alternative API fetch also failed:", alternativeError);
-        }
-      }
     } finally {
       setLoading(false);
     }
   };
 
-  // Add this alternative fetch function for backup
   const fetchRecipesAlternative = async () => {
     try {
       const pantryItems = (await getItems("pantry")) || [];
       const fridgeItems = (await getItems("fridge")) || [];
       const freezerItems = (await getItems("freezer")) || [];
       const spicesItems = (await getItems("spices")) || [];
-
-      // Combine all ingredients
       const allIngredients = [
         ...pantryItems,
         ...fridgeItems,
         ...freezerItems,
         ...spicesItems,
       ];
+      const existingIngredientNames = allIngredients.map((item) => item.name);
+      const combinedIngredients = [...existingIngredientNames, ...cravings];
+      const ingredientNames = combinedIngredients.join(",");
 
-      // Extract ingredient names and join with commas
-      const ingredientNames = allIngredients.map((item) => item.name).join(",");
-      
-      // Use a different endpoint or approach
       const apiUrl = `https://api.spoonacular.com/recipes/findByIngredients?apiKey=${API_KEY}&ingredients=${ingredientNames}&number=6`;
-      
       console.log("Trying alternative endpoint:", apiUrl);
-      
       const response = await fetch(apiUrl);
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`);
       }
-      
       const data = await response.json();
-      
       if (Array.isArray(data) && data.length > 0) {
-        // Fetch detailed recipe info for each recipe
+        const recipesWithImage = data.filter((recipe) => recipe.image);
         const detailedRecipes = await Promise.all(
-          data.map(async (recipe) => {
+          recipesWithImage.map(async (recipe) => {
             try {
               const detailResponse = await fetch(
                 `https://api.spoonacular.com/recipes/${recipe.id}/information?apiKey=${API_KEY}`
               );
               if (!detailResponse.ok) {
-                return recipe; // Return basic recipe if detail fetch fails
+                return recipe;
               }
               return await detailResponse.json();
             } catch (e) {
-              console.error(`Error fetching details for recipe ${recipe.id}:`, e);
-              return recipe; // Return basic recipe on error
+              console.error(
+                `Error fetching details for recipe ${recipe.id}:`,
+                e
+              );
+              return recipe;
             }
           })
         );
-        
-        // Process recipes like in main function
         const processedRecipes = detailedRecipes.map((recipe) => {
           const usedCount = recipe.usedIngredientCount || 0;
           const missedCount = recipe.missedIngredientCount || 0;
           const totalCount = usedCount + missedCount;
-
           const matchPercentage =
             totalCount > 0 ? (usedCount / totalCount) * 100 : 0;
-
           recipe.matchInfo = {
             used: usedCount,
             missed: missedCount,
@@ -313,10 +276,8 @@ export default function AIRecipes() {
             percentage: matchPercentage,
             matchLevel: getMatchLevel(matchPercentage),
           };
-
           return recipe;
         });
-
         setRecipes(processedRecipes);
       } else {
         setRecipes([]);
@@ -329,46 +290,40 @@ export default function AIRecipes() {
 
   useEffect(() => {
     fetchRecipes();
-  }, [selectedCuisine]); // Re-fetch when cuisine changes
+  }, [selectedCuisine, cravings]);
 
   useEffect(() => {
+    const fetchBookmarkedStatus = async () => {
+      try {
+        const bookmarkedStatus = {};
+        for (const recipe of recipes) {
+          bookmarkedStatus[recipe.id] = await isRecipeBookmarked(recipe.id);
+        }
+        setBookmarkedRecipes(bookmarkedStatus);
+      } catch (error) {
+        console.error("Error fetching bookmarked status:", error);
+      }
+    };
     fetchBookmarkedStatus();
   }, [recipes]);
 
-  const fetchBookmarkedStatus = async () => {
-    try {
-      // For each recipe in recipes array, check if it's bookmarked
-      const bookmarkedStatus = {};
-      for (const recipe of recipes) {
-        bookmarkedStatus[recipe.id] = await isRecipeBookmarked(recipe.id);
-      }
-      setBookmarkedRecipes(bookmarkedStatus);
-    } catch (error) {
-      console.error("Error fetching bookmarked status:", error);
-    }
-  };
-
   const handleRecipePress = (recipe) => {
     console.log("Recipe pressed:", recipe.title);
-    
-    // Log this recipe to the history
     addRecipeToHistory({
       id: recipe.id,
       title: recipe.title,
       image: recipe.image,
     }).catch((err) => console.error("Failed to log recipe to history", err));
-
-    // Set selected recipe and flag if it's the first in the list
     setSelectedRecipe({
       ...recipe,
-      isFirstRecipe: recipes.length > 0 && recipe.id === recipes[0].id
+      isFirstRecipe: recipes.length > 0 && recipe.id === recipes[0].id,
     });
     setModalVisible(true);
   };
 
   const formatInstructions = (instructions) => {
     if (!instructions) return "No instructions available.";
-    return instructions.replace(/<\/?[^>]+(>|$)/g, "\n"); // Replace HTML tags with new lines
+    return instructions.replace(/<\/?[^>]+(>|$)/g, "\n");
   };
 
   const toggleMenu = () => {
@@ -381,24 +336,16 @@ export default function AIRecipes() {
 
   const toggleBookmark = async (recipeId, e) => {
     if (e) {
-      e.stopPropagation(); // Prevent triggering the parent onPress
+      e.stopPropagation();
     }
-
     try {
-      // Get the recipe from recipes array
       const recipe = recipes.find((r) => r.id === recipeId);
       if (!recipe) return;
-
-      // Check current bookmark status
       const isCurrentlyBookmarked = bookmarkedRecipes[recipeId] || false;
-
-      // Update UI immediately for responsive feel
       setBookmarkedRecipes((prev) => ({
         ...prev,
         [recipeId]: !prev[recipeId],
       }));
-
-      // Update in Firebase
       if (isCurrentlyBookmarked) {
         await removeBookmark(recipeId);
       } else {
@@ -410,7 +357,6 @@ export default function AIRecipes() {
       }
     } catch (error) {
       console.error("Error toggling bookmark:", error);
-      // Revert UI if operation failed
       setBookmarkedRecipes((prev) => ({
         ...prev,
         [recipeId]: !prev[recipeId],
@@ -425,6 +371,17 @@ export default function AIRecipes() {
   const handleCuisineSelect = (cuisine) => {
     setSelectedCuisine(cuisine);
     setShowCuisineDropdown(false);
+  };
+
+  // When the user submits their cravings, split on commas and trim extra whitespace
+  const handleCravingSubmit = () => {
+    const newCravings = cravingInput
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+    setCravings((prev) => [...prev, ...newCravings]);
+    setCravingInput("");
+    setCravingModalVisible(false);
   };
 
   const MatchLegend = () => (
@@ -448,7 +405,6 @@ export default function AIRecipes() {
 
   return (
     <View style={styles.container}>
-      {/* Add overlay to close menu when clicking anywhere on the screen */}
       {isMenuOpen && (
         <TouchableOpacity
           style={styles.menuOverlay}
@@ -466,7 +422,6 @@ export default function AIRecipes() {
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
       <Text style={styles.title}>Your Recipes {emoji}</Text>
 
-      {/* Cuisine Dropdown Button */}
       <TouchableOpacity
         style={styles.cuisineButton}
         onPress={toggleCuisineDropdown}
@@ -476,117 +431,96 @@ export default function AIRecipes() {
         </Text>
       </TouchableOpacity>
 
-      {/* Match Legend moved here, right after cuisine button */}
-      <MatchLegend />
-
-      {/* Cuisine Dropdown Menu */}
+      {/* Cuisine dropdown with background dismissal */}
       {showCuisineDropdown && (
-        <View style={styles.cuisineDropdown}>
-          <ScrollView style={styles.cuisineScrollView}>
-            {CUISINES.map((cuisine) => (
-              <TouchableOpacity
-                key={cuisine}
-                style={[
-                  styles.cuisineOption,
-                  selectedCuisine === cuisine && styles.selectedCuisine,
-                ]}
-                onPress={() => handleCuisineSelect(cuisine)}
-              >
-                <Text style={[
-                  styles.cuisineOptionText,
-                  selectedCuisine === cuisine && styles.selectedCuisineText,
-                ]}>
-                  {cuisine}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+        <>
+          <TouchableWithoutFeedback
+            onPress={() => setShowCuisineDropdown(false)}
+          >
+            <View style={styles.dropdownOverlay} />
+          </TouchableWithoutFeedback>
+          <View style={styles.cuisineDropdown}>
+            <ScrollView style={styles.cuisineScrollView}>
+              {CUISINES.map((cuisine) => (
+                <TouchableOpacity
+                  key={cuisine}
+                  style={[
+                    styles.cuisineOption,
+                    selectedCuisine === cuisine && styles.selectedCuisine,
+                  ]}
+                  onPress={() => handleCuisineSelect(cuisine)}
+                >
+                  <Text
+                    style={[
+                      styles.cuisineOptionText,
+                      selectedCuisine === cuisine && styles.selectedCuisineText,
+                    ]}
+                  >
+                    {cuisine}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </>
       )}
 
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
         <ScrollView
-          contentContainerStyle={[
-            styles.scrollViewContent,
-            { paddingBottom: 100 },
-          ]}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
         >
-          {recipes.length > 0 ? (
-            recipes.map((recipe, index) => (
-              <TouchableOpacity
-                key={index}
-                style={getRecipeContainerStyle(recipe)}
-                onPress={() => handleRecipePress(recipe)}
-              >
-                <View style={styles.recipeHeader}>
-                  <Text style={styles.recipeTitle}>{recipe.title}</Text>
-                  <TouchableOpacity
-                    onPress={(e) => toggleBookmark(recipe.id, e)}
-                  >
-                    <Ionicons
-                      name={
-                        isBookmarked(recipe.id)
-                          ? "bookmark"
-                          : "bookmark-outline"
-                      }
-                      size={24}
-                      color={isBookmarked(recipe.id) ? "gold" : "#333"}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.imageWrapper}>
-                  {recipe.image && (
-                    <Image
-                      source={{ uri: recipe.image }}
-                      style={styles.recipeImage}
-                    />
-                  )}
-                  
-                  {/* Gradient overlay */}
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.5)']}
-                    style={styles.gradientOverlay}
-                  />
-
-                  {/* Add match badge if it's a good match */}
-                  {recipe.matchInfo && (
-                    <View style={[
-                      styles.matchBadge,
-                      recipe.matchInfo.matchLevel === "perfect" && styles.perfectBadge,
-                      recipe.matchInfo.matchLevel === "close" && styles.closeBadge,
-                      recipe.matchInfo.matchLevel === "missing" && styles.missingBadge,
-                    ]}>
-                      <Text style={styles.matchText}>
-                        {Math.round(recipe.matchInfo.displayPercentage)}% match
+          <View style={styles.recipeContainer}>
+            {recipes.length > 0 ? (
+              recipes.map((recipe, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.recipeCardContainer}
+                  onPress={() => handleRecipePress(recipe)}
+                >
+                  <View style={styles.recipeCard}>
+                    <View style={styles.imageContainer}>
+                      {recipe.image ? (
+                        <Image
+                          source={{ uri: recipe.image }}
+                          style={styles.recipeImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <View style={styles.placeholder} />
+                      )}
+                      <LinearGradient
+                        colors={["transparent", "rgba(0,0,0,0.8)"]}
+                        style={styles.imageOverlay}
+                      />
+                      <Text style={styles.imageTitle}>{recipe.title}</Text>
+                      <Text style={styles.imageDescription} numberOfLines={1}>
+                        {recipe.matchInfo
+                          ? `${Math.round(
+                              recipe.matchInfo.displayPercentage
+                            )}% match`
+                          : ""}
                       </Text>
                     </View>
-                  )}
-                </View>
-              </TouchableOpacity>
-            ))
-          ) : (
-            <View style={styles.noRecipesContainer}>
-              <Text style={styles.noRecipesText}>
-                No recipes found for {selectedCuisine} cuisine with your
-                ingredients.
-              </Text>
-              <Text style={styles.noRecipesSubtext}>
-                Try selecting a different cuisine or adding more ingredients to
-                your pantry.
-              </Text>
-            </View>
-          )}
-          <View style={styles.spacer} />
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.noRecipesContainer}>
+                <Text style={styles.noRecipesText}>
+                  No recipes found. Try adding more ingredients, cravings or
+                  changing the cuisine.
+                </Text>
+              </View>
+            )}
+            <View style={styles.spacer} />
+          </View>
         </ScrollView>
       )}
 
-      <TouchableOpacity style={styles.resetButton} onPress={fetchRecipes}>
-        <Text style={styles.resetButtonText}>Get New Recipes</Text>
-      </TouchableOpacity>
-
+      {/* Recipe Modal with background dismissal */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -594,6 +528,11 @@ export default function AIRecipes() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalContainer}>
+          {/* Background dismiss area */}
+          <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+            <View style={styles.backgroundDismiss} />
+          </TouchableWithoutFeedback>
+          {/* Modal content */}
           <View style={styles.modalContent}>
             {selectedRecipe && (
               <>
@@ -602,13 +541,16 @@ export default function AIRecipes() {
                   onPress={() => toggleBookmark(selectedRecipe.id)}
                 >
                   <Ionicons
-                    name={isBookmarked(selectedRecipe.id) ? "bookmark" : "bookmark-outline"}
+                    name={
+                      isBookmarked(selectedRecipe.id)
+                        ? "bookmark"
+                        : "bookmark-outline"
+                    }
                     size={30}
                     color={isBookmarked(selectedRecipe.id) ? "gold" : "#000"}
                   />
                 </TouchableOpacity>
-                
-                <ScrollView 
+                <ScrollView
                   contentContainerStyle={styles.modalScrollViewContent}
                   showsVerticalScrollIndicator={true}
                   scrollEventThrottle={16}
@@ -617,56 +559,120 @@ export default function AIRecipes() {
                 >
                   <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                   {selectedRecipe.image && (
-                    <Image source={{ uri: selectedRecipe.image }} style={styles.modalImage} />
+                    <Image
+                      source={{ uri: selectedRecipe.image }}
+                      style={styles.modalImage}
+                    />
                   )}
-                  
-                  {/* Ingredients Section */}
                   <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
                   <View style={styles.ingredientsContainer}>
-                    {selectedRecipe.extendedIngredients && 
-                      selectedRecipe.extendedIngredients.map((ingredient, index) => (
-                        <Text key={index} style={styles.ingredientItem}>
-                          <Text style={{ fontWeight: "bold" }}>•</Text> {ingredient.original}
-                        </Text>
-                      ))
-                    }
+                    {selectedRecipe.extendedIngredients &&
+                      selectedRecipe.extendedIngredients.map(
+                        (ingredient, index) => (
+                          <Text key={index} style={styles.ingredientItem}>
+                            <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
+                            {ingredient.original}
+                          </Text>
+                        )
+                      )}
                   </View>
-                  
-                  {/* Instructions Section */}
                   <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
                   <View style={styles.instructionsContainer}>
-                    {selectedRecipe.analyzedInstructions && 
+                    {selectedRecipe.analyzedInstructions &&
                     selectedRecipe.analyzedInstructions.length > 0 ? (
-                      selectedRecipe.analyzedInstructions[0].steps.map((step, idx) => (
-                        <View key={idx} style={styles.instructionRow}>
-                          <Text style={styles.stepNumber}>{idx + 1}.</Text>
-                          <Text style={styles.instructionText}>{step.step}</Text>
-                        </View>
-                      ))
+                      selectedRecipe.analyzedInstructions[0].steps.map(
+                        (step, idx) => (
+                          <View key={idx} style={styles.instructionRow}>
+                            <Text style={styles.stepNumber}>{idx + 1}.</Text>
+                            <Text style={styles.instructionText}>
+                              {step.step}
+                            </Text>
+                          </View>
+                        )
+                      )
                     ) : (
                       <Text style={styles.instructionText}>
                         {formatInstructions(selectedRecipe.instructions)}
                       </Text>
                     )}
                   </View>
-                  
-                  {/* Dynamic padding based on whether this is the first recipe (which needs more padding) */}
-                  <View style={{ 
-                    height: selectedRecipe.isFirstRecipe ? 200 : 60 
-                  }} />
+                  <View
+                    style={{
+                      height: selectedRecipe.isFirstRecipe ? 200 : 60,
+                    }}
+                  />
                 </ScrollView>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
               </>
             )}
-            
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
+      {/* Craving Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={cravingModalVisible}
+        onRequestClose={() => setCravingModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setCravingModalVisible(false)}>
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.cravingModalContent}>
+                <View style={styles.cravingHeader}>
+                  <Ionicons
+                    name="fast-food-outline"
+                    size={28}
+                    color="#007BFF"
+                  />
+                  <Text style={[styles.modalTitle, { marginLeft: 8 }]}>
+                    Add Your Cravings
+                  </Text>
+                </View>
+                <Text style={styles.sectionTitle}>
+                  Enter craving items (comma separated):
+                </Text>
+                <TextInput
+                  style={styles.cravingInput}
+                  placeholder="e.g. chocolate, chips, ice cream"
+                  placeholderTextColor="grey"
+                  value={cravingInput}
+                  onChangeText={(text) => setCravingInput(text)}
+                />
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity
+                    style={styles.modalButton}
+                    onPress={handleCravingSubmit}
+                  >
+                    <Text style={styles.modalButtonText}>Add</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, styles.cancelButton]}
+                    onPress={() => setCravingModalVisible(false)}
+                  >
+                    <Text style={styles.modalButtonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Floating Craving Button */}
+      <TouchableOpacity
+        style={styles.cravingButton}
+        onPress={() => setCravingModalVisible(true)}
+      >
+        <Ionicons name="fast-food-outline" size={30} color="#fff" />
+        <Text style={styles.cravingButtonText}>Crave</Text>
+      </TouchableOpacity>
 
       <AnimatedSideMenu
         isMenuOpen={isMenuOpen}
@@ -677,6 +683,82 @@ export default function AIRecipes() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    width: "100%",
+  },
+  scrollViewContent: {
+    paddingVertical: 20,
+    paddingBottom: 50,
+  },
+  recipeContainer: {
+    width: "100%",
+    padding: 5,
+  },
+  recipeCardContainer: {
+    marginVertical: 6,
+    width: "92%",
+    alignSelf: "center",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    backgroundColor: "#fff",
+  },
+  recipeCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  imageContainer: {
+    width: "100%",
+    height: 175,
+    position: "relative",
+  },
+  recipeImage: {
+    width: "100%",
+    height: "100%",
+  },
+  imageOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "100%",
+  },
+  imageTitle: {
+    position: "absolute",
+    bottom: 30,
+    left: 15,
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+  },
+  imageDescription: {
+    position: "absolute",
+    bottom: 10,
+    left: 15,
+    paddingRight: 15,
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+    opacity: 0.9,
+  },
+  placeholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E0E0E0",
+  },
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -733,6 +815,15 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 3,
   },
+  dropdownOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "transparent",
+    zIndex: 2,
+  },
   cuisineScrollView: {
     maxHeight: 200,
   },
@@ -751,54 +842,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#007BFF",
   },
-  scrollViewContent: {
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingBottom: 50,
-  },
-  recipeContainer: {
-    marginTop: 12, // Reduced from 20
-    marginBottom: 0, // Added to reduce vertical spacing
-    alignItems: "center",
-    width: "92%",
-    backgroundColor: "#fff",
-    padding: 0,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-    overflow: "hidden",
-  },
-  imageContainer: {
-    position: "relative",
-    width: "100%",
-    height: 150, // Reduced from 220
-    overflow: "hidden",
-  },
-  recipeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    width: "100%",
-    marginBottom: 10,
-  },
-  recipeTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    flex: 1,
-    marginRight: 10,
-  },
-  recipeImage: {
-    width: "100%",
-    height: 250,
-    borderRadius: 10,
-  },
-  spacer: {
-    height: 50,
-  },
   noRecipesContainer: {
     marginTop: 50,
     alignItems: "center",
@@ -810,30 +853,18 @@ const styles = StyleSheet.create({
     color: "#333",
     textAlign: "center",
   },
-  noRecipesSubtext: {
-    fontSize: 16,
-    color: "#555",
-    textAlign: "center",
-    marginTop: 10,
-  },
-  resetButton: {
-    backgroundColor: "#007BFF",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginTop: 20,
-    marginBottom: 20,
-  },
-  resetButtonText: {
-    color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
   modalContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  backgroundDismiss: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   modalContent: {
     width: "90%",
@@ -842,6 +873,15 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     alignItems: "center",
+  },
+  cravingModalContent: {
+    width: "90%",
+    height: height * 0.3,
+    backgroundColor: "#fff",
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalScrollViewContent: {
     alignItems: "center",
@@ -919,46 +959,10 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#333",
   },
-  perfectBorder: {
-    borderWidth: 5,
-    borderColor: "#99E1AC", // Green
-    shadowColor: "99E1AC",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-  },
-  closeBorder: {
-    borderWidth: 5,
-    borderColor: "#FFF894", // Amber
-    shadowColor: "#FFF894",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-  },
-  missingBorder: {
-    borderWidth: 5,
-    borderColor: "#F06A6A", // Red
-    shadowColor: "#F06A6A",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
-  goldBorder: undefined,
-  silverBorder: undefined,
-  bronzeBorder: undefined,
-  perfectBadge: {
-    backgroundColor: "rgba(76, 175, 80, 0.8)", // Green with transparency
-  },
-  closeBadge: {
-    backgroundColor: "rgba(255, 193, 7, 0.8)", // Amber with transparency
-  },
-  missingBadge: {
-    backgroundColor: "rgba(244, 67, 54, 0.8)", // Red with transparency
-  },
   legendContainer: {
     width: "90%",
     backgroundColor: "transparent",
-borderRadius: 10,
+    borderRadius: 10,
     padding: 5,
     marginTop: 0,
     marginBottom: 5,
@@ -980,7 +984,7 @@ borderRadius: 10,
     height: 20,
     borderWidth: 3,
     marginRight: 5,
-    backgroundColor: "transparent", // Make inside hollow
+    backgroundColor: "transparent",
   },
   legendText: {
     fontSize: 11,
@@ -988,13 +992,13 @@ borderRadius: 10,
     fontWeight: "500",
   },
   perfectBox: {
-    borderColor: "#1AC737", // Green
+    borderColor: "#1AC737",
   },
   closeBox: {
-    borderColor: "#FFC107", // Amber
+    borderColor: "#FFC107",
   },
   missingBox: {
-    borderColor: "#F44336", // Red
+    borderColor: "#F44336",
   },
   matchBadge: {
     position: "absolute",
@@ -1011,19 +1015,8 @@ borderRadius: 10,
     fontWeight: "bold",
     fontSize: 12,
   },
-  imageWrapper: {
-    position: "relative",
-    width: "100%",
-    height: 250,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  gradientOverlay: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: "50%",
+  spacer: {
+    height: 50,
   },
   ingredientsContainer: {
     width: "100%",
@@ -1034,6 +1027,60 @@ borderRadius: 10,
     paddingHorizontal: 10,
   },
   extraPadding: {
-    height: 150, // Increased from 100 to 150 for more scroll space
+    height: 150,
+  },
+  cravingButton: {
+    position: "absolute",
+    bottom: 20,
+    right: 20,
+    backgroundColor: "#007BFF",
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 50,
+    flexDirection: "row",
+    alignItems: "center",
+    elevation: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  cravingButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+    marginLeft: 5,
+  },
+  cravingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  cravingInput: {
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 5,
+    width: "90%",
+    padding: 10,
+    marginVertical: 10,
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    width: "100%",
+    marginTop: 10,
+  },
+  modalButton: {
+    backgroundColor: "#007BFF",
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  cancelButton: {
+    backgroundColor: "#F44336",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
   },
 });
