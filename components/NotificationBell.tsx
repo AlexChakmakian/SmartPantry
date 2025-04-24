@@ -397,7 +397,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 0,
     right: 0,
-    width: width * 0.8, // Make panel wider
+    width: width * 0.7, // Make panel wider
     height: "100%",
     backgroundColor: "#fff",
     zIndex: 1000, // Increase zIndex

@@ -41,7 +41,7 @@ const checkForExpiredItems = async (): Promise<ExpiredItem[]> => {
         (currentDate.getTime() - dateAdded.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      if (diffDays >= expiryThreshold) {
+      if (diffDays > expiryThreshold) {
         // Calculate priority based on how long it's been expired
         let priority: "high" | "medium" | "low" = "low";
         if (diffDays >= expiryThreshold + 14) {

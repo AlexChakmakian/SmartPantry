@@ -655,19 +655,4 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#333",
   },
-
-  // closeButton: {
-  //   backgroundColor: "#007BFF",
-  //   paddingVertical: 8,
-  //   paddingHorizontal: 20,
-  //   borderRadius: 5,
-  //   marginTop: 10,
-  //   alignSelf: "center",
-  // },
-
-  // closeButtonText: {
-  //   color: "#FFF",
-  //   fontWeight: "bold",
-  //   fontSize: 16,
-  // },
 });
