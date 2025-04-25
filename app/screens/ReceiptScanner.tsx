@@ -30,7 +30,7 @@ import {
 const { width } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "";
+const GOOGLE_API_KEY = "AIzaSyAVhxUivnm-f6Q0FO9mHeNsL7M7tmMuT4Q";
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
