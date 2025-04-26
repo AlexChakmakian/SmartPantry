@@ -44,8 +44,11 @@ export default function Bookmarked() {
     setLoading(true);
     try {
       const bookmarks = await getBookmarks();
-      console.log("Bookmarked items:", bookmarks);
-      setBookmarkedItems(bookmarks);
+      const sortedBookmarks = bookmarks.sort((a, b) => {
+        return b.timestamp - a.timestamp;
+      });
+      console.log("Bookmarked items:", sortedBookmarks);
+      setBookmarkedItems(sortedBookmarks);
     } catch (error) {
       console.error("Error fetching bookmarks:", error);
     } finally {

@@ -110,20 +110,29 @@ const NotificationBell = () => {
 
   const getPriorityColor = (priority?: "high" | "medium" | "low") => {
     switch (priority) {
-      case "high": return "rgba(220, 53, 69, 0.1)";
-      case "medium": return "rgba(255, 193, 7, 0.1)";
-      case "low": return "rgba(40, 167, 69, 0.1)";
-      default: return "#cfe6f5";
+      case "high":
+        return "rgba(220, 53, 69, 0.1)";
+      case "medium":
+        return "rgba(255, 193, 7, 0.1)";
+      case "low":
+        return "rgba(40, 167, 69, 0.1)";
+      default:
+        return "#cfe6f5";
     }
   };
 
   const getLocationIcon = (location: string) => {
     switch (location.toLowerCase()) {
-      case "pantry": return "nutrition-outline";
-      case "fridge": return "snow-outline";
-      case "freezer": return "cube-outline";
-      case "spices": return "leaf-outline";
-      default: return "file-tray-outline";
+      case "pantry":
+        return "nutrition-outline";
+      case "fridge":
+        return "snow-outline";
+      case "freezer":
+        return "cube-outline";
+      case "spices":
+        return "leaf-outline";
+      default:
+        return "file-tray-outline";
     }
   };
 
@@ -169,7 +178,10 @@ const NotificationBell = () => {
 
   const renderRightActions = (item: Notification) => (
     <View style={styles.deleteButtonContainer}>
-      <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteItem(item)}>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleDeleteItem(item)}
+      >
         <Ionicons name="trash-outline" size={24} color="#fff" />
         <Text style={styles.deleteButtonText}>Delete</Text>
       </TouchableOpacity>
@@ -178,11 +190,21 @@ const NotificationBell = () => {
 
   return (
     <>
-      <TouchableOpacity style={styles.notificationIcon} onPress={toggleNotifications} activeOpacity={0.7}>
-        <Ionicons name={isOpen ? "notifications" : "notifications-outline"} size={30} color="#fff" />
+      <TouchableOpacity
+        style={styles.notificationIcon}
+        onPress={toggleNotifications}
+        activeOpacity={0.7}
+      >
+        <Ionicons
+          name={isOpen ? "notifications" : "notifications-outline"}
+          size={30}
+          color="#fff"
+        />
         {notifications.length > 0 && (
           <View style={styles.notificationBadge}>
-            <Text style={styles.notificationBadgeText}>{notifications.length}</Text>
+            <Text style={styles.notificationBadgeText}>
+              {notifications.length}
+            </Text>
           </View>
         )}
       </TouchableOpacity>
@@ -196,16 +218,27 @@ const NotificationBell = () => {
       )}
 
       {isOpen && (
-        <Animated.View style={[styles.notificationPanel, { transform: [{ translateX: slideAnim }] }]}> 
+        <Animated.View
+          style={[
+            styles.notificationPanel,
+            { transform: [{ translateX: slideAnim }] },
+          ]}
+        >
           <View style={styles.panelHeader}>
             <Text style={styles.panelTitle}>Notifications</Text>
             <View style={styles.headerButtons}>
               {notifications.length > 0 && (
-                <TouchableOpacity onPress={clearAllNotifications} style={styles.clearAllButton}>
+                <TouchableOpacity
+                  onPress={clearAllNotifications}
+                  style={styles.clearAllButton}
+                >
                   <Text style={styles.clearAllText}>Clear All</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={closeNotifications} style={styles.closeButton}>
+              <TouchableOpacity
+                onPress={closeNotifications}
+                style={styles.closeButton}
+              >
                 <Ionicons name="close" size={24} color="#333" />
               </TouchableOpacity>
             </View>
@@ -215,16 +248,32 @@ const NotificationBell = () => {
             {notifications.length > 0 ? (
               <GestureHandlerRootView>
                 {notifications.map((item) => (
-                  <Swipeable key={item.id} renderRightActions={() => renderRightActions(item)}>
+                  <Swipeable
+                    key={item.id}
+                    renderRightActions={() => renderRightActions(item)}
+                  >
                     <TouchableOpacity onPress={() => handleViewDetails(item)}>
-                      <Animated.View style={[styles.notificationItem, { backgroundColor: getPriorityColor(item.priority) }]}> 
+                      <Animated.View
+                        style={[
+                          styles.notificationItem,
+                          { backgroundColor: getPriorityColor(item.priority) },
+                        ]}
+                      >
                         <View style={styles.itemIconContainer}>
-                          <Ionicons name={getLocationIcon(item.location)} size={24} color="#007BFF" />
+                          <Ionicons
+                            name={getLocationIcon(item.location)}
+                            size={24}
+                            color="#007BFF"
+                          />
                         </View>
                         <View style={styles.itemContent}>
                           <Text style={styles.itemName}>{item.name}</Text>
-                          <Text style={styles.itemLocation}>{item.location}</Text>
-                          <Text style={styles.expiredText}>{getTimeSinceExpiration(item.expirationDate)}</Text>
+                          <Text style={styles.itemLocation}>
+                            {item.location}
+                          </Text>
+                          <Text style={styles.expiredText}>
+                            {getTimeSinceExpiration(item.expirationDate)}
+                          </Text>
                         </View>
                       </Animated.View>
                     </TouchableOpacity>
@@ -252,28 +301,111 @@ const styles = StyleSheet.create({
     borderBottomColor: "#eee",
     backgroundColor: "#fff",
   },
-  notificationIcon: { position: "absolute", top: 40, right: 20, zIndex: 100, padding: 10 },
-  notificationBadge: { position: "absolute", top: -5, right: -5, backgroundColor: "#ff4444", borderRadius: 10, minWidth: 20, height: 20, justifyContent: "center", alignItems: "center", paddingHorizontal: 4 },
+  notificationIcon: {
+    position: "absolute",
+    top: 40,
+    right: 20,
+    zIndex: 100,
+    padding: 10,
+  },
+  notificationBadge: {
+    position: "absolute",
+    top: -5,
+    right: -5,
+    backgroundColor: "#ff4444",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 4,
+  },
   notificationBadgeText: { color: "#fff", fontSize: 12, fontWeight: "bold" },
-  backdrop: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.5)", zIndex: 999 },
-  notificationPanel: { position: "absolute", top: 0, right: 0, width: width * 0.8, height: "100%", backgroundColor: "#fff", zIndex: 1000, shadowColor: "#000", shadowOffset: { width: -2, height: 0 }, shadowOpacity: 0.25, shadowRadius: 5, elevation: 5 },
+  backdrop: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    zIndex: 999,
+  },
+  notificationPanel: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    width: width * 0.8,
+    height: "100%",
+    backgroundColor: "#fff",
+    zIndex: 1000,
+    shadowColor: "#000",
+    shadowOffset: { width: -2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+    elevation: 5,
+  },
   closeButton: { padding: 10, marginRight: -10 },
-  panelHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 20, paddingTop: 50, backgroundColor: "#f8f9fa", borderBottomWidth: 1, borderBottomColor: "#eee" },
+  panelHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: "#f8f9fa",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
   panelTitle: { fontSize: 20, fontWeight: "bold", color: "#333" },
   notificationList: { flex: 1 },
-  itemIconContainer: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#f0f8ff", justifyContent: "center", alignItems: "center", marginRight: 15 },
+  itemIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#f0f8ff",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 15,
+  },
   itemContent: { flex: 1 },
   itemName: { fontSize: 16, fontWeight: "600", color: "#333", marginBottom: 4 },
   itemLocation: { fontSize: 14, color: "#666", marginBottom: 4 },
   expiredText: { fontSize: 12, color: "#ff4444", fontWeight: "500" },
-  emptyState: { flex: 1, justifyContent: "center", alignItems: "center", paddingVertical: 40 },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 40,
+  },
   emptyStateText: { marginTop: 10, fontSize: 16, color: "#666" },
   headerButtons: { flexDirection: "row", alignItems: "center" },
-  clearAllButton: { marginRight: 15, padding: 8, backgroundColor: "#f0f0f0", borderRadius: 5 },
+  clearAllButton: {
+    marginRight: 15,
+    padding: 8,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 5,
+  },
   clearAllText: { color: "#666", fontSize: 14, fontWeight: "500" },
-  deleteButton: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 4, flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: "#FF3B30" },
-  deleteButtonText: { color: "#fff", fontSize: 12, fontWeight: "500", marginLeft: 8 },
-  deleteButtonContainer: { justifyContent: "center", alignItems: "center", width: 80, backgroundColor: "#FF3B30" },
+  deleteButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FF3B30",
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "500",
+    marginLeft: 8,
+  },
+  deleteButtonContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    width: 80,
+    backgroundColor: "#FF3B30",
+  },
 });
 
 export default NotificationBell;

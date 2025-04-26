@@ -287,6 +287,23 @@ export default function History() {
                         style={styles.modalImage}
                       />
                     )}
+                    <Text style={styles.sectionTitle}>Overview 📊:</Text>
+                    <View style={styles.infoContainer}>
+                      <Text style={styles.modalText}>
+                        Calories:{" "}
+                        {recipeDetails.calories > 0
+                          ? `${recipeDetails.calories} cal`
+                          : "Not available"}
+                      </Text>
+                      <Text style={styles.modalText}>
+                        Serving Size:{" "}
+                        {recipeDetails.servingSize?.amount
+                          ? `${recipeDetails.servingSize.amount} ${
+                              recipeDetails.servingSize.unit || ""
+                            }`
+                          : "Not available"}
+                      </Text>
+                    </View>
                     <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
                     <View style={styles.ingredientsContainer}>
                       {recipeDetails.extendedIngredients?.length > 0 ? (
@@ -398,6 +415,12 @@ const styles = StyleSheet.create({
     width: "100%",
     height: 150,
     position: "relative",
+  },
+
+  infoContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+    marginBottom: 10,
   },
 
   recipeImage: {
@@ -655,19 +678,4 @@ const styles = StyleSheet.create({
     flex: 1,
     color: "#333",
   },
-
-  // closeButton: {
-  //   backgroundColor: "#007BFF",
-  //   paddingVertical: 8,
-  //   paddingHorizontal: 20,
-  //   borderRadius: 5,
-  //   marginTop: 10,
-  //   alignSelf: "center",
-  // },
-
-  // closeButtonText: {
-  //   color: "#FFF",
-  //   fontWeight: "bold",
-  //   fontSize: 16,
-  // },
 });
