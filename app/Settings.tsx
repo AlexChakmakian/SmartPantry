@@ -12,12 +12,11 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from "react-native";
-import { getAuth, signOut } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
-import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the notification icon
-import { useRouter } from "expo-router"; // Import useRouter for navigation
-import NotificationBell from "../components/NotificationBell"; // Adjust the import path as needed
+import { useRouter } from "expo-router";
+import NotificationBell from "../components/NotificationBell";
 import AnimatedSideMenu from "@/components/SideMenu";
 
 const { width } = Dimensions.get("window");
@@ -26,26 +25,24 @@ export default function SettingsScreen() {
   const [expiryThreshold, setExpiryThreshold] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
+  const [bellKey, setBellKey] = useState(0);
   const slideAnim = useRef(new Animated.Value(-width)).current;
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
 
   useEffect(() => {
-    // Fetch the current expiry threshold from Firebase if available
     const fetchThreshold = async () => {
       const user = getAuth().currentUser;
       if (user) {
         const userRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userRef);
-        const threshold = userDoc.data()?.expiryThreshold || 30; // Default to 30 days
-        setExpiryThreshold(threshold.toString()); // Set the state with the fetched value
+        const threshold = userDoc.data()?.expiryThreshold || 30;
+        setExpiryThreshold(threshold.toString());
       }
     };
     fetchThreshold();
   }, []);
 
-  const toggleMenu = () => {
-    setMenuOpen(!isMenuOpen);
-  };
+  const toggleMenu = () => setMenuOpen(open => !open);
 
   const handleSaveThreshold = async () => {
     const thresholdNumber = Number(expiryThreshold);
@@ -60,7 +57,8 @@ export default function SettingsScreen() {
       try {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, { expiryThreshold: thresholdNumber });
-        Alert.alert("Success", "Expiry threshold updated.");
+        // Removed the success Alert here
+        setBellKey(k => k + 1);
       } catch (error) {
         console.error("Error saving threshold:", error);
         Alert.alert("Error", "Failed to save expiry threshold.");
@@ -72,7 +70,6 @@ export default function SettingsScreen() {
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <View style={styles.container}>
-        {/* Add overlay to close menu when clicking anywhere on the screen */}
         {isMenuOpen && (
           <TouchableOpacity
             style={styles.menuOverlay}
@@ -87,7 +84,7 @@ export default function SettingsScreen() {
           <View style={styles.line} />
         </TouchableOpacity>
 
-        <NotificationBell />
+        <NotificationBell key={bellKey} />
 
         <AnimatedSideMenu
           isMenuOpen={isMenuOpen}
@@ -99,13 +96,18 @@ export default function SettingsScreen() {
           <Text style={styles.subHeader}>
             Notify me when items are older than:
           </Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={expiryThreshold}
-            onChangeText={setExpiryThreshold}
-            placeholder="Number of days"
-          />
+
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.input}
+              keyboardType="numeric"
+              value={expiryThreshold}
+              onChangeText={setExpiryThreshold}
+              placeholder="Number of days"
+            />
+            <Text style={styles.unitText}>days</Text>
+          </View>
+
           {isLoading ? (
             <ActivityIndicator size="large" color="#007BFF" />
           ) : (
@@ -137,46 +139,20 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#C1E0EC", // Soft blue background
+    backgroundColor: "#C1E0EC",
     padding: 20,
   },
   hamburger: {
     position: "absolute",
     top: 40,
     left: 20,
-    zIndex: 5, // Ensure the hamburger icon is above other elements
-  },
-  notificationIcon: {
-    position: "absolute",
-    top: 40,
-    right: 20,
-    zIndex: 2, // Ensure the notification icon is above other elements
+    zIndex: 5,
   },
   line: {
     width: 30,
     height: 4,
     backgroundColor: "#fff",
     marginVertical: 4,
-  },
-  menuContainer: {
-    position: "absolute",
-    top: 0,
-    bottom: 0,
-    left: 0,
-    width: width * 0.4,
-    backgroundColor: "#4C5D6B", // Match the color scheme from HomeScreen
-    padding: 20,
-    paddingTop: 40,
-    zIndex: 1, // Ensure the menu is above other elements
-    // elevation: 5,
-  },
-  firstMenuItem: {
-    paddingTop: 40,
-  },
-  menuText: {
-    fontSize: 18,
-    color: "#fff", // Match the text color from HomeScreen
-    marginVertical: 10,
   },
   card: {
     backgroundColor: "white",
@@ -188,22 +164,27 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 10 },
     elevation: 5,
-    alignItems: "center", // Center content horizontally
-    justifyContent: "center", // Center content vertically
-    marginTop: -85, // Move the card higher up
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: -85,
   },
   header: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#333",
     marginBottom: 20,
-    textAlign: "center", // Center text
+    textAlign: "center",
   },
   subHeader: {
     fontSize: 18,
     color: "#555",
     marginBottom: 15,
-    textAlign: "center", // Center text
+    textAlign: "center",
+  },
+  inputContainer: {
+    width: "100%",
+    position: "relative",
+    marginBottom: 20,
   },
   input: {
     width: "100%",
@@ -212,11 +193,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 10,
     paddingLeft: 15,
+    paddingRight: 60,
     fontSize: 16,
-    marginBottom: 20,
+  },
+  unitText: {
+    position: "absolute",
+    right: 15,
+    top: 14,
+    color: "#000",
+    fontSize: 16,
   },
   saveButton: {
-    backgroundColor: "#007BFF", // Blue color for the button
+    backgroundColor: "#007BFF",
     paddingVertical: 15,
     borderRadius: 10,
     alignItems: "center",
