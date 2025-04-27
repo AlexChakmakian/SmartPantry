@@ -21,11 +21,11 @@ import AnimatedSideMenu from "@/components/SideMenu";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const RecipeCard = ({ title, imagePath, description, onPress }) => (
-  <TouchableOpacity 
-    onPress={onPress} 
+  <TouchableOpacity
+    onPress={onPress}
     style={styles.recipeCardContainer}
     activeOpacity={0.9}
   >
@@ -41,7 +41,7 @@ const RecipeCard = ({ title, imagePath, description, onPress }) => (
           <View style={styles.placeholder} />
         )}
         <LinearGradient
-          colors={['transparent', 'rgba(0,0,0,0.8)']}
+          colors={["transparent", "rgba(0,0,0,0.8)"]}
           style={styles.imageOverlay}
         />
         <Text style={styles.imageTitle}>{title}</Text>
@@ -54,7 +54,11 @@ const RecipeCard = ({ title, imagePath, description, onPress }) => (
 );
 
 const QuickAccessButton = ({ icon, title, onPress, color }) => (
-  <TouchableOpacity style={[styles.quickAccessButton, { backgroundColor: color }]} onPress={onPress} activeOpacity={0.8}>
+  <TouchableOpacity
+    style={[styles.quickAccessButton, { backgroundColor: color }]}
+    onPress={onPress}
+    activeOpacity={0.8}
+  >
     <Ionicons name={icon} size={16} color="#fff" style={styles.buttonIcon} />
     <Text style={styles.quickAccessText}>{title}</Text>
   </TouchableOpacity>
@@ -167,23 +171,31 @@ const HomeScreen = () => {
         <View style={styles.headerContainer}>
           <View style={styles.headerRow}>
             <View style={styles.buttonsRow}>
-              <QuickAccessButton 
-                icon="flash" 
-                title="Smart Recipes" 
-                onPress={() => router.push("/screens/AIRecipes")} 
+              <QuickAccessButton
+                icon="flash"
+                title="Smart Recipes"
+                onPress={() => router.push("/screens/AIRecipes")}
                 color="#4CAF50"
               />
-              <TouchableOpacity 
-                style={[styles.quickAccessButton, {backgroundColor: "#FF5722"}]}
+              <TouchableOpacity
+                style={[
+                  styles.quickAccessButton,
+                  { backgroundColor: "#FF5722" },
+                ]}
                 onPress={() => router.push("/screens/Pantry")}
               >
-                <Ionicons name="nutrition" size={16} color="#fff" style={styles.buttonIcon} />
+                <Ionicons
+                  name="nutrition"
+                  size={16}
+                  color="#fff"
+                  style={styles.buttonIcon}
+                />
                 <Text style={styles.quickAccessText}>Add to Pantry</Text>
               </TouchableOpacity>
-              <QuickAccessButton 
-                icon="scan" 
-                title="Scan Receipt" 
-                onPress={() => router.push("/screens/ReceiptScanner")} 
+              <QuickAccessButton
+                icon="scan"
+                title="Scan Receipt"
+                onPress={() => router.push("/screens/ReceiptScanner")}
                 color="#2196F3"
               />
             </View>
@@ -328,9 +340,13 @@ Instructions:
                   color={isBookmarked ? "gold" : "#000"}
                 />
               </TouchableOpacity>
+
               <ScrollView
                 contentContainerStyle={styles.modalScrollViewContent}
                 showsVerticalScrollIndicator={true}
+                scrollEventThrottle={16}
+                removeClippedSubviews={false}
+                keyboardShouldPersistTaps="handled"
               >
                 <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
                 {selectedRecipe.imagePath && (
@@ -340,81 +356,50 @@ Instructions:
                   />
                 )}
 
-                {/* Format recipe description */}
-                <View style={styles.recipeContentContainer}>
+                <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
+                <View style={styles.ingredientsContainer}>
                   {selectedRecipe.description
                     .split("\n\n")
-                    .map((section, index) => {
-                      if (section.startsWith("Ingredients:")) {
+                    .find((section) => section.startsWith("Ingredients:"))
+                    ?.split("\n")
+                    .slice(1)
+                    .map((ingredient, idx) => (
+                      <Text key={idx} style={styles.ingredientItem}>
+                        <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
+                        {ingredient.substring(1).trim()}
+                      </Text>
+                    ))}
+                </View>
+
+                <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
+                <View style={styles.instructionsContainer}>
+                  {selectedRecipe.description
+                    .split("\n\n")
+                    .find((section) => section.startsWith("Instructions:"))
+                    ?.split("\n")
+                    .slice(1)
+                    .map((instruction, idx) => {
+                      const stepMatch = instruction.match(/^(\d+)\./);
+                      if (stepMatch) {
+                        const [fullMatch, stepNumber] = stepMatch;
+                        const stepText = instruction
+                          .replace(fullMatch, "")
+                          .trim();
                         return (
-                          <View key={index} style={styles.sectionContainer}>
-                            <Text style={styles.sectionTitle}>
-                              Ingredients 🍝
+                          <View key={idx} style={styles.instructionRow}>
+                            <Text style={styles.stepNumber}>{stepNumber}.</Text>
+                            <Text style={styles.instructionText}>
+                              {stepText}
                             </Text>
-                            {section
-                              .split("\n")
-                              .slice(1)
-                              .map((ingredient, idx) => (
-                                <Text key={idx} style={styles.ingredientItem}>
-                                  <Text style={{ fontWeight: "bold" }}>-</Text>
-                                  {ingredient.substring(1)}
-                                </Text>
-                              ))}
-                          </View>
-                        );
-                      } else if (section.startsWith("Instructions:")) {
-                        return (
-                          <View key={index} style={styles.sectionContainer}>
-                            <Text style={styles.sectionTitle}>
-                              Instructions 👨‍🍳
-                            </Text>
-                            {section
-                              .split("\n")
-                              .slice(1)
-                              .map((instruction, idx) => {
-                                const stepMatch = instruction.match(/^(\d+)\./);
-                                if (stepMatch) {
-                                  const [fullMatch, stepNumber] = stepMatch;
-                                  const stepText = instruction
-                                    .replace(fullMatch, "")
-                                    .trim();
-                                  return (
-                                    <View
-                                      key={idx}
-                                      style={styles.instructionRow}
-                                    >
-                                      <Text style={styles.stepNumber}>
-                                        {stepNumber}.
-                                      </Text>
-                                      <Text style={styles.instructionText}>
-                                        {stepText}
-                                      </Text>
-                                    </View>
-                                  );
-                                }
-                                return (
-                                  <Text
-                                    key={idx}
-                                    style={styles.instructionText}
-                                  >
-                                    {instruction}
-                                  </Text>
-                                );
-                              })}
                           </View>
                         );
                       }
-                      return (
-                        <Text key={index} style={styles.modalText}>
-                          {section}
-                        </Text>
-                      );
+                      return null;
                     })}
                 </View>
-
-                {/* Add extra padding space at the bottom to ensure scrollability */}
-                <View style={{ height: 80 }} />
+                <View style={{ height: 60 }} />
               </ScrollView>
+
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setModalVisible(false)}
@@ -477,6 +462,7 @@ const styles = StyleSheet.create({
     top: 10,
     right: 10,
     zIndex: 1,
+    padding: 5,
   },
   notificationIcon: {
     position: "absolute",
@@ -713,26 +699,26 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: "90%",
-    height: "75%",
+    height: height * 0.75,
     backgroundColor: "#fff",
-    padding: 10,
+    padding: 15,
     borderRadius: 10,
     alignItems: "center",
   },
   // Update these styles in your StyleSheet
   modalScrollViewContent: {
     alignItems: "center",
-    paddingBottom: 70, // Increased padding for better scrolling
+    paddingBottom: 100, // Increased padding for better scrolling
   },
-  modalContent: {
-    width: "90%",
-    height: "75%",
-    backgroundColor: "#fff",
-    padding: 10,
-    borderRadius: 10,
-    alignItems: "center",
-    position: "relative", // Added for proper layout
-  },
+  // modalContent: {
+  //   width: "90%",
+  //   height: "75%",
+  //   backgroundColor: "#fff",
+  //   padding: 10,
+  //   borderRadius: 10,
+  //   alignItems: "center",
+  //   position: "relative", // Added for proper layout
+  // },
   recipeContentContainer: {
     width: "90%",
     paddingHorizontal: 5,
@@ -742,37 +728,50 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   sectionTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: "bold",
-    marginVertical: 8,
+    marginVertical: 10,
     color: "#333",
+    textAlign: "center",
+    width: "100%",
+  },
+  ingredientsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
   },
   ingredientItem: {
     fontSize: 16,
     lineHeight: 22,
-    marginBottom: 3,
+    marginBottom: 5,
+    textAlign: "left",
+  },
+  instructionsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
   },
   instructionRow: {
     flexDirection: "row",
-    marginBottom: 5,
+    marginBottom: 8,
     alignItems: "flex-start",
   },
   stepNumber: {
     fontSize: 16,
     fontWeight: "bold",
-    marginRight: 5,
-    width: 25,
+    marginRight: 8,
     color: "#333",
   },
   instructionText: {
     fontSize: 16,
-    flex: 1,
     lineHeight: 22,
+    flex: 1,
+    color: "#333",
   },
   modalTitle: {
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: 5,
+    paddingRight: 40,
+    textAlign: "center",
   },
   modalImage: {
     width: "100%",

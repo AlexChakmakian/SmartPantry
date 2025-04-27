@@ -12,6 +12,7 @@ import {
   Animated,
   Alert,
 } from "react-native";
+import { Ionicons as Icon } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import {
@@ -24,8 +25,9 @@ import {
   Swipeable,
 } from "react-native-gesture-handler";
 import AnimatedSideMenu from "@/components/SideMenu";
+import { LinearGradient } from "expo-linear-gradient";
 
-const API_KEY = "ac72e349e8f84948a669a045f2e972d9";
+const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get("window");
 
 export default function History() {
@@ -158,66 +160,29 @@ export default function History() {
   };
 
   const renderRightActions = (id) => (
-    <TouchableOpacity
-      style={styles.deleteButton}
-      onPress={() => {
-        Alert.alert(
-          "Delete Item",
-          "Are you sure you want to remove this recipe from history?",
-          [
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: () => handleRemoveItem(id),
-            },
-          ]
-        );
-      }}
-    >
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
+    <View style={styles.deleteButtonContainer}>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => {
+          Alert.alert(
+            "Delete Item",
+            "Are you sure you want to remove this recipe from history?",
+            [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => handleRemoveItem(id),
+              },
+            ]
+          );
+        }}
+      >
+        <Icon name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
   );
-
-  const handleMenuSelect = async (page) => {
-    setMenuOpen(false);
-    Animated.timing(slideAnim, {
-      toValue: -width,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    if (page === "Log out") {
-      try {
-        await signOut(auth);
-        console.log("User signed out");
-        router.push("/");
-      } catch (error) {
-        console.error("Error signing out:", error);
-      }
-    } else {
-      const paths = {
-        Home: "/home",
-        AIRecipes: "/screens/AIRecipes",
-        Pantry: "/screens/Pantry",
-        Fridge: "/screens/Fridge",
-        Freezer: "/screens/Freezer",
-        Spices: "/screens/Spices",
-        Appliances: "/screens/Appliances",
-        History: "/screens/History",
-        Bookmarked: "/screens/Bookmarked",
-        ReceiptScanner: "/screens/ReceiptScanner",
-        ProfileSettings: "/screens/ProfileSettings",
-        Settings: "/Settings",
-      };
-      router.push({
-        pathname: paths[page] || "/home",
-      });
-    }
-  };
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -249,28 +214,40 @@ export default function History() {
                 <Swipeable
                   key={index}
                   renderRightActions={() => renderRightActions(item.id)}
+                  containerStyle={styles.swipeableContainer}
                 >
                   <TouchableOpacity
-                    style={styles.recipeContainer}
+                    style={styles.recipeCardContainer}
                     onPress={() => handleRecipePress(item)}
+                    activeOpacity={0.9}
                   >
-                    <Text style={styles.recipeTitle}>{item.title}</Text>
-                    {item.image && (
-                      <Image
-                        source={{ uri: item.image }}
-                        style={styles.recipeImage}
-                      />
-                    )}
-                    <Text style={styles.recipeInfo}>
-                      Viewed: {formatDate(item.timestamp)}
-                    </Text>
+                    <View style={styles.recipeCard}>
+                      <View style={styles.imageContainer}>
+                        {item.image ? (
+                          <Image
+                            source={{ uri: item.image }}
+                            style={styles.recipeImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View style={styles.placeholder} />
+                        )}
+                        <LinearGradient
+                          colors={["transparent", "rgba(0,0,0,0.8)"]}
+                          style={styles.imageOverlay}
+                        />
+                        <Text style={styles.imageTitle}>{item.title}</Text>
+                        <Text style={styles.imageDescription}>
+                          Viewed: {formatDate(item.timestamp)}
+                        </Text>
+                      </View>
+                    </View>
                   </TouchableOpacity>
                 </Swipeable>
               ))
             ) : (
               <Text style={styles.emptyText}>No viewing history</Text>
             )}
-            <View style={styles.spacer} />
           </ScrollView>
         )}
 
@@ -292,52 +269,88 @@ export default function History() {
           >
             <View style={styles.modalContainer}>
               <View style={styles.modalContent}>
-                <ScrollView
-                  contentContainerStyle={styles.modalScrollViewContent}
-                >
-                  {loadingRecipe ? (
-                    <ActivityIndicator
-                      size="large"
-                      color="#0000ff"
-                      style={styles.modalLoader}
-                    />
-                  ) : (
-                    recipeDetails && (
-                      <>
-                        <Text style={styles.modalTitle}>
-                          {recipeDetails.title}
+                {loadingRecipe ? (
+                  <ActivityIndicator
+                    size="large"
+                    color="#0000ff"
+                    style={styles.modalLoader}
+                  />
+                ) : recipeDetails ? (
+                  <ScrollView
+                    contentContainerStyle={styles.modalScrollViewContent}
+                    showsVerticalScrollIndicator={true}
+                  >
+                    <Text style={styles.modalTitle}>{recipeDetails.title}</Text>
+                    {recipeDetails.image && (
+                      <Image
+                        source={{ uri: recipeDetails.image }}
+                        style={styles.modalImage}
+                      />
+                    )}
+                    <Text style={styles.sectionTitle}>Overview 📊:</Text>
+                    <View style={styles.infoContainer}>
+                      <Text style={styles.modalText}>
+                        Calories:{" "}
+                        {recipeDetails.calories > 0
+                          ? `${recipeDetails.calories} cal`
+                          : "Not available"}
+                      </Text>
+                      <Text style={styles.modalText}>
+                        Serving Size:{" "}
+                        {recipeDetails.servingSize?.amount
+                          ? `${recipeDetails.servingSize.amount} ${
+                              recipeDetails.servingSize.unit || ""
+                            }`
+                          : "Not available"}
+                      </Text>
+                    </View>
+                    <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
+                    <View style={styles.ingredientsContainer}>
+                      {recipeDetails.extendedIngredients?.length > 0 ? (
+                        recipeDetails.extendedIngredients.map(
+                          (ingredient, index) => (
+                            <Text key={index} style={styles.ingredientItem}>
+                              <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
+                              {ingredient.original}
+                            </Text>
+                          )
+                        )
+                      ) : (
+                        <Text style={styles.ingredientItem}>
+                          No ingredients available
                         </Text>
-                        {recipeDetails.image && (
-                          <Image
-                            source={{ uri: recipeDetails.image }}
-                            style={styles.modalImage}
-                          />
-                        )}
-                        <Text style={styles.modalText}>
-                          Calories: {recipeDetails.calories} cal
-                        </Text>
-                        <Text style={styles.modalText}>
-                          Serving Size:{" "}
-                          {recipeDetails.servingSize?.amount || ""}{" "}
-                          {recipeDetails.servingSize?.unit || ""}
-                        </Text>
-                        <Text style={styles.modalText}>Ingredients:</Text>
-                        {recipeDetails.extendedIngredients &&
-                          recipeDetails.extendedIngredients.map(
-                            (ingredient, index) => (
-                              <Text key={index} style={styles.modalText}>
-                                • {ingredient.original}
+                      )}
+                    </View>
+                    <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
+                    <View style={styles.instructionsContainer}>
+                      {recipeDetails.analyzedInstructions?.length > 0 ? (
+                        recipeDetails.analyzedInstructions[0].steps.map(
+                          (step, idx) => (
+                            <View key={idx} style={styles.instructionRow}>
+                              <Text style={styles.stepNumber}>{idx + 1}.</Text>
+                              <Text style={styles.instructionText}>
+                                {step.step}
                               </Text>
-                            )
-                          )}
-                        <Text style={styles.modalText}>Instructions:</Text>
-                        <Text style={styles.modalText}>
+                            </View>
+                          )
+                        )
+                      ) : recipeDetails.instructions ? (
+                        <Text style={styles.instructionText}>
                           {formatInstructions(recipeDetails.instructions)}
                         </Text>
-                      </>
-                    )
-                  )}
-                </ScrollView>
+                      ) : (
+                        <Text style={styles.instructionText}>
+                          No instructions available
+                        </Text>
+                      )}
+                    </View>
+                    <View style={{ height: 60 }} />
+                  </ScrollView>
+                ) : (
+                  <Text style={styles.errorText}>
+                    Failed to load recipe details
+                  </Text>
+                )}
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setModalVisible(false)}
@@ -367,6 +380,123 @@ export default function History() {
 }
 
 const styles = StyleSheet.create({
+  scrollViewContent: {
+    width: "100%",
+    alignItems: "center",
+    paddingVertical: 20,
+    paddingBottom: 50,
+  },
+
+  swipeableContainer: {
+    width: width * 0.92,
+    marginVertical: 6,
+  },
+
+  recipeCardContainer: {
+    width: "100%",
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    backgroundColor: "#fff",
+  },
+
+  recipeCard: {
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    overflow: "hidden",
+    padding: 0,
+  },
+
+  imageContainer: {
+    width: "100%",
+    height: 150,
+    position: "relative",
+  },
+
+  infoContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+    marginBottom: 10,
+  },
+
+  recipeImage: {
+    width: "100%",
+    height: "100%",
+  },
+
+  placeholder: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#E0E0E0",
+  },
+
+  imageOverlay: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: "100%",
+  },
+
+  imageTitle: {
+    position: "absolute",
+    bottom: 30,
+    left: 15,
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+  },
+
+  imageDescription: {
+    position: "absolute",
+    bottom: 10,
+    left: 15,
+    paddingRight: 15,
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "500",
+    textShadowColor: "rgba(0,0,0,0.7)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+    zIndex: 2,
+    opacity: 0.9,
+  },
+
+  deleteButtonContainer: {
+    width: 80,
+    height: "100%",
+  },
+
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+    borderTopRightRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  emptyText: {
+    fontSize: 18,
+    color: "#555",
+    marginTop: 30,
+    textAlign: "center",
+  },
+
   menuOverlay: {
     position: "absolute",
     top: 0,
@@ -389,7 +519,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     marginTop: -40,
   },
-  // Add overlay style for closing menu when tapping anywhere
   overlay: {
     position: "absolute",
     top: 0,
@@ -404,58 +533,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
     marginBottom: 10,
-  },
-  scrollViewContent: {
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingBottom: 50,
-  },
-  recipeContainer: {
-    marginTop: 10,
-    marginBottom: 10,
-    alignItems: "center",
-    minHeight: 200,
-    width: "95%",
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  recipeTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  recipeInfo: {
-    fontSize: 16,
-    color: "#555",
-    marginBottom: 10,
-  },
-  recipeImage: {
-    width: "100%",
-    height: 150,
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  deleteButton: {
-    backgroundColor: "#FF3B30",
-    justifyContent: "center",
-    alignItems: "center",
-    width: 80,
-    height: "100%",
-    borderTopRightRadius: 10,
-    borderBottomRightRadius: 10,
-  },
-  deleteButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
   },
   spacer: {
     height: 50,
@@ -473,11 +550,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  emptyText: {
-    fontSize: 18,
-    color: "#555",
-    marginTop: 30,
-  },
+
   modalContainer: {
     flex: 1,
     justifyContent: "center",
@@ -494,8 +567,6 @@ const styles = StyleSheet.create({
   },
   modalScrollViewContent: {
     alignItems: "center",
-    // width: "100%",
-    // paddingHorizontal: 10,
   },
   modalTitle: {
     fontSize: 24,
@@ -551,7 +622,60 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     zIndex: 0,
   },
+  errorText: {
+    fontSize: 16,
+    color: "#FF3B30",
+    textAlign: "center",
+    marginVertical: 20,
+  },
   modalLoader: {
-    marginVertical: 30,
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginVertical: 10,
+    color: "#333",
+    textAlign: "center",
+  },
+
+  ingredientsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+
+  ingredientItem: {
+    fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 5,
+    textAlign: "left",
+  },
+
+  instructionsContainer: {
+    width: "100%",
+    paddingHorizontal: 10,
+  },
+
+  instructionRow: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "flex-start",
+  },
+
+  stepNumber: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginRight: 8,
+    color: "#333",
+  },
+
+  instructionText: {
+    fontSize: 16,
+    lineHeight: 22,
+    flex: 1,
+    color: "#333",
   },
 });

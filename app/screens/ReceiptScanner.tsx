@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Dimensions,
   ScrollView,
-  Animated,
   TextInput,
   Modal,
   Image,
@@ -23,11 +22,15 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { addItem } from "@/firebase/pantryService"; // Import your database utility function
 import AnimatedSideMenu from "../../components/SideMenu";
 import CustomDropdown from "../../components/CustomDropdown"; // Import your custom dropdown component
+import {
+  GestureHandlerRootView,
+  Swipeable,
+} from "react-native-gesture-handler";
 
 const { width } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
 
-const GOOGLE_API_KEY = "";
+const GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY"; // Replace with your actual API key
 
 export default function ReceiptScanner() {
   const [items, setItems] = useState<{ name: string; quantity: string }[]>([]);
@@ -42,8 +45,6 @@ export default function ReceiptScanner() {
   }>({ name: "", quantity: "", category: "Pantry", unit: "pcs" });
   const [isLoading, setIsLoading] = useState(false); // Add loading state
   const [modalVisible, setModalVisible] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-width)).current;
-  const router = useRouter();
   const [showAddToPantryOptions, setShowAddToPantryOptions] = useState(false);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
 
@@ -151,89 +152,6 @@ export default function ReceiptScanner() {
     }
   };
 
-  // Enhanced parsing function for receipt OCR
-  const parseItems = (text: string) => {
-    // Split the text into lines
-    const lines = text.split("\n").filter((line) => line.trim() !== "");
-
-    // Common patterns to ignore (headers, footers, totals, etc.)
-    const ignorePatterns = [
-      /total/i,
-      /subtotal/i,
-      /tax/i,
-      /change/i,
-      /cash/i,
-      /credit card/i,
-      /store/i,
-      /receipt/i,
-      /thank you/i,
-      /welcome/i,
-      /date/i,
-      /time/i,
-      /^\d+\/\d+\/\d+$/, // Date format
-      /^\d+:\d+$/, // Time format
-      /^\$?\d+\.\d{2}$/, // Just a price like $10.99
-    ];
-
-    // Regular expressions for price and quantity detection
-    const priceRegex = /\$?(\d+\.\d{2})/;
-    const quantityRegex = /(\d+)\s*(x|oz|lb|lbs|g|kg|ml|l|pkg|pack|each)/i;
-
-    // Process each line to extract product information
-    const parsedItems = [];
-
-    lines.forEach((line) => {
-      // Skip lines that match ignore patterns
-      if (ignorePatterns.some((pattern) => pattern.test(line))) {
-        return;
-      }
-
-      // Extract and remove price
-      let price = "";
-      const priceMatch = line.match(priceRegex);
-      if (priceMatch) {
-        price = priceMatch[0];
-        line = line.replace(priceRegex, "").trim();
-      }
-
-      // Extract quantity
-      let quantity = "";
-      const quantityMatch = line.match(quantityRegex);
-      if (quantityMatch) {
-        quantity = quantityMatch[0];
-        line = line.replace(quantityRegex, "").trim();
-      } else {
-        // If no explicit quantity format, look for numbers at the beginning
-        const numericStart = line.match(/^(\d+(\.\d+)?)/);
-        if (numericStart) {
-          quantity = numericStart[0];
-          line = line.replace(/^(\d+(\.\d+)?)/, "").trim();
-        } else {
-          // Default quantity if none detected
-          quantity = "1";
-        }
-      }
-
-      // Clean up the item name - remove common receipt abbreviations
-      const name = line
-        .replace(/\s{2,}/g, " ") // Replace multiple spaces with one
-        .replace(/[^a-zA-Z0-9\s]/g, "") // Remove special characters
-        .trim();
-
-      // Only add items with valid names
-      if (name && name.length > 1) {
-        parsedItems.push({
-          name,
-          quantity,
-          price,
-          category: guessFoodCategory(name), // Try to guess the food category
-        });
-      }
-    });
-
-    setItems(parsedItems);
-  };
-
   // Simple function to guess food category based on keywords
   const guessFoodCategory = (itemName) => {
     const lowerName = itemName.toLowerCase();
@@ -260,6 +178,7 @@ export default function ReceiptScanner() {
       ],
       Fridge: [
         "milk",
+        "apple",
         "yogurt",
         "cheese",
         "butter",
@@ -305,8 +224,8 @@ export default function ReceiptScanner() {
     return "Pantry";
   };
 
-  // Add function to add selected items to pantry
-  const addSelectedItemsToPantry = async (storageLocation) => {
+  // Modify the addSelectedItemsToPantry function to handle multiple locations
+  const addItemsToStorages = async () => {
     const user = auth.currentUser;
     if (!user) {
       Alert.alert("Error", "User not authenticated");
@@ -314,37 +233,43 @@ export default function ReceiptScanner() {
     }
 
     try {
-      for (const index of selectedItems) {
-        const item = items[index];
+      // Group items by their assigned categories
+      const itemsByCategory = items.reduce((acc, item) => {
+        const location = item.category?.toLowerCase() || "pantry";
+        if (!acc[location]) {
+          acc[location] = [];
+        }
+        acc[location].push(item);
+        return acc;
+      }, {});
 
-        // Create an item object for the database
-        const newItem = {
-          name: item.name,
-          quantity: item.quantity,
-          dateAdded: new Date().toISOString(),
-        };
+      // Add items to their respective storage locations
+      for (const [location, categoryItems] of Object.entries(itemsByCategory)) {
+        for (const item of categoryItems) {
+          const newItem = {
+            name: item.name,
+            quantity: item.quantity,
+            dateAdded: new Date().toISOString(),
+          };
 
-        // Add to the selected storage location
-        await addItem(storageLocation, user.uid, newItem);
+          await addItem(location, user.uid, newItem);
+        }
       }
 
-      Alert.alert(
-        "Success",
-        `Added ${selectedItems.length} items to ${storageLocation}`
-      );
+      // Show success message with breakdown
+      const itemCounts = Object.entries(itemsByCategory)
+        .map(([location, items]) => `${items.length} to ${location}`)
+        .join(", ");
+
+      Alert.alert("Success", `Added items to storage:\n${itemCounts}`);
+
+      // Clear items after successful addition
+      setItems([]);
       setSelectedItems([]);
-      setShowAddToPantryOptions(false);
     } catch (error) {
-      console.error(`Error adding items to ${storageLocation}:`, error);
+      console.error("Error adding items to storage:", error);
       Alert.alert("Error", "Failed to add items to storage");
     }
-  };
-
-  // Function to toggle item selection
-  const toggleItemSelection = (index) => {
-    setSelectedItems((prev) =>
-      prev.includes(index) ? prev.filter((i) => i !== index) : [...prev, index]
-    );
   };
 
   const editItem = (index: number, event?: GestureResponderEvent) => {
@@ -415,6 +340,38 @@ export default function ReceiptScanner() {
     }
   };
 
+  const renderRightActions = (index) => (
+    <View style={styles.deleteButtonContainer}>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => {
+          Alert.alert(
+            "Delete Item",
+            "Are you sure you want to delete this item?",
+            [
+              {
+                text: "Cancel",
+                style: "cancel",
+              },
+              {
+                text: "Delete",
+                style: "destructive",
+                onPress: () => {
+                  const updatedItems = [...items];
+                  updatedItems.splice(index, 1);
+                  setItems(updatedItems);
+                },
+              },
+            ]
+          );
+        }}
+      >
+        <Icon name="trash-outline" size={24} color="#fff" />
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       {/* Loading wheel */}
@@ -450,68 +407,76 @@ export default function ReceiptScanner() {
         </TouchableOpacity>
 
         {items.length > 0 && (
-          <ScrollView style={styles.itemsContainer}>
-            {items.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.itemContainer,
-                  selectedItems.includes(index) && styles.selectedItem,
-                  { borderLeftColor: getCategoryColor(item.category) },
-                ]}
-                //onPress={() => toggleItemSelection(index)}
-              >
-                <View style={styles.itemHeader}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  {item.category && (
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <ScrollView style={styles.itemsContainer}>
+              {items.map((item, index) => (
+                <Swipeable
+                  key={index}
+                  renderRightActions={() => renderRightActions(index)}
+                >
+                  <TouchableOpacity onPress={() => editItem(index)}>
                     <View
                       style={[
-                        styles.categoryTag,
-                        {
-                          backgroundColor: getCategoryColor(item.category, 0.2),
-                        },
+                        styles.itemContainer,
+                        selectedItems.includes(index) && styles.selectedItem,
+                        { borderLeftColor: getCategoryColor(item.category) },
                       ]}
                     >
-                      <Text style={styles.categoryText}>{item.category}</Text>
+                      <View style={styles.itemHeader}>
+                        <Text style={styles.itemName}>{item.name}</Text>
+                        {item.category && (
+                          <View
+                            style={[
+                              styles.categoryTag,
+                              {
+                                backgroundColor: getCategoryColor(
+                                  item.category,
+                                  0.2
+                                ),
+                              },
+                            ]}
+                          >
+                            <Text style={styles.categoryText}>
+                              {item.category}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <View style={styles.itemDetails}>
+                        <View style={styles.itemRow}>
+                          <Text style={styles.itemLabel}>Qty: </Text>
+                          <Text style={styles.itemQuantity}>
+                            {item.quantity}
+                          </Text>
+                        </View>
+
+                        {item.price && (
+                          <View style={styles.itemRow}>
+                            <Text style={styles.itemLabel}>Price: </Text>
+                            <Text style={styles.itemPrice}>{item.price}</Text>
+                          </View>
+                        )}
+                      </View>
+
+                      <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => editItem(index)}
+                      >
+                        <Icon name="pencil" size={18} color="#007BFF" />
+                      </TouchableOpacity>
                     </View>
-                  )}
-                </View>
-
-                <View style={styles.itemDetails}>
-                  <View style={styles.itemRow}>
-                    <Text style={styles.itemLabel}>Qty: </Text>
-                    <Text style={styles.itemQuantity}>{item.quantity}</Text>
-                  </View>
-
-                  {item.price && (
-                    <View style={styles.itemRow}>
-                      <Text style={styles.itemLabel}>Price: </Text>
-                      <Text style={styles.itemPrice}>{item.price}</Text>
-                    </View>
-                  )}
-                </View>
-
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => editItem(index)}
-                >
-                  <Icon name="pencil" size={18} color="#007BFF" />
-                </TouchableOpacity>
+                  </TouchableOpacity>
+                </Swipeable>
+              ))}
+              <TouchableOpacity
+                style={styles.addAllButton}
+                onPress={addItemsToStorages}
+              >
+                <Text style={styles.addAllButtonText}>Add All Items</Text>
               </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.addAllButton}
-              onPress={() => {
-                // Select all items by setting selectedItems to all indices
-                const allIndices = items.map((_, index) => index);
-                setSelectedItems(allIndices);
-                // Show the storage options modal
-                setShowAddToPantryOptions(true);
-              }}
-            >
-              <Text style={styles.addAllButtonText}>Add All</Text>
-            </TouchableOpacity>
-          </ScrollView>
+            </ScrollView>
+          </GestureHandlerRootView>
         )}
 
         <Modal
@@ -659,7 +624,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("pantry")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="cube" size={24} color="#007BFF" />
                 <Text style={styles.storageButtonText}>Pantry</Text>
@@ -667,7 +632,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("fridge")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="restaurant" size={24} color="#00A651" />
                 <Text style={styles.storageButtonText}>Fridge</Text>
@@ -675,7 +640,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("freezer")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="snow" size={24} color="#00B2E3" />
                 <Text style={styles.storageButtonText}>Freezer</Text>
@@ -683,7 +648,7 @@ export default function ReceiptScanner() {
 
               <TouchableOpacity
                 style={styles.storageButton}
-                onPress={() => addSelectedItemsToPantry("spices")}
+                onPress={() => addItemsToStorages()}
               >
                 <Icon name="flame" size={24} color="#FE5000" />
                 <Text style={styles.storageButtonText}>Spices</Text>
@@ -721,8 +686,26 @@ const getCategoryColor = (category, opacity = 1) => {
   return colors[category] || colors["Pantry"];
 };
 
-// Merge with existing styles
 const styles = StyleSheet.create({
+  deleteButtonContainer: {
+    width: 100,
+    height: "100%",
+  },
+  deleteButton: {
+    backgroundColor: "#FF3B30",
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+    borderRadius: 12,
+    marginVertical: 8,
+    paddingHorizontal: 15,
+  },
+  deleteButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+    marginTop: 4,
+  },
   loadingContainer: {
     position: "absolute",
     top: 0,
@@ -964,7 +947,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 20,
     width: width * 0.8,
-    backgroundColor: "#ADD8E6",
+    // backgroundColor: "#ADD8E6",
     borderRadius: 10,
     padding: 10,
   },
