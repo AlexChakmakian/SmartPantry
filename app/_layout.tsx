@@ -1,17 +1,20 @@
 import { Stack } from "expo-router";
+import { ThemeProvider } from "../context/ThemeContext";
 
 export default function RootLayout() {
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: "Login" }} />{" "}
-      {/* Login screen */}
-      <Stack.Screen name="home" options={{ title: "Home" }} />{" "}
-      {/* Home screen */}
-      <Stack.Screen
-        name="create-account"
-        options={{ title: "Register" }}
-      />{" "}
-      {/* Registering a new user */}
-    </Stack>
+    <ThemeProvider>
+      <Stack>
+        <Stack.Screen
+          name="index"
+          options={{
+            title: "Login",
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen name="home" options={{ title: "Home" }} />
+        <Stack.Screen name="create-account" options={{ title: "Register" }} />
+      </Stack>
+    </ThemeProvider>
   );
 }

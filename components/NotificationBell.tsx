@@ -18,6 +18,8 @@ import {
   GestureHandlerRootView,
   Swipeable,
 } from "react-native-gesture-handler";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -36,6 +38,9 @@ const NotificationBell = () => {
   const slideAnim = useRef(new Animated.Value(width)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const router = useRouter();
+
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   useEffect(() => {
     const fetchExpiredItems = async () => {
@@ -221,11 +226,18 @@ const NotificationBell = () => {
         <Animated.View
           style={[
             styles.notificationPanel,
-            { transform: [{ translateX: slideAnim }] },
+            {
+              transform: [{ translateX: slideAnim }],
+              backgroundColor: theme.background,
+            },
           ]}
         >
-          <View style={styles.panelHeader}>
-            <Text style={styles.panelTitle}>Notifications</Text>
+          <View
+            style={[styles.panelHeader, { backgroundColor: theme.background }]}
+          >
+            <Text style={[styles.panelTitle, { color: theme.text }]}>
+              Notifications
+            </Text>
             <View style={styles.headerButtons}>
               {notifications.length > 0 && (
                 <TouchableOpacity

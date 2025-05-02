@@ -26,6 +26,8 @@ import {
   GestureHandlerRootView,
   Swipeable,
 } from "react-native-gesture-handler";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const { width } = Dimensions.get("window");
 const auth = getAuth(); // Define auth at the module level for use
@@ -47,6 +49,9 @@ export default function ReceiptScanner() {
   const [modalVisible, setModalVisible] = useState(false);
   const [showAddToPantryOptions, setShowAddToPantryOptions] = useState(false);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
+
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const unitOptions = [
     "lbs",
@@ -373,7 +378,7 @@ export default function ReceiptScanner() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Loading wheel */}
       {isLoading && (
         <View style={styles.loadingContainer}>
@@ -401,7 +406,9 @@ export default function ReceiptScanner() {
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
 
       <View style={styles.content}>
-        <Text style={styles.title}>Receipt Scanner</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Receipt Scanner
+        </Text>
         <TouchableOpacity style={styles.button} onPress={pickImageAndProcess}>
           <Text style={styles.buttonText}>Scan Receipt!</Text>
         </TouchableOpacity>

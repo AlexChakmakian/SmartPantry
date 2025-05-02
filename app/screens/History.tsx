@@ -26,6 +26,8 @@ import {
 } from "react-native-gesture-handler";
 import AnimatedSideMenu from "@/components/SideMenu";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get("window");
@@ -39,8 +41,8 @@ export default function History() {
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [recipeDetails, setRecipeDetails] = useState(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
-  const slideAnim = useRef(new Animated.Value(-width)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const auth = getAuth();
 
@@ -116,11 +118,6 @@ export default function History() {
 
   const toggleMenu = () => {
     setMenuOpen(!isMenuOpen);
-    // Animated.timing(slideAnim, {
-    //   toValue: isMenuOpen ? -width : 0,
-    //   duration: 300,
-    //   useNativeDriver: true,
-    // }).start();
   };
 
   const handleClearHistory = async () => {
@@ -186,7 +183,7 @@ export default function History() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Add overlay to close menu when clicking anywhere on the screen */}
         {isMenuOpen && (
           <TouchableOpacity
@@ -203,7 +200,9 @@ export default function History() {
         </TouchableOpacity>
 
         <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-        <Text style={styles.title}>Viewing History</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Viewing History
+        </Text>
 
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />

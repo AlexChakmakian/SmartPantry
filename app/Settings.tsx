@@ -11,13 +11,17 @@ import {
   Dimensions,
   Keyboard,
   TouchableWithoutFeedback,
+  Switch,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { getAuth } from "firebase/auth";
 import { doc, updateDoc, getDoc } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
 import { useRouter } from "expo-router";
 import NotificationBell from "../components/NotificationBell";
 import AnimatedSideMenu from "@/components/SideMenu";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -26,8 +30,9 @@ export default function SettingsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMenuOpen, setMenuOpen] = useState(false);
   const [bellKey, setBellKey] = useState(0);
-  const slideAnim = useRef(new Animated.Value(-width)).current;
-  const router = useRouter();
+
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   useEffect(() => {
     const fetchThreshold = async () => {
@@ -42,7 +47,11 @@ export default function SettingsScreen() {
     fetchThreshold();
   }, []);
 
-  const toggleMenu = () => setMenuOpen(open => !open);
+  useEffect(() => {
+    console.log("Current theme:", isDarkMode ? "dark" : "light");
+  }, [isDarkMode]);
+
+  const toggleMenu = () => setMenuOpen((open) => !open);
 
   const handleSaveThreshold = async () => {
     const thresholdNumber = Number(expiryThreshold);
@@ -57,8 +66,7 @@ export default function SettingsScreen() {
       try {
         const userRef = doc(db, "users", user.uid);
         await updateDoc(userRef, { expiryThreshold: thresholdNumber });
-        // Removed the success Alert here
-        setBellKey(k => k + 1);
+        setBellKey((k) => k + 1);
       } catch (error) {
         console.error("Error saving threshold:", error);
         Alert.alert("Error", "Failed to save expiry threshold.");
@@ -69,7 +77,7 @@ export default function SettingsScreen() {
 
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {isMenuOpen && (
           <TouchableOpacity
             style={styles.menuOverlay}
@@ -91,21 +99,53 @@ export default function SettingsScreen() {
           onClose={() => setMenuOpen(false)}
         />
 
-        <View style={styles.card}>
-          <Text style={styles.header}>Set Expiry Threshold</Text>
-          <Text style={styles.subHeader}>
+        <View style={[styles.card, { backgroundColor: theme.surface }]}>
+          <Text style={[styles.header, { color: theme.text }]}>Settings</Text>
+
+          {/* Dark Mode Toggle */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingContent}>
+              <Ionicons
+                name={isDarkMode ? "moon" : "sunny"}
+                size={24}
+                color={theme.text}
+              />
+              <Text style={[styles.settingText, { color: theme.text }]}>
+                {isDarkMode ? "Dark Mode" : "Light Mode"}
+              </Text>
+            </View>
+            <Switch
+              value={isDarkMode}
+              onValueChange={(value) => {
+                console.log("Switch toggled to:", value);
+                toggleTheme();
+              }}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={isDarkMode ? "#f5dd4b" : "#f4f3f4"}
+            />
+          </View>
+
+          <Text style={[styles.subHeader, { color: theme.textSecondary }]}>
             Notify me when items are older than:
           </Text>
 
           <View style={styles.inputContainer}>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                {
+                  borderColor: theme.border,
+                  color: theme.text,
+                  backgroundColor: theme.surface,
+                },
+              ]}
               keyboardType="numeric"
               value={expiryThreshold}
               onChangeText={setExpiryThreshold}
               placeholder="Number of days"
+              placeholderTextColor={theme.textSecondary}
             />
-            <Text style={styles.unitText}>days</Text>
+            <Text style={[styles.unitText, { color: theme.text }]}>days</Text>
           </View>
 
           {isLoading ? (
@@ -214,5 +254,24 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  settingItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    width: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+    marginBottom: 20,
+  },
+  settingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  settingText: {
+    fontSize: 16,
+    marginLeft: 10,
   },
 });

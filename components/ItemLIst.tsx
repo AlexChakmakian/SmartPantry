@@ -28,6 +28,8 @@ import Icon from "react-native-vector-icons/Ionicons";
 import { getAuth, signOut } from "firebase/auth";
 import { useRouter } from "expo-router";
 import AnimatedSideMenu from "./SideMenu";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const { width } = Dimensions.get("window");
 
@@ -101,6 +103,9 @@ export default function ItemList({ itemType }) {
   const [isMyFoodOpen, setIsMyFoodOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const router = useRouter();
   const auth = getAuth();
@@ -302,51 +307,9 @@ export default function ItemList({ itemType }) {
     }).start();
   };
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "90deg"],
-  });
-
-  const handleMenuSelect = async (page) => {
-    setMenuOpen(false);
-    Animated.timing(slideAnim, {
-      toValue: -width,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    if (page === "Log out") {
-      try {
-        await signOut(auth);
-        console.log("User signed out");
-        router.push("/");
-      } catch (error) {
-        console.error("Error signing out:", error);
-      }
-    } else {
-      const paths = {
-        Home: "/home",
-        AIRecipes: "/screens/AIRecipes",
-        Pantry: "/screens/Pantry",
-        Fridge: "/screens/Fridge",
-        Freezer: "/screens/Freezer",
-        Spices: "/screens/Spices",
-        Appliances: "/screens/Appliances",
-        History: "/screens/History",
-        Bookmarked: "/screens/Bookmarked",
-        ReceiptScanner: "/screens/ReceiptScanner",
-        ProfileSettings: "/screens/ProfileSettings",
-        Settings: "/Settings",
-      };
-      router.push({
-        pathname: paths[page] || "/home",
-      });
-    }
-  };
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Add overlay to close menu when clicking anywhere on the screen */}
         {isMenuOpen && (
           <TouchableOpacity
@@ -404,18 +367,33 @@ export default function ItemList({ itemType }) {
               <Swipeable renderRightActions={() => renderRightActions(item.id)}>
                 {/* Make the entire item container clickable for editing */}
                 <TouchableOpacity onPress={() => editItem(item)}>
-                  <View style={styles.itemContainer}>
+                  <View
+                    style={[
+                      styles.itemContainer,
+                      { backgroundColor: theme.surface },
+                    ]}
+                  >
                     <View style={styles.itemRow}>
-                      <Text style={styles.itemLabel}>Item: </Text>
-                      <Text style={styles.itemName}>{item.name}</Text>
+                      <Text style={[styles.itemLabel, { color: theme.text }]}>
+                        Item:{" "}
+                      </Text>
+                      <Text style={[styles.itemName, { color: theme.text }]}>
+                        {item.name}
+                      </Text>
                     </View>
                     <View style={styles.itemRow}>
-                      <Text style={styles.itemLabel}>Qty: </Text>
+                      <Text style={[styles.itemLabel, { color: theme.text }]}>
+                        Qty:{" "}
+                      </Text>
                       <Text style={styles.itemQuantity}>{item.quantity}</Text>
                     </View>
                     <View style={styles.itemRow}>
-                      <Text style={styles.itemLabel}>Date added: </Text>
-                      <Text style={styles.itemDate}>{formattedDate}</Text>
+                      <Text style={[styles.itemLabel, { color: theme.text }]}>
+                        Date added:{" "}
+                      </Text>
+                      <Text style={[styles.itemDate, { color: theme.text }]}>
+                        {formattedDate}
+                      </Text>
                     </View>
                     <TouchableOpacity
                       style={styles.editButton}

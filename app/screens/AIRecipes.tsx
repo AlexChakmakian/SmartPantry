@@ -25,6 +25,8 @@ import {
 } from "@/firebase/bookmarkService";
 import AnimatedSideMenu from "@/components/SideMenu";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get("window");
@@ -77,7 +79,8 @@ export default function AIRecipes() {
   const [cravingModalVisible, setCravingModalVisible] = useState(false);
   const [cravingInput, setCravingInput] = useState("");
 
-  const slideAnim = useRef(new Animated.Value(-width)).current;
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const emojis = [
     "📝",
@@ -404,7 +407,7 @@ export default function AIRecipes() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       {isMenuOpen && (
         <TouchableOpacity
           style={styles.menuOverlay}
@@ -420,7 +423,9 @@ export default function AIRecipes() {
       </TouchableOpacity>
 
       <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-      <Text style={styles.title}>Your Recipes {emoji}</Text>
+      <Text style={[styles.title, { color: theme.text }]}>
+        Your Recipes {emoji}
+      </Text>
 
       <TouchableOpacity
         style={styles.cuisineButton}

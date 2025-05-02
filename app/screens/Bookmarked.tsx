@@ -23,6 +23,8 @@ import {
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext";
+import { lightTheme, darkTheme } from "@/styles/theme";
 
 const API_KEY = "b90e71d18a854a71b40b917b255177a3";
 const { width, height } = Dimensions.get("window");
@@ -37,6 +39,8 @@ export default function Bookmarked() {
   const [recipeDetails, setRecipeDetails] = useState(null);
   const [loadingRecipe, setLoadingRecipe] = useState(false);
   const slideAnim = useRef(new Animated.Value(-width)).current;
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const auth = getAuth();
 
@@ -225,7 +229,7 @@ export default function Bookmarked() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Add overlay to close menu when clicking anywhere on the screen */}
         {isMenuOpen && (
           <TouchableOpacity
@@ -242,7 +246,9 @@ export default function Bookmarked() {
         </TouchableOpacity>
 
         <Image source={require("../../assets/Logo.png")} style={styles.logo} />
-        <Text style={styles.title}>Bookmarked Recipes</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Bookmarked Recipes
+        </Text>
 
         {loading ? (
           <ActivityIndicator size="large" color="#0000ff" />

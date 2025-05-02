@@ -9,17 +9,17 @@ import {
   Image,
   ScrollView,
   Modal,
-  Alert,
-  ImageBackground,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth"; // Import Firebase auth functions
-import { db } from "../firebase/firebaseConfig"; // Import the Firestore database
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import NotificationBell from "../components/NotificationBell"; // Component for notifications
 import AnimatedSideMenu from "@/components/SideMenu";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "@/context/ThemeContext"; // Custom theme context
+import { lightTheme, darkTheme } from "@/styles/theme"; // Import light and dark themes
 
 const { width, height } = Dimensions.get("window");
 
@@ -75,6 +75,8 @@ const HomeScreen = () => {
   const [isMyFoodOpen, setIsMyFoodOpen] = useState(false); // State for My Food dropdown
   const slideAnim = useRef(new Animated.Value(-width)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const { isDarkMode, toggleTheme } = useTheme();
+  const theme = isDarkMode ? darkTheme : lightTheme;
 
   const auth = getAuth();
 
@@ -87,137 +89,86 @@ const HomeScreen = () => {
     // }).start();
   };
 
-  const toggleMyFood = () => {
-    setIsMyFoodOpen(!isMyFoodOpen);
-    Animated.timing(rotateAnim, {
-      toValue: isMyFoodOpen ? 0 : 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "90deg"],
-  });
-
-  const handleMenuSelect = async (page) => {
-    setMenuOpen(false);
-    Animated.timing(slideAnim, {
-      toValue: -width,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
-    if (page === "Log out") {
-      try {
-        await signOut(auth);
-
-        console.log("User signed out");
-        router.push("/"); // Redirect to the login screen
-      } catch (error) {
-        console.error("Error signing out:", error);
-      }
-    } else if (page === "Settings") {
-      router.push("/Settings"); // Redirect to the settings screen
-    } else {
-      const paths = {
-        Home: "/home",
-        AIRecipes: "/screens/AIRecipes",
-        Pantry: "/screens/Pantry",
-        Fridge: "/screens/Fridge",
-        Freezer: "/screens/Freezer",
-        Spices: "/screens/Spices",
-        Appliances: "/screens/Appliances",
-        Bookmarked: "/screens/Bookmarked",
-        History: "/screens/History",
-        ReceiptScanner: "/screens/ReceiptScanner",
-        ProfileSettings: "/screens/ProfileSettings",
-        Settings: "/Settings",
-      };
-      router.push({
-        pathname: paths[page] || "/home",
-      });
-    }
-  };
-
   const handleRecipePress = (recipe) => {
     setSelectedRecipe(recipe);
     setModalVisible(true);
   };
 
   return (
-    <View style={styles.container}>
-      {/* Add overlay to close menu when clicking anywhere on the screen */}
-      {isMenuOpen && (
-        <TouchableOpacity
-          style={styles.menuOverlay}
-          activeOpacity={1}
-          onPress={toggleMenu}
-        />
-      )}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        {/* Add overlay to close menu when clicking anywhere on the screen */}
+        {isMenuOpen && (
+          <TouchableOpacity
+            style={styles.menuOverlay}
+            activeOpacity={1}
+            onPress={toggleMenu}
+          />
+        )}
 
-      <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
-        <View style={styles.line} />
-        <View style={styles.line} />
-        <View style={styles.line} />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.hamburger} onPress={toggleMenu}>
+          <View style={styles.line} />
+          <View style={styles.line} />
+          <View style={styles.line} />
+        </TouchableOpacity>
 
-      <NotificationBell />
+        <NotificationBell />
 
-      <Image source={require("../assets/Logo.png")} style={styles.logo} />
+        <Image source={require("../assets/Logo.png")} style={styles.logo} />
 
-      <View style={styles.contentContainer}>
-        <View style={styles.headerContainer}>
-          <View style={styles.headerRow}>
-            <View style={styles.buttonsRow}>
-              <QuickAccessButton
-                icon="flash"
-                title="Smart Recipes"
-                onPress={() => router.push("/screens/AIRecipes")}
-                color="#4CAF50"
-              />
-              <TouchableOpacity
-                style={[
-                  styles.quickAccessButton,
-                  { backgroundColor: "#FF5722" },
-                ]}
-                onPress={() => router.push("/screens/Pantry")}
-              >
-                <Ionicons
-                  name="nutrition"
-                  size={16}
-                  color="#fff"
-                  style={styles.buttonIcon}
+        <View style={styles.contentContainer}>
+          <View style={styles.headerContainer}>
+            <View style={styles.headerRow}>
+              <View style={styles.buttonsRow}>
+                <QuickAccessButton
+                  icon="flash"
+                  title="Smart Recipes"
+                  onPress={() => router.push("/screens/AIRecipes")}
+                  color="#4CAF50"
                 />
-                <Text style={styles.quickAccessText}>Add to Pantry</Text>
-              </TouchableOpacity>
-              <QuickAccessButton
-                icon="scan"
-                title="Scan Receipt"
-                onPress={() => router.push("/screens/ReceiptScanner")}
-                color="#2196F3"
-              />
+                <TouchableOpacity
+                  style={[
+                    styles.quickAccessButton,
+                    { backgroundColor: "#FF5722" },
+                  ]}
+                  onPress={() => router.push("/screens/Pantry")}
+                >
+                  <Ionicons
+                    name="nutrition"
+                    size={16}
+                    color="#fff"
+                    style={styles.buttonIcon}
+                  />
+                  <Text style={styles.quickAccessText}>Add to Pantry</Text>
+                </TouchableOpacity>
+                <QuickAccessButton
+                  icon="scan"
+                  title="Scan Receipt"
+                  onPress={() => router.push("/screens/ReceiptScanner")}
+                  color="#2196F3"
+                />
+              </View>
+              <Text style={[styles.recipesHeader, { color: theme.text }]}>
+                Trending Recipes🧑‍🍳
+              </Text>
             </View>
-            <Text style={styles.recipesHeader}>Trending Recipes🧑‍🍳</Text>
           </View>
-        </View>
 
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.recipeContainer}>
-            <RecipeCard
-              title="Steak and Potatoes"
-              imagePath={require("../assets/steakpotatoes.jpg")}
-              description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Steak and Potatoes",
-                  imagePath: require("../assets/steakpotatoes.jpg"),
-                  description: `Ingredients:
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollViewContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.recipeContainer}>
+              <RecipeCard
+                title="Steak and Potatoes"
+                imagePath={require("../assets/steakpotatoes.jpg")}
+                description="A hearty meal featuring a perfectly seasoned steak served with baked potatoes."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Steak and Potatoes",
+                    imagePath: require("../assets/steakpotatoes.jpg"),
+                    description: `Ingredients:
 - 2 ribeye steaks
 - 4 large potatoes
 - 2 tablespoons olive oil
@@ -233,18 +184,18 @@ Instructions:
 5. While the steaks are baking, wash and dry the potatoes. Rub them with olive oil, salt, and pepper.
 6. Place the potatoes on a baking sheet and bake in the preheated oven for 45-60 minutes, or until tender.
 7. Serve the steaks with the baked potatoes and garnish with fresh rosemary.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Tacos"
-              imagePath={require("../assets/tacos.jpg")}
-              description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Tacos",
-                  imagePath: require("../assets/tacos.jpg"),
-                  description: `Ingredients:
+                  })
+                }
+              />
+              <RecipeCard
+                title="Tacos"
+                imagePath={require("../assets/tacos.jpg")}
+                description="A flavorful Mexican dish with tortillas filled with beef, cheese, and salsa."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Tacos",
+                    imagePath: require("../assets/tacos.jpg"),
+                    description: `Ingredients:
 - 1 pound ground beef
 - 1 packet taco seasoning
 - 8 small tortillas
@@ -259,18 +210,18 @@ Instructions:
 3. Warm the tortillas in a dry skillet or microwave.
 4. Fill each tortilla with the seasoned beef, shredded lettuce, shredded cheese, salsa, and sour cream.
 5. Serve immediately.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Fish and Chips"
-              imagePath={require("../assets/fishandchips.jpg")}
-              description="A classic British dish with crispy fried fish and golden fries."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Fish and Chips",
-                  imagePath: require("../assets/fishandchips.jpg"),
-                  description: `Ingredients:
+                  })
+                }
+              />
+              <RecipeCard
+                title="Fish and Chips"
+                imagePath={require("../assets/fishandchips.jpg")}
+                description="A classic British dish with crispy fried fish and golden fries."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Fish and Chips",
+                    imagePath: require("../assets/fishandchips.jpg"),
+                    description: `Ingredients:
 - 4 cod fillets
 - 1 cup all-purpose flour
 - 1 teaspoon baking powder
@@ -288,18 +239,18 @@ Instructions:
 5. Dip the cod fillets into the batter, allowing any excess to drip off.
 6. Fry the fish in the hot oil until golden and crispy, about 4-5 minutes per side. Drain on paper towels.
 7. Serve the fish with the fries and lemon wedges.`,
-                })
-              }
-            />
-            <RecipeCard
-              title="Spaghetti Alfredo"
-              imagePath={require("../assets/spaghetti.jpg")}
-              description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
-              onPress={() =>
-                handleRecipePress({
-                  title: "Spaghetti Alfredo",
-                  imagePath: require("../assets/spaghetti.jpg"),
-                  description: `Ingredients:
+                  })
+                }
+              />
+              <RecipeCard
+                title="Spaghetti Alfredo"
+                imagePath={require("../assets/spaghetti.jpg")}
+                description="A creamy and delicious pasta dish made with Alfredo sauce and garnished with Parmesan cheese."
+                onPress={() =>
+                  handleRecipePress({
+                    title: "Spaghetti Alfredo",
+                    imagePath: require("../assets/spaghetti.jpg"),
+                    description: `Ingredients:
 - 12 ounces fettuccine
 - 1 cup heavy cream
 - 1/2 cup unsalted butter
@@ -314,109 +265,112 @@ Instructions:
 4. Add the cooked fettuccine to the skillet and toss to coat with the sauce.
 5. Season with salt and pepper to taste.
 6. Garnish with chopped parsley and serve immediately.`,
-                })
-              }
-            />
-          </View>
-        </ScrollView>
-      </View>
-
-      {selectedRecipe && (
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <TouchableOpacity
-                style={styles.bookmarkIcon}
-                onPress={() => setIsBookmarked(!isBookmarked)}
-              >
-                <Ionicons
-                  name={isBookmarked ? "bookmark" : "bookmark-outline"}
-                  size={30}
-                  color={isBookmarked ? "gold" : "#000"}
-                />
-              </TouchableOpacity>
-
-              <ScrollView
-                contentContainerStyle={styles.modalScrollViewContent}
-                showsVerticalScrollIndicator={true}
-                scrollEventThrottle={16}
-                removeClippedSubviews={false}
-                keyboardShouldPersistTaps="handled"
-              >
-                <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
-                {selectedRecipe.imagePath && (
-                  <Image
-                    source={selectedRecipe.imagePath}
-                    style={styles.modalImage}
-                  />
-                )}
-
-                <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
-                <View style={styles.ingredientsContainer}>
-                  {selectedRecipe.description
-                    .split("\n\n")
-                    .find((section) => section.startsWith("Ingredients:"))
-                    ?.split("\n")
-                    .slice(1)
-                    .map((ingredient, idx) => (
-                      <Text key={idx} style={styles.ingredientItem}>
-                        <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
-                        {ingredient.substring(1).trim()}
-                      </Text>
-                    ))}
-                </View>
-
-                <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
-                <View style={styles.instructionsContainer}>
-                  {selectedRecipe.description
-                    .split("\n\n")
-                    .find((section) => section.startsWith("Instructions:"))
-                    ?.split("\n")
-                    .slice(1)
-                    .map((instruction, idx) => {
-                      const stepMatch = instruction.match(/^(\d+)\./);
-                      if (stepMatch) {
-                        const [fullMatch, stepNumber] = stepMatch;
-                        const stepText = instruction
-                          .replace(fullMatch, "")
-                          .trim();
-                        return (
-                          <View key={idx} style={styles.instructionRow}>
-                            <Text style={styles.stepNumber}>{stepNumber}.</Text>
-                            <Text style={styles.instructionText}>
-                              {stepText}
-                            </Text>
-                          </View>
-                        );
-                      }
-                      return null;
-                    })}
-                </View>
-                <View style={{ height: 60 }} />
-              </ScrollView>
-
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
+                  })
+                }
+              />
             </View>
-          </View>
-        </Modal>
-      )}
+          </ScrollView>
+        </View>
 
-      {/* Animated Side Menu */}
-      <AnimatedSideMenu
-        isMenuOpen={isMenuOpen}
-        onClose={() => setMenuOpen(false)}
-      />
-    </View>
+        {selectedRecipe && (
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={modalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <TouchableOpacity
+                  style={styles.bookmarkIcon}
+                  onPress={() => setIsBookmarked(!isBookmarked)}
+                >
+                  <Ionicons
+                    name={isBookmarked ? "bookmark" : "bookmark-outline"}
+                    size={30}
+                    color={isBookmarked ? "gold" : "#000"}
+                  />
+                </TouchableOpacity>
+
+                <ScrollView
+                  contentContainerStyle={styles.modalScrollViewContent}
+                  showsVerticalScrollIndicator={true}
+                  scrollEventThrottle={16}
+                  removeClippedSubviews={false}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  <Text style={styles.modalTitle}>{selectedRecipe.title}</Text>
+                  {selectedRecipe.imagePath && (
+                    <Image
+                      source={selectedRecipe.imagePath}
+                      style={styles.modalImage}
+                    />
+                  )}
+
+                  <Text style={styles.sectionTitle}>Ingredients 🥕:</Text>
+                  <View style={styles.ingredientsContainer}>
+                    {selectedRecipe.description
+                      .split("\n\n")
+                      .find((section) => section.startsWith("Ingredients:"))
+                      ?.split("\n")
+                      .slice(1)
+                      .map((ingredient, idx) => (
+                        <Text key={idx} style={styles.ingredientItem}>
+                          <Text style={{ fontWeight: "bold" }}>•</Text>{" "}
+                          {ingredient.substring(1).trim()}
+                        </Text>
+                      ))}
+                  </View>
+
+                  <Text style={styles.sectionTitle}>Instructions 👨‍🍳:</Text>
+                  <View style={styles.instructionsContainer}>
+                    {selectedRecipe.description
+                      .split("\n\n")
+                      .find((section) => section.startsWith("Instructions:"))
+                      ?.split("\n")
+                      .slice(1)
+                      .map((instruction, idx) => {
+                        const stepMatch = instruction.match(/^(\d+)\./);
+                        if (stepMatch) {
+                          const [fullMatch, stepNumber] = stepMatch;
+                          const stepText = instruction
+                            .replace(fullMatch, "")
+                            .trim();
+                          return (
+                            <View key={idx} style={styles.instructionRow}>
+                              <Text style={styles.stepNumber}>
+                                {stepNumber}.
+                              </Text>
+                              <Text style={styles.instructionText}>
+                                {stepText}
+                              </Text>
+                            </View>
+                          );
+                        }
+                        return null;
+                      })}
+                  </View>
+                  <View style={{ height: 60 }} />
+                </ScrollView>
+
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setModalVisible(false)}
+                >
+                  <Text style={styles.closeButtonText}>Close</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        {/* Animated Side Menu */}
+        <AnimatedSideMenu
+          isMenuOpen={isMenuOpen}
+          onClose={() => setMenuOpen(false)}
+        />
+      </View>
+    </TouchableWithoutFeedback>
   );
 };
 
